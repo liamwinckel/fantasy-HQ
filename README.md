@@ -2,7 +2,7 @@
 
 Liam's fantasy football command centre for Sleeper, as a web app.
 
-**Live:** https://liamwinckel.github.io/fantasy-hq/
+**Live:** https://liamwinckel.github.io/fantasy-HQ/
 
 Open it on your phone, then Share → **Add to Home Screen** for a full-screen app icon.
 It runs entirely in your browser: no server, no accounts, no API keys, free to run.
