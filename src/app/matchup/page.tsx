@@ -7,7 +7,7 @@ import { formatLabel } from "@/lib/services/portfolio";
 import { gameView, teamWeek, weekGames, weekKind, type TeamWeek } from "@/lib/services/views";
 import { winProbability } from "@/lib/engine/simulate";
 import { powerRankings } from "@/lib/engine/power";
-import { NflLogo, Bar, Card, Logo, Notice, PageHeader, Tag, cx } from "@/components/ui";
+import { NflLogo, Bar, Card, Logo, Notice, PageHeader, Tag, cx, Info, WinBar } from "@/components/ui";
 import { WeekNav } from "@/components/client";
 import { MatchupBoard } from "@/components/matchup";
 import { PlayerLink } from "@/components/PlayerCard";
@@ -61,7 +61,7 @@ function MatchupPageBody({ setup, league, ctx, sp }: LeagueData) {
         {games.map(({ a, b }) => {
           const on = a === focus || b === focus;
           return (
-            <Link key={a} href={`/matchup?week=${week}&team=${a}`} className={cx("shrink-0 rounded-xl border px-3 py-2 text-xs transition-colors", on ? "border-acc bg-acc-soft" : "border-line bg-panel hover:bg-panel2")}>
+            <Link key={a} href={`/matchup/?week=${week}&team=${a}`} className={cx("shrink-0 rounded-xl border px-3 py-2 text-xs transition-colors", on ? "border-acc bg-acc-soft" : "border-line bg-panel hover:bg-panel2")}>
               <div className={cx("flex items-center gap-1.5 font-semibold", a === ctx.myRosterId && "text-acc-ink")}><Logo src={av(a)} name={name(a)} size={18} />{name(a)}</div>
               <div className={cx("mt-1 flex items-center gap-1.5 text-muted", b === ctx.myRosterId && "font-semibold text-acc-ink")}><Logo src={av(b)} name={name(b)} size={18} />vs {name(b)}</div>
             </Link>
@@ -69,16 +69,14 @@ function MatchupPageBody({ setup, league, ctx, sp }: LeagueData) {
         })}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <div className="rounded-xl border border-line bg-panel p-4"><div className="flex items-center gap-2 text-xs text-muted"><Logo src={g.a.avatar} name={g.a.name} size={22} /><span className="truncate">{g.a.name}</span></div><div className="num font-[family-name:var(--font-display)] text-4xl font-bold">{(kind === "past" || started ? g.a.actual : g.a.projected)?.toFixed(1) ?? "—"}</div><div className="text-xs text-muted">Power rank #{rankOf(g.a.rosterId)}</div></div>
-        <div className="rounded-xl border border-line bg-panel p-4"><div className="flex items-center gap-2 text-xs text-muted">{g.b && <Logo src={g.b.avatar} name={g.b.name} size={22} />}<span className="truncate">{g.b?.name ?? "Opponent"}</span></div><div className="num font-[family-name:var(--font-display)] text-4xl font-bold">{g.b ? (kind === "past" || started ? g.b.actual : g.b.projected)?.toFixed(1) ?? "—" : "—"}</div><div className="text-xs text-muted">{g.b ? `Power rank #${rankOf(g.b.rosterId)}` : ""}</div></div>
-        <div className="col-span-2 rounded-xl border border-line bg-panel p-4">
+      <div>
+        <div className="rounded-xl border border-line bg-panel p-4">
           {g.kind === "past" ? (
             <><div className="text-xs text-muted">Result</div><div className="h-display mt-1 text-3xl">{g.result === "W" ? `${g.a.name} won` : g.result === "L" ? `${g.b?.name} won` : g.result === "T" ? "Tie" : "—"}</div>
               <div className="text-xs text-muted">by {g.a.actual !== null && g.b?.actual != null ? Math.abs(g.a.actual - g.b.actual).toFixed(1) : "—"} pts</div></>
           ) : (
-            <><div className="flex justify-between text-xs text-muted"><span>{g.a.name} win chance</span><Tag kind="MODEL" /></div>
-              <div className="mt-2 flex items-center gap-3"><Bar value={g.winProbA ?? 50} className="h-3" color={(g.winProbA ?? 50) >= 50 ? "bg-acc" : "bg-muted"} /><span className="num w-14 text-right text-2xl font-bold">{g.winProbA?.toFixed(0) ?? "—"}%</span></div></>
+            <><div className="flex justify-between text-xs text-muted"><span>{g.a.name} win chance · power #{rankOf(g.a.rosterId)}{g.b ? ` vs #${rankOf(g.b.rosterId)}` : ""}</span><Tag kind="MODEL" /></div>
+              <div className="mt-2 flex items-center gap-3"><WinBar pct={g.winProbA ?? 50} /><span className="num w-14 text-right text-2xl font-bold">{g.winProbA?.toFixed(0) ?? "—"}%</span></div></>
           )}
         </div>
       </div>
@@ -114,7 +112,7 @@ function MatchupPageBody({ setup, league, ctx, sp }: LeagueData) {
                   </li>
                 ))}
               </ul>
-              <p className="mt-3 text-xs text-muted">These players have the biggest gap between a bad week and a good week, so they&apos;re most likely to decide the result.</p>
+              <Info className="mt-3">These players have the biggest gap between a bad week and a good week, so they&apos;re most likely to decide the result.</Info>
             </Card>
           )}
         </div>
@@ -133,12 +131,12 @@ function MatchupPageBody({ setup, league, ctx, sp }: LeagueData) {
             const wp = kind !== "past" && wa && wb ? winProbability(wa, wb) : null;
             return (
               <li key={a} className={cx("border-line md:border-b md:odd:border-r", (a === focus || b === focus) && "bg-acc-soft")}>
-                <Link href={`/matchup?week=${week}&team=${a}`} className="flex items-center gap-3 px-5 py-3 hover:bg-panel2">
+                <Link href={`/matchup/?week=${week}&team=${a}`} className="flex items-center gap-3 px-5 py-3 hover:bg-panel2">
                   <div className="min-w-0 flex-1 text-sm">
                     <div className="flex justify-between gap-2"><span className={cx("flex min-w-0 items-center gap-1.5", sa !== null && sb !== null && sa > sb && "font-bold")}><Logo src={av(a)} name={name(a)} size={18} /><span className="truncate">{name(a)}</span></span><span className="num">{sa?.toFixed(1) ?? "—"}</span></div>
                     <div className="flex justify-between gap-2"><span className={cx("flex min-w-0 items-center gap-1.5", sa !== null && sb !== null && sb > sa && "font-bold")}><Logo src={av(b)} name={name(b)} size={18} /><span className="truncate">{name(b)}</span></span><span className="num">{sb?.toFixed(1) ?? "—"}</span></div>
                   </div>
-                  {wp !== null && <div className="w-20 text-right text-[11px] text-muted"><Bar value={wp} />{wp.toFixed(0)}% / {(100 - wp).toFixed(0)}%</div>}
+                  {wp !== null && <div className="w-20 text-right text-[11px] text-muted"><WinBar pct={wp} className="h-2" />{wp.toFixed(0)}% / {(100 - wp).toFixed(0)}%</div>}
                 </Link>
               </li>
             );

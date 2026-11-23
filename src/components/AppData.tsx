@@ -138,7 +138,8 @@ export function useQuery() {
     const p = new URLSearchParams(params.toString());
     for (const [k, v] of Object.entries(patch)) (v === undefined || v === "" ? p.delete(k) : p.set(k, v));
     const q = p.toString();
-    (replace ? router.replace : router.push)(`${path}${q ? `?${q}` : ""}`, { scroll: false });
+    const base = path.endsWith("/") ? path : `${path}/`;
+    (replace ? router.replace : router.push)(`${base}${q ? `?${q}` : ""}`, { scroll: false });
   }, [params, router, path]);
   return { sp, set };
 }

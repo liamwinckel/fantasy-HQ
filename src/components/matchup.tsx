@@ -1,65 +1,97 @@
 "use client";
 
 import type { GameView, TeamWeek, WeekLine } from "@/lib/services/views";
-import { Bar, InjuryChip, Logo, NflLogo, cx } from "./ui";
+import { Bar, InjuryChip, Logo, NflLogo, cx, WinBar } from "./ui";
 import { TeamLink } from "./TeamPeek";
+import { useState } from "react";
 import { PlayerLink } from "./PlayerCard";
 import { PlayerImg } from "./client";
 
 const slotLabel = (s: string) => s.replace("SUPER_FLEX", "SFLX").replace("IDP_FLEX", "IDP").replace("WRRB_FLEX", "W/R").replace("REC_FLEX", "W/T");
 
-function points(l: WeekLine, kind: GameView["kind"]) {
+function points(l: WeekLine, kind: GameView["kind"]): { main: string; sub: string | null; projected?: boolean } {
   if (kind === "past") return { main: (l.actual ?? 0).toFixed(1), sub: null };
-  if (kind === "current") return { main: l.actual !== null && l.actual !== 0 ? l.actual.toFixed(1) : "—", sub: l.proj !== null ? `proj ${l.proj.toFixed(1)}` : null };
-  return { main: l.proj !== null ? l.proj.toFixed(1) : "—", sub: null };
+  if (kind === "current") return l.actual !== null && l.actual !== 0
+    ? { main: l.actual.toFixed(1), sub: l.proj !== null ? `proj ${l.proj.toFixed(1)}` : null }
+    : { main: l.proj !== null ? l.proj.toFixed(1) : "—", sub: null, projected: true };
+  return { main: l.proj !== null ? l.proj.toFixed(1) : "—", sub: null, projected: true };
 }
+/** "Drake Maye" → "D. Maye" on small screens. */
+const shortName = (n: string) => { const [f, ...r] = n.split(" "); return r.length ? `${f[0]}. ${r.join(" ")}` : n; };
 
-function Side({ t, kind, align }: { t: TeamWeek | null; kind: GameView["kind"]; align: "left" | "right" }) {
-  if (!t) return <div className="flex flex-1 items-center justify-center p-6 text-sm text-muted">No opponent this week (playoff bracket or bye).</div>;
-  const notStarted = kind === "current" && !t.actual;
-  const total = kind === "future" || notStarted ? t.projected : t.actual;
+function Cell({ l, kind, align }: { l: WeekLine | undefined; kind: GameView["kind"]; align: "left" | "right" }) {
+  if (!l) return <div className="flex-1" />;
+  const p = points(l, kind);
+  const right = align === "right";
   return (
-    <div className="min-w-0 flex-1">
-      <div className={cx("flex items-end justify-between gap-2 border-b border-line px-4 py-3", align === "right" && "flex-row-reverse text-right")}>
-        <div className="min-w-0">
-          <div className={cx("flex items-center gap-2 font-semibold", align === "right" && "flex-row-reverse")}><TeamLink rosterId={t.rosterId} name={t.name} avatar={t.avatar} size={26} /></div>
-          <div className="text-[11px] text-muted">{kind === "past" ? "Final score" : notStarted ? "Projected · games not started" : kind === "current" ? `Live · projected ${t.projected?.toFixed(1) ?? "—"}` : "Projected best lineup"}</div>
+    <div className={cx("flex min-w-0 flex-1 items-center gap-2", right && "flex-row-reverse text-right")}>
+      <span className="hidden sm:block">{l.playerId ? <PlayerImg id={l.playerId} name={l.name} pos={l.pos} size={30} /> : <span className="block h-[30px] w-[30px] shrink-0 rounded-full border border-dashed border-line" />}</span>
+      <div className="min-w-0 flex-1">
+        <div className={cx("flex items-center gap-1 text-xs font-semibold sm:text-sm", right && "flex-row-reverse")}>
+          {l.playerId ? <><PlayerLink id={l.playerId} name={shortName(l.name)} className="sm:hidden" /><PlayerLink id={l.playerId} name={l.name} className="hidden sm:inline" /></> : <span className="truncate text-muted">{l.name}</span>}
+          <InjuryChip status={l.injury} />
         </div>
-        <div className="num font-[family-name:var(--font-display)] text-4xl font-bold leading-none">{total !== null ? total.toFixed(1) : "—"}</div>
+        <div className={cx("flex items-center gap-1 truncate text-[10px] text-muted sm:text-[11px]", right && "flex-row-reverse")}><NflLogo team={l.team} size={11} /><span className="truncate">{l.team ?? l.pos}{l.note ? ` · ${l.note}` : ""}</span></div>
       </div>
-      <ul className="divide-y divide-line">
-        {t.starters.map((l, i) => {
-          const p = points(l, kind);
-          return (
-            <li key={i} className={cx("flex items-center gap-2 px-4 py-2", align === "right" && "flex-row-reverse text-right")}>
-              <span className="w-10 shrink-0 rounded bg-panel2 py-0.5 text-center text-[10px] font-extrabold">{slotLabel(l.slot)}</span>
-              {l.playerId ? <PlayerImg id={l.playerId} name={l.name} pos={l.pos} size={30} /> : <span className="h-[30px] w-[30px] shrink-0 rounded-full border border-dashed border-line" />}
-              <div className="min-w-0 flex-1">
-                <div className={cx("flex items-center gap-1 text-sm font-medium", align === "right" && "justify-end")}>
-                  {l.playerId ? <PlayerLink id={l.playerId} name={l.name} /> : <span className="truncate">{l.name}</span>}
-                  <InjuryChip status={l.injury} />
-                </div>
-                <div className={cx("flex items-center gap-1 truncate text-[11px] text-muted", align === "right" && "justify-end")}><NflLogo team={l.team} size={12} />{l.pos}{l.team ? ` · ${l.team}` : ""}{l.note ? ` · ${l.note}` : ""}</div>
-              </div>
-              <div className="w-14 shrink-0">
-                <div className="num text-sm font-bold">{p.main}</div>
-                {p.sub && <div className="num text-[10px] text-muted">{p.sub}</div>}
-              </div>
-            </li>
-          );
-        })}
-      </ul>
+      <div className="w-10 shrink-0 sm:w-12">
+        <div className={cx("num text-sm font-bold", p.projected && "text-muted")}>{p.main}</div>
+        {p.sub && <div className="num text-[10px] text-muted">{p.sub}</div>}
+      </div>
     </div>
   );
 }
 
+function Head({ t, kind, align }: { t: TeamWeek | null; kind: GameView["kind"]; align: "left" | "right" }) {
+  if (!t) return <div className="flex-1 p-3 text-center text-xs text-muted">No opponent (bye or bracket)</div>;
+  const notStarted = kind === "current" && !t.actual;
+  const total = kind === "future" || notStarted ? t.projected : t.actual;
+  return (
+    <div className={cx("flex min-w-0 flex-1 flex-col gap-1 px-3 py-3", align === "right" ? "items-end text-right" : "items-start")}>
+      <TeamLink rosterId={t.rosterId} name={t.name} avatar={t.avatar} size={24} className="max-w-full text-sm font-semibold" />
+      <div className="num font-[family-name:var(--font-display)] text-3xl font-bold leading-none sm:text-4xl">{total !== null ? total.toFixed(1) : "—"}</div>
+      <div className="text-[10px] text-muted">{kind === "past" ? "Final" : kind === "future" ? "Projected · best lineup" : notStarted ? "Projected" : `Live · proj ${t.projected?.toFixed(1) ?? "—"}`}</div>
+    </div>
+  );
+}
+
+/** Both lineups side by side, slot by slot (like the Sleeper matchup screen), on any screen size. */
 export function MatchupBoard({ g }: { g: GameView }) {
+  const [bench, setBench] = useState(false);
+  const n = Math.max(g.a.starters.length, g.b?.starters.length ?? 0);
+  const nb = Math.max(g.a.bench.length, g.b?.bench.length ?? 0);
   return (
     <div>
-      <div className="flex flex-col divide-y divide-line sm:flex-row sm:divide-x sm:divide-y-0">
-        <Side t={g.a} kind={g.kind} align="left" />
-        <Side t={g.b} kind={g.kind} align="right" />
+      <div className="flex divide-x divide-line border-b border-line">
+        <Head t={g.a} kind={g.kind} align="left" />
+        <Head t={g.b} kind={g.kind} align="right" />
       </div>
+      <ul className="divide-y divide-line">
+        {Array.from({ length: n }, (_, i) => (
+          <li key={i} className="flex items-center gap-1.5 px-2 py-2 sm:gap-3 sm:px-4">
+            <Cell l={g.a.starters[i]} kind={g.kind} align="left" />
+            <span className="w-9 shrink-0 rounded bg-panel2 py-0.5 text-center text-[9px] font-extrabold sm:w-11 sm:text-[10px]">{slotLabel(g.a.starters[i]?.slot ?? g.b?.starters[i]?.slot ?? "")}</span>
+            <Cell l={g.b?.starters[i]} kind={g.kind} align="right" />
+          </li>
+        ))}
+      </ul>
+      {nb > 0 && (
+        <>
+          <button type="button" onClick={() => setBench(!bench)} className="flex w-full items-center justify-center gap-1 border-t border-line py-2 text-xs font-semibold text-muted hover:text-fg">
+            {bench ? "Hide benches" : "Show benches"}
+          </button>
+          {bench && (
+            <ul className="divide-y divide-line border-t border-line bg-panel2/40">
+              {Array.from({ length: nb }, (_, i) => (
+                <li key={i} className="flex items-center gap-1.5 px-2 py-2 sm:gap-3 sm:px-4">
+                  <Cell l={g.a.bench[i]} kind={g.kind} align="left" />
+                  <span className="w-9 shrink-0 text-center text-[9px] font-bold text-muted sm:w-11">BN</span>
+                  <Cell l={g.b?.bench[i]} kind={g.kind} align="right" />
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
       <div className="border-t border-line px-4 py-3">
         {g.kind === "past" && g.result && (
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
@@ -71,8 +103,8 @@ export function MatchupBoard({ g }: { g: GameView }) {
         )}
         {g.kind !== "past" && g.winProbA !== null && (
           <div className="flex items-center gap-3 text-sm">
-            <span className="w-32 shrink-0 text-xs text-muted">Your win chance</span>
-            <Bar value={g.winProbA} color={g.winProbA >= 50 ? "bg-acc" : "bg-muted"} />
+            <span className="shrink-0 text-xs text-muted">{g.a.name} win chance</span>
+            <WinBar pct={g.winProbA} />
             <span className="num w-12 text-right font-bold">{g.winProbA.toFixed(0)}%</span>
           </div>
         )}

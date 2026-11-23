@@ -12,7 +12,7 @@ import { loadKeeperPlan } from "@/lib/services/keeperData";
 import { powerRankings } from "@/lib/engine/power";
 import { winProbability } from "@/lib/engine/simulate";
 import { ord } from "@/lib/engine/classify";
-import { Logo, Bar, Card, ClassBadge, InjuryChip, Notice, PageHeader, Stat, Tag, cx, signed } from "@/components/ui";
+import { Logo, Bar, Card, ClassBadge, InjuryChip, Notice, PageHeader, Stat, Tag, cx, signed, Info, WinBar } from "@/components/ui";
 import { PlayerImg } from "@/components/client";
 import { PlayerLink } from "@/components/PlayerCard";
 import { SeasonChart } from "@/components/charts";
@@ -39,6 +39,7 @@ function DashboardBody({ setup, league, ctx, sp }: LeagueData) {
   const power = powerRankings(ctx);
   const myPower = power.find((p) => p.rosterId === me.rosterId)!;
   const avgPf = ctx.teams.reduce((a, t) => a + t.pointsFor, 0) / ctx.teams.length;
+  const avgPa = ctx.teams.reduce((a, t) => a + t.pointsAgainst, 0) / ctx.teams.length;
   const cls = ctx.showClasses ? ctx.classifications.get(me.rosterId) : undefined;
   const swaps = ctx.seasonOver ? [] : lineupSwaps(ctx, me.rosterId);
   const waivers = ctx.seasonOver ? [] : waiverReport(ctx, me.rosterId).topAdds.slice(0, 3);
@@ -52,13 +53,14 @@ function DashboardBody({ setup, league, ctx, sp }: LeagueData) {
       <PageHeader eyebrow={`${league.name} · ${formatLabel(league)} · ${ctx.scoring} · ${ctx.teamsCount} teams`} title="Dashboard">
         <span className={cx("rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider", fmt === "dynasty" ? "bg-fg text-bg" : fmt === "keeper" ? "border border-acc text-acc-ink" : "bg-acc text-on-acc")}>{formatLabel(league)} league</span>
       </PageHeader>
-      <p className="-mt-2 text-sm text-muted">{FORMAT_NOTE[fmt]}</p>
+      <Info className="-mt-2 self-center" label="About this tool">{FORMAT_NOTE[fmt]}</Info>
       {ctx.warnings.map((w) => <Notice key={w} tone="warn">{w}</Notice>)}
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat label="Record" value={`${me.wins}–${me.losses}${me.ties ? `–${me.ties}` : ""}`} sub={`${ord(me.rank)} in standings`} tag="ACTUAL" />
         <Stat label="Power rank" value={`#${myPower.rank}`} sub={`of ${ctx.teamsCount} · score ${myPower.score.toFixed(0)}`} tag="MODEL" />
-        {fmt !== "dynasty" && <Stat label="Points for" value={me.pointsFor.toFixed(0)} sub={`${signed(me.pointsFor - avgPf)} vs avg`} tone={me.pointsFor >= avgPf ? "pos" : "neg"} tag="ACTUAL" />}
+        <Stat label="Points for" value={me.pointsFor.toFixed(0)} sub={`${signed(me.pointsFor - avgPf)} vs avg`} tone={me.pointsFor >= avgPf ? "pos" : "neg"} tag="ACTUAL" />
+        <Stat label="Points against" value={me.pointsAgainst.toFixed(0)} sub={`${signed(me.pointsAgainst - avgPa)} vs avg`} tone={me.pointsAgainst <= avgPa ? "pos" : "neg"} tag="ACTUAL" />
         <Stat label="Playoff odds" value={`${(ctx.sim.playoffOdds[me.rosterId] ?? 0).toFixed(0)}%`} sub={`Projected ${ctx.sim.projectedWins[me.rosterId] ?? "—"} wins`} tag="MODEL" />
         <Stat label="Title odds" value={`${(ctx.sim.titleOdds[me.rosterId] ?? 0).toFixed(0)}%`} sub="Simulated" tag="MODEL" />
         {fmt === "redraft" && <Stat label="Projected finish" value={ord(Math.round(ctx.sim.avgSeed[me.rosterId] ?? 0))} sub="Average simulated seed" tag="MODEL" />}
@@ -76,7 +78,7 @@ function DashboardBody({ setup, league, ctx, sp }: LeagueData) {
                 <span className="text-xs font-bold uppercase text-muted">{started ? "Live" : "Projected"}</span>
                 <div className="min-w-0 text-right"><div className="flex flex-row-reverse items-center gap-2 font-semibold"><TeamLink rosterId={g.b.rosterId} name={g.b.name} avatar={g.b.avatar} size={26} /></div><div className="num font-[family-name:var(--font-display)] text-4xl font-bold">{(started ? g.b.actual : g.b.projected)?.toFixed(1)}</div></div>
               </div>
-              {g.winProbA !== null && <div className="flex items-center gap-3 text-sm"><span className="w-28 shrink-0 text-xs text-muted">Your win chance</span><Bar value={g.winProbA} className="h-2.5" color={g.winProbA >= 50 ? "bg-acc" : "bg-muted"} /><span className="num w-12 text-right font-bold">{g.winProbA.toFixed(0)}%</span></div>}
+              {g.winProbA !== null && <div className="flex items-center gap-3 text-sm"><span className="w-28 shrink-0 text-xs text-muted">Your win chance</span><WinBar pct={g.winProbA} /><span className="num w-12 text-right font-bold">{g.winProbA.toFixed(0)}%</span></div>}
             </div>
           ) : <p className="text-sm text-muted">No opponent this week.</p>}
         </Card>
@@ -108,7 +110,7 @@ function DashboardBody({ setup, league, ctx, sp }: LeagueData) {
             ))}
             {keeper.rows.filter((r) => r.recommended).length === 0 && <p className="text-sm text-muted">No keeper beats the value of its draft round right now.</p>}
           </div>
-          <p className="mt-3 text-xs text-muted">Rules: keep {keeper.rules.maxKeepers}, cost = this year&apos;s round {keeper.rules.modifier === "same" ? "(same round)" : `${keeper.rules.modifier} (${keeper.rules.direction})`}. Undrafted players cost R{keeper.rules.undraftedRound}.</p>
+          <Info className="mt-3">Rules: keep {keeper.rules.maxKeepers}, cost = this year&apos;s round {keeper.rules.modifier === "same" ? "(same round)" : `${keeper.rules.modifier} (${keeper.rules.direction})`}. Undrafted players cost R{keeper.rules.undraftedRound}.</Info>
         </Card>
       )}
       {fmt === "dynasty" && (
@@ -194,7 +196,7 @@ function PlayoffPath({ ctx, me, power }: { ctx: Ctx; me: number; power: ReturnTy
               <li key={w} className="grid grid-cols-[3.5rem_1fr_6rem] items-center gap-3 text-sm">
                 <span className="text-xs font-bold text-muted">Week {w}</span>
                 <span className="truncate">vs <b>{ctx.teams.find((t) => t.rosterId === opp)?.name ?? "—"}</b> <span className="text-xs text-muted">(power #{power.find((p) => p.rosterId === opp)?.rank ?? "—"})</span></span>
-                {wp !== null ? <span className="flex items-center gap-2"><Bar value={wp} color={wp >= 50 ? "bg-acc" : "bg-muted"} /><span className="num w-9 text-right text-xs font-bold">{wp.toFixed(0)}%</span></span> : <span />}
+                {wp !== null ? <span className="flex items-center gap-2"><WinBar pct={wp} className="h-2" /><span className="num w-9 text-right text-xs font-bold">{wp.toFixed(0)}%</span></span> : <span />}
               </li>
             );
           })}
@@ -241,7 +243,7 @@ function AgeProfile({ ctx, rosterId }: { ctx: Ctx; rosterId: number }) {
           </div>
         );
       })}
-      <p className="text-xs text-muted">Value-weighted age of your top 3 at each position. The green band is the position&apos;s peak-production age window.</p>
+      <Info className="">Value-weighted age of your top 3 at each position. The green band is the position&apos;s peak-production age window.</Info>
     </div>
   );
 }

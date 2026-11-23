@@ -6,7 +6,7 @@ import Link from "next/link";
 import { formatLabel } from "@/lib/services/portfolio";
 import { powerRankings, POS_ORDER } from "@/lib/engine/power";
 import { ord } from "@/lib/engine/classify";
-import { Bar, Card, ClassBadge, Notice, PageHeader, Stat, Tag, cx } from "@/components/ui";
+import { Bar, Card, ClassBadge, Notice, PageHeader, Stat, Tag, cx, Info } from "@/components/ui";
 
 export default function LeagueAnalyzer() {
   return <LeaguePage>{(d) => <LeagueAnalyzerBody {...d} />}</LeaguePage>;
@@ -103,7 +103,7 @@ function LeagueAnalyzerBody({ setup, league, ctx, sp }: LeagueData) {
             ))}
           </div>
         </div>
-        <p className="border-t border-line px-5 py-2.5 text-xs text-muted">Players in flex slots count toward their own position. Depth = projected points of the best three bench players (no K/DEF). Power score = 45% lineup strength + 35% rest-of-season strength + 20% actual points per game.</p>
+        <Info className="border-t border-line px-5 py-2.5">Players in flex slots count toward their own position. Depth = projected points of the best three bench players (no K/DEF). Power score = 45% lineup strength + 35% rest-of-season strength + 20% actual points per game.</Info>
       </Card>
     </div>
   );

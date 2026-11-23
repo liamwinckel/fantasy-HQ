@@ -3,7 +3,8 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { X } from "lucide-react";
 import { ownershipAcross, playerCard, type PlayerCardData } from "@/lib/services/playerCard";
-import { cx, NflLogo } from "./ui";
+import { useSwipeDown } from "./swipe";
+import { cx, NflLogo, Info } from "./ui";
 import { useApp } from "./AppData";
 
 const Ctx = createContext<{ open: (id: string) => void }>({ open: () => {} });
@@ -38,16 +39,18 @@ export function PlayerCardProvider({ children }: { children: ReactNode }) {
     if (id) window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [id]);
+  const swipe = useSwipeDown(close);
   return (
     <Ctx.Provider value={{ open }}>
       {children}
       <div className={cx("fixed inset-0 z-50 transition", id ? "pointer-events-auto" : "pointer-events-none")} aria-hidden={!id}>
         <div className={cx("absolute inset-0 bg-black/50 transition-opacity duration-300", id ? "opacity-100" : "opacity-0")} onClick={close} />
-        <aside role="dialog" aria-modal="true" aria-label={data?.name ?? "Player"}
+        <aside ref={swipe.ref} {...swipe.handlers} role="dialog" aria-modal="true" aria-label={data?.name ?? "Player"}
           className={cx("absolute bottom-0 right-0 flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-2xl border border-line bg-bg shadow-2xl transition-transform duration-300 ease-out md:top-0 md:max-h-none md:w-[520px] md:rounded-none md:rounded-l-2xl",
             id ? "translate-y-0 md:translate-x-0" : "translate-y-full md:translate-x-full md:translate-y-0")}>
           <button type="button" onClick={close} aria-label="Close player card" className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-panel2"><X size={18} /></button>
-          <div className="overflow-y-auto">
+          <div className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-muted/40 md:hidden" aria-hidden />
+          <div ref={swipe.scrollRef} className="overflow-y-auto overscroll-contain">
             {!data && !err && id && <div className="p-6"><div className="h-20 animate-pulse rounded-xl bg-panel2" /><div className="mt-4 h-40 animate-pulse rounded-xl bg-panel2" /></div>}
             {err && <p className="p-6 text-sm text-neg">{err}</p>}
             {data && <CardBody d={data} />}
@@ -100,13 +103,13 @@ function CardBody({ d }: { d: PlayerCardData }) {
         </div>
       )}
       {d.values && (
-        <p className="-mt-1 px-5 pb-3 text-[11px] leading-relaxed text-muted">
+        <Info className="-mt-1 px-5">
           <b className="text-fg">Trade value</b> is the SHS model&apos;s score for how much this player is worth in a trade in {d.leagueName}, from 0 to 100 (100 = the league&apos;s most valuable player).{" "}
           {d.leagueMode === "dynasty"
             ? "It weighs production above a replacement starter over the next five seasons, adjusted for age, contract and injury history."
             : <>It&apos;s rest-of-season points above a replacement {d.pos} ({d.replacement?.toFixed(1)} pts/g: whichever is better of the last starter in your league or the best free agent), so positions you can easily fill off waivers count for less. {d.values.rosVorp > 0 ? `${d.values.rosVorp} points above replacement from here on.` : "Not projected above replacement from here on."}</>}{" "}
           It isn&apos;t a points total or a points-per-game rank.
-        </p>
+        </Info>
       )}
 
       <Section title={`Week by week · ${d.leagueName} scoring`}>
@@ -178,7 +181,7 @@ function CardBody({ d }: { d: PlayerCardData }) {
             {d.draft && <Row k="Drafted" v={d.draft} />}
             {d.college && <Row k="College" v={d.college} />}
           </dl>
-          <p className="mt-3 text-[11px] text-muted">Contracts: NFLverse (OverTheCap). Injury reports: NFLverse official weekly reports.</p>
+          <Info className="mt-3">Contracts: NFLverse (OverTheCap). Injury reports: NFLverse official weekly reports.</Info>
         </Section>
       )}
     </div>

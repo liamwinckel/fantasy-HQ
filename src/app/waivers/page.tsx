@@ -5,7 +5,7 @@ import Link from "next/link";
 import { formatLabel } from "@/lib/services/portfolio";
 import { rosterSpace, waiverReport, type WaiverPlayer } from "@/lib/services/waivers";
 import { WaiverBoard } from "./WaiverBoard";
-import { Card, InjuryChip, NflLogo, Notice, PageHeader, Tag, signed } from "@/components/ui";
+import { Card, InjuryChip, NflLogo, Notice, PageHeader, Tag, signed, Info } from "@/components/ui";
 import { PlayerImg } from "@/components/client";
 import { PlayerLink } from "@/components/PlayerCard";
 
@@ -22,10 +22,10 @@ function WaiverPageBody({ setup, league, ctx, sp }: LeagueData) {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader eyebrow={`${league.name} · ${formatLabel(league)} · ${ctx.scoring}`} title="Waiver Assistant" />
-      <p className="-mt-2 max-w-3xl text-sm text-muted">
+      <Info className="-mt-2 self-center" label="About this tool">
         The league&apos;s top projected free agents (Sleeper projections in your scoring), ranked by what they&apos;d add to <b className="text-fg">your</b> best lineup this week and for the rest of the season.
         Injured, suspended and players not projected to play are left out. If your roster is full, the suggested drop is taken off first, so the gain is net of losing him.
-      </p>
+      </Info>
 
       <Card title="Your needs" right={<Tag kind="MODEL" />}>
         <div className="flex flex-wrap gap-2 text-sm">
@@ -70,7 +70,7 @@ function WaiverPageBody({ setup, league, ctx, sp }: LeagueData) {
           {r.drops.length === 0 && <li className="px-5 py-4 text-sm text-muted">Every player on your roster is in at least one of your best lineups.</li>}
         </ul>
       </Card>
-      <p className="text-xs text-muted">FAAB bid suggestions aren&apos;t shown: there&apos;s no reliable free data on what your league bids. Waiver claims are made in Sleeper.</p>
+      <Info className="">FAAB bid suggestions aren&apos;t shown: there&apos;s no reliable free data on what your league bids. Waiver claims are made in Sleeper.</Info>
     </div>
   );
 }
@@ -78,7 +78,7 @@ function WaiverPageBody({ setup, league, ctx, sp }: LeagueData) {
 function ListCard({ title, hint, items, stat, statLabel }: { title: string; hint: string; items: WaiverPlayer[]; stat: (w: WaiverPlayer) => string; statLabel: string }) {
   return (
     <Card title={title}>
-      <p className="-mt-1 mb-3 text-xs text-muted">{hint}</p>
+      <Info className="-mt-1 mb-3">{hint}</Info>
       {items.length === 0 && <p className="text-sm text-muted">None right now.</p>}
       <ul className="flex flex-col gap-3">
         {items.map((w) => (

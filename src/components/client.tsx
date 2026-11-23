@@ -136,7 +136,7 @@ export function LeagueSelect({ leagues, current, compact = false }: { leagues: {
   const pick = (id: string) => {
     setOpen(false);
     selectLeague(id);
-    router.push(path); // drop ?league= and other per-league params
+    router.push(path.endsWith("/") ? path : `${path}/`); // drop ?league= and other per-league params
   };
   return (
     <div ref={ref} className={cx("relative", compact && "min-w-0 flex-1")}>
@@ -173,7 +173,7 @@ export function WeekNav({ week, current, last, label }: { week: number; current:
   const go = (w: number) => {
     const p = new URLSearchParams(params.toString());
     p.set("week", String(w));
-    router.push(`${path}?${p.toString()}`);
+    router.push(`${path.endsWith("/") ? path : `${path}/`}?${p.toString()}`, { scroll: false });
   };
   const btn = "flex h-10 w-10 items-center justify-center rounded-lg border border-line bg-panel hover:bg-panel2 disabled:opacity-40";
   return (

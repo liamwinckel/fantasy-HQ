@@ -6,7 +6,8 @@ import { X } from "lucide-react";
 import { useApp } from "./AppData";
 import { powerRankings, POS_ORDER } from "@/lib/engine/power";
 import { ord } from "@/lib/engine/classify";
-import { cx, InjuryChip, Logo, NflLogo } from "./ui";
+import { useSwipeDown } from "./swipe";
+import { cx, InjuryChip, Logo, NflLogo, Info } from "./ui";
 import { PlayerImg } from "./client";
 import { PlayerLink } from "./PlayerCard";
 
@@ -21,16 +22,18 @@ export function TeamPeekProvider({ children }: { children: ReactNode }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+  const swipe = useSwipeDown(() => setRid(null));
   return (
     <Ctx.Provider value={{ open }}>
       {children}
       <div className={cx("fixed inset-0 z-40 transition", rid !== null ? "pointer-events-auto" : "pointer-events-none")} aria-hidden={rid === null}>
         <div className={cx("absolute inset-0 bg-black/50 transition-opacity duration-300", rid !== null ? "opacity-100" : "opacity-0")} onClick={() => setRid(null)} />
-        <aside role="dialog" aria-modal="true" aria-label="Team"
+        <aside ref={swipe.ref} {...swipe.handlers} role="dialog" aria-modal="true" aria-label="Team"
           className={cx("absolute bottom-0 right-0 flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-2xl border border-line bg-bg shadow-2xl transition-transform duration-300 ease-out md:top-0 md:max-h-none md:w-[560px] md:rounded-none md:rounded-l-2xl",
             rid !== null ? "translate-y-0 md:translate-x-0" : "translate-y-full md:translate-x-full md:translate-y-0")}>
           <button type="button" onClick={() => setRid(null)} aria-label="Close team" className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-panel2"><X size={18} /></button>
-          <div className="overflow-y-auto">{rid !== null && <TeamBody rosterId={rid} />}</div>
+          <div className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-muted/40 md:hidden" aria-hidden />
+          <div ref={swipe.scrollRef} className="overflow-y-auto overscroll-contain">{rid !== null && <TeamBody rosterId={rid} />}</div>
         </aside>
       </div>
     </Ctx.Provider>
@@ -121,7 +124,7 @@ function TeamBody({ rosterId }: { rosterId: number }) {
           </ul>
         </section>
       ))}
-      <p className="px-5 pt-2 text-[11px] text-muted">Value = SHS trade value, 0–100 in this league. Tap a player for their card.</p>
+      <Info className="px-5">Value = SHS trade value, 0–100 in this league. Tap a player for their card.</Info>
     </div>
   );
 }

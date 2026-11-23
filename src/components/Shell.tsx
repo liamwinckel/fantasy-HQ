@@ -9,7 +9,7 @@ import { TeamPeekProvider } from "./TeamPeek";
 import { formatLabel } from "@/lib/services/portfolio";
 import { ago } from "@/lib/time";
 import { BASE_PATH } from "@/lib/net";
-import type { ReactNode } from "react";
+import { Component, type ReactNode } from "react";
 
 const TOOLS = [
   { href: "/", label: "Dashboard" },
@@ -64,7 +64,7 @@ function Frame({ children }: { children: ReactNode }) {
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 flex items-center gap-2 border-b border-line bg-bg/95 px-3 py-2.5 backdrop-blur sm:gap-3 sm:px-6">
+          <header className="sticky top-0 z-30 flex items-center gap-2 border-b border-line bg-bg/95 px-3 pb-2.5 pt-[max(env(safe-area-inset-top),0.625rem)] backdrop-blur sm:gap-3 sm:px-6">
             <Link href="/" className="shrink-0 md:hidden" aria-label="Dashboard">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={`${BASE_PATH}/shs-mark.png`} alt="SHS" width={34} height={34} />
@@ -82,10 +82,26 @@ function Frame({ children }: { children: ReactNode }) {
               <ThemeToggle />
             </div>
           </header>
-          <main className="mx-auto w-full max-w-[1320px] flex-1 px-4 pb-28 pt-5 sm:px-6 md:pb-10">{children}</main>
+          <main className="mx-auto w-full max-w-[1320px] flex-1 px-3 pb-28 pt-5 sm:px-6 md:pb-10"><Boundary>{children}</Boundary></main>
         </div>
       </div>
       <MobileTabs more={[...tools, { href: "/methodology", label: "How it's calculated" }, { href: "/settings", label: "Settings" }]} />
     </>
   );
+}
+
+/** Shows what went wrong instead of a blank screen. */
+class Boundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null as Error | null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  render() {
+    if (!this.state.error) return this.props.children;
+    return (
+      <div className="mx-auto mt-10 max-w-lg rounded-xl border border-neg/60 bg-panel p-5 text-sm">
+        <div className="h-display text-2xl">Something broke on this screen</div>
+        <p className="mt-2 break-words text-muted">{this.state.error.message}</p>
+        <button type="button" className="mt-4 rounded-lg bg-acc px-4 py-2 font-bold text-on-acc" onClick={() => { this.setState({ error: null }); location.reload(); }}>Reload</button>
+      </div>
+    );
+  }
 }

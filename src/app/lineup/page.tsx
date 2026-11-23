@@ -8,7 +8,7 @@ import { formatLabel } from "@/lib/services/portfolio";
 import { lineupSwaps, projectionFor, teamWeek, weekKind } from "@/lib/services/views";
 import { canFill } from "@/lib/engine/positions";
 import { optimizeLineup } from "@/lib/engine/lineup";
-import { Card, Notice, PageHeader, Tag, cx } from "@/components/ui";
+import { Card, Notice, PageHeader, Tag, cx, Info } from "@/components/ui";
 import { PlayerImg, WeekNav } from "@/components/client";
 import { LineupLab, type LabPlayer } from "./LineupLab";
 
@@ -55,25 +55,18 @@ function LineupPageBody({ setup, league, ctx, sp }: LeagueData) {
   let optimal = lu.optimal.map((s) => s.playerId);
   let swaps = lineupSwaps(ctx, me.rosterId);
   if (kind === "future") {
+    // Future weeks assume every team starts its best lineup for that week.
     const usable = players.filter((p) => !p.unavailable);
     optimal = optimizeLineup(ctx.league.roster_positions, usable.map((p) => ({ id: p.id, positions: ctx.players.get(p.id)!.positions, points: p.median })), current).map((s) => s.playerId);
-    // Compare with today's lineup carried forward
-    const byId = new Map(players.map((p) => [p.id, p]));
-    const inIds = optimal.filter((id) => id && !current.includes(id)) as string[];
-    const outIds = current.filter((id) => id && !optimal.includes(id)) as string[];
-    swaps = inIds.map((id, i) => {
-      const o = outIds[i] ? byId.get(outIds[i]) : undefined;
-      const reason = o?.onBye ? `${o.name} is on bye in Week ${week}` : o?.injury ? `${o.name} is ${o.injury}` : "Higher projection that week";
-      return { inId: id, inName: byId.get(id)!.name, outId: o?.id ?? null, outName: o?.name ?? "Empty slot", gain: Math.round(((byId.get(id)?.median ?? 0) - (o?.median ?? 0)) * 10) / 10, reason };
-    }).filter((s) => s.gain > 0.2);
-    current = [...current];
+    current = [...optimal];
+    swaps = [];
   }
 
   return (
     <div className="flex flex-col gap-5">
       {header}
       {ctx.warnings.map((w) => <Notice key={w} tone="warn">{w}</Notice>)}
-      {kind === "future" && <Notice>Planning Week {week}: &quot;Current&quot; is your lineup as it&apos;s set today. Projections apply that week&apos;s byes and multi-week injuries.</Notice>}
+      {kind === "future" && <Notice>Planning Week {week}: shown as your best lineup for that week (byes and multi-week injuries applied). Tap a position to try changes.</Notice>}
       <LineupLab
         key={week}
         slots={slots}
@@ -125,7 +118,7 @@ function Review({ ctx, rosterId, week }: { ctx: LeagueContext; rosterId: number;
             {missed.length === 0 ? <p className="text-sm text-muted">You started the best possible lineup. Nice.</p> : (
               <ul className="flex flex-col gap-2 text-sm">{missed.map((s) => <li key={s.playerId!}><b>{ctx.players.get(s.playerId!)?.name}</b> scored {s.points.toFixed(1)} on your bench</li>)}</ul>
             )}
-            <p className="mt-3 text-xs text-muted">&quot;Best possible&quot; uses hindsight: the highest-scoring legal lineup from your roster that week.</p>
+            <Info className="mt-3">&quot;Best possible&quot; uses hindsight: the highest-scoring legal lineup from your roster that week.</Info>
           </Card>
           <Card title="Bench" pad={false}>
             <div className="flex justify-between border-b border-line px-5 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted"><span>Player</span><span>Points</span></div>

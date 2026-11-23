@@ -4,7 +4,7 @@ import { LeaguePage, type LeagueData } from "@/components/AppData";
 import Link from "next/link";
 import { formatLabel } from "@/lib/services/portfolio";
 import { breakouts, CLASS_LABEL, type BreakoutRow } from "@/lib/services/breakouts";
-import { NflLogo, Card, InjuryChip, Notice, PageHeader, Tag, cx } from "@/components/ui";
+import { NflLogo, Card, InjuryChip, Notice, PageHeader, Tag, cx, Info } from "@/components/ui";
 import { PlayerImg } from "@/components/client";
 import { PlayerLink } from "@/components/PlayerCard";
 
@@ -31,15 +31,15 @@ function BreakoutPageBody({ setup, league, ctx, sp }: LeagueData) {
         <span className="mx-1 h-5 w-px bg-line" />
         {[["all", "Everyone"], ["fa", "Free agents"], ["mine", "My players"]].map(([k, l]) => <Link key={k} href={q({ avail: k })} className={chip(avail === k)}>{l}</Link>)}
       </div>
-      <p className="-mt-1 max-w-3xl text-sm text-muted">
+      <Info className="-mt-2 self-center" label="About this tool">
         Rookies, second- and third-year players whose profile points to a jump: share of team volume, efficiency, a growing role, Sleeper&apos;s outlook, draft capital and age.
         Only healthy players with a real role who are projected to play are scored; anyone already top-tier at their position is left out. Score 0–100.
-      </p>
+      </Info>
       {rows.length === 0 && <Card><p className="text-sm text-muted">No candidates match these filters.</p></Card>}
       <div className="grid gap-4 lg:grid-cols-2">
         {rows.map((r, i) => <BreakoutCard key={r.id} r={r} rank={i + 1} />)}
       </div>
-      <p className="text-xs text-muted">Model weights are on <Link href="/methodology" className="underline">How it&apos;s calculated</Link>. Data: Sleeper league scoring, NFLverse stats and snap counts.</p>
+      <Info className="">Model weights are on <Link href="/methodology" className="underline">How it&apos;s calculated</Link>. Data: Sleeper league scoring, NFLverse stats and snap counts.</Info>
     </div>
   );
 }

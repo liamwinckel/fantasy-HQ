@@ -5,7 +5,8 @@ import { connectUser } from "@/lib/services/portfolio";
 import { BASE_PATH } from "@/lib/net";
 
 export function Onboarding({ suggested = "" }: { suggested?: string }) {
-  const [name, setName] = useState(suggested);
+  void suggested;
+  const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const submit = async (e: React.FormEvent) => {
@@ -30,7 +31,7 @@ export function Onboarding({ suggested = "" }: { suggested?: string }) {
         <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wider text-muted">
           Username or user ID
           <input value={name} onChange={(e) => setName(e.target.value)} required autoCapitalize="none" autoCorrect="off"
-            className="rounded-lg border border-line bg-panel2 px-3 py-3 text-base normal-case tracking-normal text-fg" placeholder="L1am" />
+            className="rounded-lg border border-line bg-panel2 px-3 py-3 text-base normal-case tracking-normal text-fg" placeholder="Sleeper username" />
         </label>
         <button disabled={busy} className="rounded-lg bg-acc px-4 py-3 font-bold text-on-acc disabled:opacity-60">{busy ? "Connecting…" : "Connect"}</button>
         {err && <p className="text-sm text-neg">{err}</p>}

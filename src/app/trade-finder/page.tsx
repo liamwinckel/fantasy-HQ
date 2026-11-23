@@ -1,23 +1,28 @@
 "use client";
 
-import { LeaguePage, type LeagueData } from "@/components/AppData";
+import { LeaguePage, useQuery, type LeagueData } from "@/components/AppData";
 import { TeamLink } from "@/components/TeamPeek";
 import Link from "next/link";
 import { formatLabel } from "@/lib/services/portfolio";
 import { findTrades } from "@/lib/services/tradeFinder";
-import { Card, ClassBadge, Logo, Notice, PageHeader, Tag, cx, signed } from "@/components/ui";
+import { Card, ClassBadge, Logo, Notice, PageHeader, Tag, cx, signed, Info } from "@/components/ui";
 import { PlayerLink } from "@/components/PlayerCard";
 
 export default function TradeFinderPage() {
   return <LeaguePage>{(d) => <TradeFinderPageBody {...d} />}</LeaguePage>;
 }
 
-function TradeFinderPageBody({ setup, league, ctx, sp }: LeagueData) {
+function TradeFinderPageBody({ league, ctx, sp }: LeagueData) {
+  const { set } = useQuery();
   if (ctx.myRosterId === null) return <Notice tone="warn">You don&apos;t own a team in {league.name}.</Notice>;
-  const { profiles, trades } = findTrades(ctx, ctx.myRosterId, 14);
+  const partnerFilter = Number(sp.partner) && ctx.teams.some((t) => t.rosterId === Number(sp.partner) && t.rosterId !== ctx.myRosterId) ? Number(sp.partner) : null;
+  const { profiles, trades } = findTrades(ctx, ctx.myRosterId, partnerFilter ? 8 : 14, partnerFilter);
   const mine = profiles.find((p) => p.rosterId === ctx.myRosterId)!;
-  const partnerFilter = Number(sp.partner) || null;
-  const shown = partnerFilter ? trades.filter((t) => t.partner === partnerFilter) : trades;
+  const shown = trades;
+  const pick = (rid: number | null) => {
+    set({ partner: rid ? String(rid) : undefined }, true);
+    setTimeout(() => document.getElementById("deals")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+  };
   const dyn = ctx.valuationMode === "dynasty";
   const POS = ["QB", "RB", "WR", "TE"].filter((p) => profiles.some((x) => x.power.positions[p]));
   const n = ctx.teamsCount;
@@ -25,45 +30,45 @@ function TradeFinderPageBody({ setup, league, ctx, sp }: LeagueData) {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader eyebrow={`${league.name} · ${formatLabel(league)} · ${ctx.scoring}`} title="Trade Finder" />
-      <p className="-mt-2 max-w-3xl text-sm text-muted">
+      <Info className="-mt-2 self-center" label="About this tool">
         Every team&apos;s strengths and needs, and trades that fill a hole on <b className="text-fg">both</b> sides. {dyn
           ? "Dynasty: deals must add value for each team's strategy (contender vs rebuilder) and stay close in value."
           : "Redraft: deals must improve your best lineups for the rest of the season without gutting theirs, and stay close in value."}
-      </p>
+      </Info>
 
-      <Card title="Team needs map" right={<span className="text-[11px] text-muted">position rank · 1 = strongest</span>} pad={false}>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] text-sm">
-            <thead><tr className="text-left text-[11px] uppercase tracking-wider text-muted">
-              <th className="px-5 py-2.5 font-semibold">Team</th>
-              {POS.map((p) => <th key={p} className="px-2 py-2.5 text-center font-semibold">{p}</th>)}
-              <th className="px-2 py-2.5 font-semibold">Needs</th><th className="px-2 py-2.5 font-semibold">Can spare</th>
-              {dyn && <th className="px-2 py-2.5 font-semibold">Strategy</th>}
-              <th className="px-5 py-2.5" />
-            </tr></thead>
-            <tbody>
-              {profiles.map((p) => (
-                <tr key={p.rosterId} className={cx("border-t border-line", p.rosterId === ctx.myRosterId && "bg-acc-soft")}>
-                  <td className="px-5 py-2.5 font-semibold"><TeamLink rosterId={p.rosterId} name={`${p.name}${p.rosterId === ctx.myRosterId ? " (you)" : ""}`} avatar={ctx.teams.find((t) => t.rosterId === p.rosterId)?.avatar ?? null} size={26} /></td>
+      <Card title="Team needs" info={<>Each team&apos;s rank at each position (1 = strongest). <span className="text-pos">Green</span> = top third, <span className="text-neg">red</span> = bottom half (a need). You need: <b className="text-neg">{mine.needs.join(", ") || "nothing urgent"}</b>; you can spare: <b className="text-pos">{mine.surplus.join(", ") || "little depth"}</b>. Tap Deals to see trades with that team.</>} pad={false}>
+        <ul className="divide-y divide-line">
+          {profiles.map((p) => {
+            const t = ctx.teams.find((x) => x.rosterId === p.rosterId);
+            const isMe = p.rosterId === ctx.myRosterId;
+            return (
+              <li key={p.rosterId} className={cx("flex items-center gap-2 px-3 py-2 sm:px-5", isMe && "bg-acc-soft", partnerFilter === p.rosterId && "bg-panel2")}>
+                <div className="min-w-0 flex-1">
+                  <TeamLink rosterId={p.rosterId} name={`${p.name}${isMe ? " (you)" : ""}`} avatar={t?.avatar ?? null} size={24} className="max-w-full text-sm font-semibold" />
+                  {dyn && p.cls && <div className="mt-0.5 pl-8"><ClassBadge cls={p.cls} className="!text-[9px]" /></div>}
+                </div>
+                <div className="flex shrink-0 gap-1">
                   {POS.map((pos) => {
                     const r = p.power.positions[pos]?.rank ?? 0;
-                    return <td key={pos} className="px-2 py-2.5 text-center"><span className={cx("num inline-block w-9 rounded py-0.5 text-xs font-bold", r && r <= Math.ceil(n / 3) ? "bg-pos/20 text-pos" : r > n / 2 ? "bg-neg/15 text-neg" : "bg-panel2 text-muted")}>{r || "—"}</span></td>;
+                    return (
+                      <span key={pos} className={cx("flex w-8 flex-col items-center rounded py-0.5 sm:w-10", r && r <= Math.ceil(n / 3) ? "bg-pos/20 text-pos" : r > n / 2 ? "bg-neg/15 text-neg" : "bg-panel2 text-muted")}>
+                        <span className="text-[8px] font-bold opacity-70">{pos}</span><span className="num text-xs font-bold leading-tight">{r || "—"}</span>
+                      </span>
+                    );
                   })}
-                  <td className="px-2 py-2.5 text-xs text-neg">{p.needs.join(", ") || "—"}</td>
-                  <td className="px-2 py-2.5 text-xs text-pos">{p.surplus.join(", ") || "—"}</td>
-                  {dyn && <td className="px-2 py-2.5"><ClassBadge cls={p.cls} /></td>}
-                  <td className="px-5 py-2.5 text-right">{p.rosterId !== ctx.myRosterId && <Link href={`/trade-finder?partner=${p.rosterId}`} className="text-xs font-semibold text-acc-ink">Deals →</Link>}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <p className="border-t border-line px-5 py-2.5 text-xs text-muted">You need: <b className="text-neg">{mine.needs.join(", ") || "nothing urgent"}</b> · you can spare: <b className="text-pos">{mine.surplus.join(", ") || "little depth"}</b>. Green = top third, red = bottom half.</p>
+                </div>
+                <div className="w-14 shrink-0 text-right">
+                  {!isMe && <button type="button" onClick={() => pick(p.rosterId)} className={cx("rounded-md px-2 py-1.5 text-xs font-bold", partnerFilter === p.rosterId ? "bg-acc text-on-acc" : "border border-line text-acc-ink")}>Deals</button>}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       </Card>
 
-      <div className="flex items-center justify-between">
+      <div id="deals" className="flex scroll-mt-20 items-center justify-between">
         <h2 className="h-display text-2xl">{partnerFilter ? `Deals with ${profiles.find((p) => p.rosterId === partnerFilter)?.name}` : "Suggested trades"}</h2>
-        {partnerFilter && <Link href="/trade-finder" className="text-xs font-semibold text-acc-ink">Show all partners</Link>}
+        {partnerFilter && <button type="button" onClick={() => pick(null)} className="text-xs font-semibold text-acc-ink">Show all partners</button>}
       </div>
       {shown.length === 0 && <Card><p className="text-sm text-muted">No trades found that clearly help both teams{partnerFilter ? " with this partner" : ""}. That usually means rosters don&apos;t complement each other right now.</p></Card>}
       <div className="grid gap-4 lg:grid-cols-2">
@@ -86,7 +91,7 @@ function TradeFinderPageBody({ setup, league, ctx, sp }: LeagueData) {
           );
         })}
       </div>
-      <p className="text-xs text-muted">Suggestions use real rosters and picks each team actually owns. Nothing is sent to Sleeper, and other managers&apos; preferences are unknown.</p>
+      <Info className="">Suggestions use real rosters and picks each team actually owns. Nothing is sent to Sleeper, and other managers&apos; preferences are unknown.</Info>
     </div>
   );
 }

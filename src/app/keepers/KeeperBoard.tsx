@@ -4,7 +4,7 @@ import { applySettings } from "@/lib/actions";
 import { useState } from "react";
 import { PlayerLink } from "@/components/PlayerCard";
 import { Segmented } from "@/components/client";
-import { Card, Tag, cx, signed } from "@/components/ui";
+import { Card, Tag, cx, signed, Info } from "@/components/ui";
 import type { KeeperRules } from "@/lib/engine/keepers";
 
 interface Row {
@@ -41,7 +41,7 @@ export function KeeperBoard({ leagueId, rows, rules, rounds, sleeperMax, season 
             </select>
           </label>
         </div>
-        <p className="mt-3 text-xs text-muted">Example: with &quot;+1&quot; and &quot;Earlier&quot;, a player drafted in round 6 costs your round-5 pick in {season}. Set any player&apos;s cost by hand in the table (&quot;Custom&quot;).</p>
+        <Info className="mt-3">Example: with &quot;+1&quot; and &quot;Earlier&quot;, a player drafted in round 6 costs your round-5 pick in {season}. Set any player&apos;s cost by hand in the table (&quot;Custom&quot;).</Info>
       </Card>
 
       <Card title={`Your keeper options for ${season}`} right={<Tag kind="MODEL" />} pad={false}>

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, Minus, Plus, Search } from "lucide-react";
 import { PlayerLink } from "@/components/PlayerCard";
 import { PlayerImg } from "@/components/client";
-import { Card, ClassBadge, InjuryChip, Logo, NflLogo, Tag, cx, signed } from "@/components/ui";
+import { Card, ClassBadge, InjuryChip, Logo, NflLogo, Tag, cx, signed, Info } from "@/components/ui";
 import { evaluateTrade, type BalanceSuggestion, type PositionShift, type PowerShift, type TradeResult } from "@/lib/engine/trade";
 import { getLeagueContext } from "@/lib/services/league";
 import { useApp } from "@/components/AppData";
@@ -70,12 +70,12 @@ export function TradeAnalyzer({ leagueId, mode, me, teams, initialPartner, initi
             {teams.filter((t) => t.rosterId !== me).map((t) => <option key={t.rosterId} value={t.rosterId}>{t.name} · {t.record}{t.cls ? ` · ${t.cls}` : ""}</option>)}
           </select>
         </label>
-        <p className="text-xs text-muted">Valued as <b className="text-fg">{mode === "dynasty" ? "Dynasty" : "Redraft"}</b>, from this league&apos;s format. Tap <b className="text-fg">+</b> to add a player to the deal, <b className="text-fg">−</b> to take him out.</p>
+        <Info className="">Valued as <b className="text-fg">{mode === "dynasty" ? "Dynasty" : "Redraft"}</b>, from this league&apos;s format. Tap <b className="text-fg">+</b> to add a player to the deal, <b className="text-fg">−</b> to take him out.</Info>
       </div>
 
       {result && <div className="lg:hidden"><Card><Spectrum balance={result.balance} partner={theirs?.name ?? "Partner"} /></Card></div>}
 
-      <div className="grid min-w-0 gap-4 lg:grid-cols-2">
+      <div className="grid min-w-0 grid-cols-2 gap-2 sm:gap-4">
         <Side title="You send" team={mine} selected={aSends} onChange={setA} tiers={tiers} setTiers={setTiers} mode={mode} />
         {theirs && <Side title="You receive" team={theirs} selected={bSends} onChange={setB} tiers={tiers} setTiers={setTiers} mode={mode} />}
       </div>
@@ -99,29 +99,30 @@ function Side({ title, team, selected, onChange, tiers, setTiers, mode }: {
   const positions = ["ALL", ...new Set(team.assets.filter((a) => mode === "dynasty" || a.kind === "player").map((a) => a.pos))];
   const pool = team.assets.filter((a) => !selected.includes(a.id) && (mode === "dynasty" || a.kind === "player") && (pos === "ALL" || a.pos === pos) && (!q || a.name.toLowerCase().includes(q.toLowerCase())));
   return (
-    <Card>
-      <div className="mb-3 flex items-start justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-3">
-          <Logo src={team.avatar} name={team.name} size={44} />
-          <div className="min-w-0">
-            <div className="text-[11px] uppercase tracking-wider text-muted">{title}</div>
-            <div className="h-display truncate text-2xl">{team.name}</div>
-            <div className="text-xs text-muted">{team.record} · {team.playoff.toFixed(0)}% playoffs · {team.title.toFixed(0)}% title</div>
+    <Card className="!p-0" pad={false}>
+      <div className="p-2.5 sm:p-5">
+      <div className="mb-3 flex flex-col items-center gap-1.5 text-center sm:flex-row sm:items-start sm:justify-between sm:text-left">
+        <div className="flex min-w-0 flex-col items-center gap-1.5 sm:flex-row sm:gap-3">
+          <Logo src={team.avatar} name={team.name} size={40} />
+          <div className="min-w-0 max-w-full">
+            <div className="text-[10px] uppercase tracking-wider text-muted sm:text-[11px]">{title}</div>
+            <div className="h-display truncate text-lg sm:text-2xl">{team.name}</div>
+            <div className="text-[10px] text-muted sm:text-xs">{team.record}<span className="hidden sm:inline"> · {team.playoff.toFixed(0)}% playoffs · {team.title.toFixed(0)}% title</span></div>
           </div>
         </div>
-        {team.cls && <div className="text-right"><ClassBadge cls={team.cls} /><div className="mt-1 text-[11px] text-muted">{team.conf}% conf.{team.overridden && " · manual"}</div></div>}
+        {team.cls && <div className="sm:text-right"><ClassBadge cls={team.cls} /><div className="mt-1 hidden text-[11px] text-muted sm:block">{team.conf}% conf.{team.overridden && " · manual"}</div></div>}
       </div>
       <div className="flex min-h-16 flex-col gap-2 rounded-xl border border-dashed border-line p-1.5">
-        {selected.length === 0 && <p className="px-2 py-4 text-center text-xs text-muted">Tap + on a player below to add him to the deal</p>}
+        {selected.length === 0 && <p className="px-2 py-4 text-center text-[11px] text-muted">Tap + below to add</p>}
         {selected.map((id) => {
           const a = byId.get(id);
           if (!a) return null;
           return (
-            <div key={id} className="fhq-in flex items-center gap-3 rounded-lg bg-panel2 p-2.5">
-              {a.kind === "player" ? <PlayerImg id={id.slice(2)} name={a.name} pos={a.pos} /> : <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-acc text-[11px] font-extrabold text-on-acc">R{a.name.split("Round ")[1]}</span>}
+            <div key={id} className="fhq-in flex items-center gap-1.5 rounded-lg bg-panel2 p-1.5 sm:gap-3 sm:p-2.5">
+              <span className="hidden sm:block">{a.kind === "player" ? <PlayerImg id={id.slice(2)} name={a.name} pos={a.pos} /> : <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-acc text-[11px] font-extrabold text-on-acc">R{a.name.split("Round ")[1]}</span>}</span>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5 text-sm font-semibold">{a.kind === "player" ? <PlayerLink id={a.id.slice(2)} name={a.name} /> : <span className="truncate">{a.name}</span>}<InjuryChip status={a.injury} /></div>
-                <div className="flex items-center gap-1 truncate text-xs text-muted"><NflLogo team={a.team} size={13} />{a.sub}</div>
+                <div className="flex min-w-0 items-center gap-1.5 text-xs font-semibold sm:text-sm">{a.kind === "player" ? <PlayerLink id={a.id.slice(2)} name={a.name} /> : <span className="truncate">{a.name}</span>}<InjuryChip status={a.injury} /></div>
+                <div className="flex items-center gap-1 truncate text-[10px] text-muted sm:text-xs"><NflLogo team={a.team} size={12} /><span className="truncate">{a.sub}</span></div>
                 {a.kind === "pick" && mode === "dynasty" && (
                   <div className="mt-1.5 flex gap-1" role="group" aria-label="Pick position">
                     {(["early", "mid", "late"] as Tier[]).map((t) => (
@@ -131,39 +132,40 @@ function Side({ title, team, selected, onChange, tiers, setTiers, mode }: {
                   </div>
                 )}
               </div>
-              <div className="text-right"><div className="num font-[family-name:var(--font-display)] text-2xl font-bold leading-none">{valueOf(a).toFixed(1)}</div><div className="text-[10px] text-muted">value</div></div>
+              <div className="text-right"><div className="num font-[family-name:var(--font-display)] text-lg font-bold leading-none sm:text-2xl">{valueOf(a).toFixed(1)}</div><div className="hidden text-[10px] text-muted sm:block">value</div></div>
               <button type="button" aria-label={`Take ${a.name} out of the trade`} onClick={() => onChange(selected.filter((x) => x !== id))}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-neg/60 text-neg transition-transform hover:bg-neg/10 active:scale-90"><Minus size={18} /></button>
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-neg/60 text-neg transition-transform hover:bg-neg/10 active:scale-90 sm:h-9 sm:w-9"><Minus size={16} /></button>
             </div>
           );
         })}
       </div>
-      <div className="mt-3 flex justify-between text-sm"><span className="text-muted">Total value (simple sum)</span><span className="num font-bold">{total.toFixed(1)}</span></div>
+      <div className="mt-2 flex justify-between text-xs sm:text-sm"><span className="text-muted">Total value</span><span className="num font-bold">{total.toFixed(1)}</span></div>
       <div className="mt-3 border-t border-line pt-3">
         <div className="mb-2 flex flex-wrap items-center gap-1.5">
           <label className="relative w-full min-w-0 sm:w-auto sm:flex-1">
             <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Search ${team.name}`} aria-label={`Search ${team.name} roster`} className="w-full rounded-lg border border-line bg-panel2 py-2 pl-8 pr-2.5 text-sm" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" aria-label={`Search ${team.name} roster`} className="w-full rounded-lg border border-line bg-panel2 py-2 pl-8 pr-2.5 text-sm" />
           </label>
-          <div className="flex gap-1 overflow-x-auto">
+          <div className="flex w-full gap-1 overflow-x-auto sm:w-auto">
             {positions.map((p) => <button key={p} type="button" onClick={() => setPos(p)} className={cx("rounded-full px-2.5 py-1 text-[11px] font-semibold", pos === p ? "bg-acc text-on-acc" : "bg-panel2 text-muted")}>{p === "ALL" ? "All" : p}</button>)}
           </div>
         </div>
         <ul className="flex max-h-80 flex-col gap-1 overflow-y-auto">
           {pool.map((a) => (
-            <li key={a.id} className="flex items-center gap-2.5 rounded-lg px-1.5 py-1.5 hover:bg-panel2">
-              {a.kind === "player" ? <PlayerImg id={a.id.slice(2)} name={a.name} pos={a.pos} size={30} /> : <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-panel2 text-[10px] font-extrabold">R{a.name.split("Round ")[1]}</span>}
+            <li key={a.id} className="flex items-center gap-1.5 rounded-lg px-1 py-1.5 hover:bg-panel2 sm:gap-2.5 sm:px-1.5">
+              <span className="hidden sm:block">{a.kind === "player" ? <PlayerImg id={a.id.slice(2)} name={a.name} pos={a.pos} size={30} /> : <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-panel2 text-[10px] font-extrabold">R{a.name.split("Round ")[1]}</span>}</span>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5 text-sm">{a.kind === "player" ? <PlayerLink id={a.id.slice(2)} name={a.name} className="font-semibold" /> : <span className="truncate font-semibold">{a.name}</span>}<InjuryChip status={a.injury} /></div>
-                <div className="flex items-center gap-1 truncate text-xs text-muted"><NflLogo team={a.team} size={12} />{a.sub}</div>
+                <div className="flex min-w-0 items-center gap-1 text-xs sm:text-sm">{a.kind === "player" ? <PlayerLink id={a.id.slice(2)} name={a.name} className="font-semibold" /> : <span className="truncate font-semibold">{a.name}</span>}<InjuryChip status={a.injury} /></div>
+                <div className="flex items-center gap-1 truncate text-[10px] text-muted sm:text-xs"><NflLogo team={a.team} size={12} /><span className="truncate">{a.sub}</span></div>
               </div>
-              <span className="num w-9 text-right text-sm font-bold">{a.value.toFixed(0)}</span>
+              <span className="num w-6 text-right text-xs font-bold sm:w-9 sm:text-sm">{a.value.toFixed(0)}</span>
               <button type="button" aria-label={`Add ${a.name} to the trade`} onClick={() => onChange([...selected, a.id])}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-acc text-on-acc transition-transform active:scale-90"><Plus size={18} /></button>
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-acc text-on-acc transition-transform active:scale-90 sm:h-9 sm:w-9"><Plus size={16} /></button>
             </li>
           ))}
           {pool.length === 0 && <li className="px-2 py-3 text-xs text-muted">Nobody matches.</li>}
         </ul>
+      </div>
       </div>
     </Card>
   );
@@ -281,10 +283,10 @@ function Result({ r, partner, busy, onApply, me, partnerId }: { r: TradeResult; 
             );
           })}
         </div>
-        <p className="mt-3 text-xs text-muted">Solid bar = package value, dashed = simple sum. Several smaller pieces are discounted because they can&apos;t fill one star&apos;s lineup spot (&quot;four quarters ≠ a dollar&quot;). This applies to picks too.
+        <Info className="mt-3">Solid bar = package value, dashed = simple sum. Several smaller pieces are discounted because they can&apos;t fill one star&apos;s lineup spot (&quot;four quarters ≠ a dollar&quot;). This applies to picks too.
           {r.rosterSpots.a.extra > 0 && <> You&apos;d need to cut <b className="text-fg">{r.rosterSpots.a.drops.join(", ")}</b> to make room (−{r.rosterSpots.a.cost}).</>}
           {r.rosterSpots.b.extra > 0 && <> {partner} would need to cut {r.rosterSpots.b.drops.length} player{r.rosterSpots.b.drops.length > 1 ? "s" : ""} (−{r.rosterSpots.b.cost}).</>}
-        </p>
+        </Info>
       </Card>
 
       <Card title="Make it fair" right={<Tag kind="MODEL" />}>
@@ -304,7 +306,7 @@ function Result({ r, partner, busy, onApply, me, partnerId }: { r: TradeResult; 
             ))}
           </ul>
         )}
-        <p className="mt-3 text-xs text-muted">Suggestions close the value gap using assets the side getting the better deal can spare (non-starters preferred), or by removing an asset from the side that&apos;s overpaying.</p>
+        <Info className="mt-3">Suggestions close the value gap using assets the side getting the better deal can spare (non-starters preferred), or by removing an asset from the side that&apos;s overpaying.</Info>
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-[2fr_3fr]">
@@ -343,7 +345,7 @@ function Result({ r, partner, busy, onApply, me, partnerId }: { r: TradeResult; 
                 </tbody>
               </table>
             </div>
-            {r.classA && <p className="border-t border-line px-5 py-2.5 text-xs text-muted">Dynasty only: &quot;To you / to them&quot; re-weights value for each team&apos;s strategy ({r.classA} vs {r.classB}).</p>}
+            {r.classA && <Info className="border-t border-line px-5 py-2.5">Dynasty only: &quot;To you / to them&quot; re-weights value for each team&apos;s strategy ({r.classA} vs {r.classB}).</Info>}
           </Card>
       <details className="text-xs text-muted"><summary className="cursor-pointer font-semibold text-fg">Limitations</summary><ul className="mt-2 list-disc pl-4">{r.limitations.map((l) => <li key={l}>{l}</li>)}</ul></details>
     </div>

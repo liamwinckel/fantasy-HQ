@@ -12,7 +12,10 @@ export function setTransport(t: Transport | undefined) {
 
 export async function fetchText(url: string, timeoutMs = 30_000): Promise<string> {
   if (g.__fhqTransport) return g.__fhqTransport(url, "text");
-  const res = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(timeoutMs) });
+  // Manual timeout (AbortSignal.timeout isn't in older Safari).
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  const res = await fetch(url, { cache: "no-store", signal: ctrl.signal }).finally(() => clearTimeout(timer));
   if (!res.ok) throw new Error(`${res.status} for ${url}`);
   return res.text();
 }

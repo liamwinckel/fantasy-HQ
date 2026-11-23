@@ -6,17 +6,42 @@ export function cx(...c: (string | false | null | undefined)[]) {
   return c.filter(Boolean).join(" ");
 }
 
-export function Card({ children, className, title, right, pad = true }: { children: ReactNode; className?: string; title?: ReactNode; right?: ReactNode; pad?: boolean }) {
+export function Card({ children, className, title, right, pad = true, info }: { children: ReactNode; className?: string; title?: ReactNode; right?: ReactNode; pad?: boolean; info?: ReactNode }) {
+  const [open, setOpen] = useState(false);
   return (
     <section className={cx("min-w-0 rounded-xl border border-line bg-panel", className)}>
       {title && (
         <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3 sm:px-5">
-          <h2 className="h-display text-xl">{title}</h2>
+          <h2 className="h-display flex min-w-0 items-center gap-2 text-xl">{title}{info && <InfoButton open={open} onClick={() => setOpen(!open)} />}</h2>
           {right}
         </div>
       )}
+      {info && open && <div className="fhq-in border-b border-line bg-panel2/60 px-4 py-3 text-xs leading-relaxed text-muted sm:px-5">{info}</div>}
       <div className={pad ? "p-4 sm:p-5" : ""}>{children}</div>
     </section>
+  );
+}
+
+/** Small ⓘ button that reveals explanatory text, so screens stay clean. */
+export function InfoButton({ open, onClick, label = "About this" }: { open: boolean; onClick: () => void; label?: string }) {
+  return (
+    <button type="button" onClick={onClick} aria-expanded={open} aria-label={label} title={label}
+      className={cx("inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border font-sans text-[11px] font-bold normal-case tracking-normal transition-colors",
+        open ? "border-acc bg-acc text-on-acc" : "border-line text-muted hover:text-fg")}>i</button>
+  );
+}
+
+/** Collapsed explanation: an ⓘ button plus text shown on tap. */
+export function Info({ children, className, label }: { children: ReactNode; className?: string; label?: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={cx("text-xs", className)}>
+      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="inline-flex items-center gap-1.5 font-semibold text-muted hover:text-fg">
+        <span className={cx("inline-flex h-5 w-5 items-center justify-center rounded-full border text-[11px] font-bold", open ? "border-acc bg-acc text-on-acc" : "border-line")}>i</span>
+        {label ?? (open ? "Hide" : "How this works")}
+      </button>
+      {open && <div className="fhq-in mt-2 rounded-lg bg-panel2/60 px-3 py-2.5 leading-relaxed text-muted">{children}</div>}
+    </div>
   );
 }
 
@@ -29,9 +54,27 @@ const TAG_STYLE: Record<SourceTag, string> = {
 };
 const TAG_LABEL: Record<SourceTag, string> = { ACTUAL: "Actual", SLEEPER: "Sleeper", MODEL: "SHS model", ESTIMATE: "Estimate" };
 
-/** Every number on screen says where it came from. */
+const DOT_STYLE: Record<SourceTag, string> = {
+  ACTUAL: "bg-fg",
+  SLEEPER: "border-2 border-sky-400",
+  MODEL: "bg-acc",
+  ESTIMATE: "border border-dashed border-muted",
+};
+void TAG_STYLE;
+/** Where a number came from, as a small coloured dot (hover/long-press for the label). */
 export function Tag({ kind, className }: { kind: SourceTag; className?: string }) {
-  return <span className={cx("rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider", TAG_STYLE[kind], className)}>{TAG_LABEL[kind]}</span>;
+  return (
+    <span title={TAG_LABEL[kind]} aria-label={TAG_LABEL[kind]} role="img" className={cx("inline-block h-2 w-2 shrink-0 rounded-full", DOT_STYLE[kind], className)} />
+  );
+}
+
+/** Legend for the source dots. */
+export function SourceLegend() {
+  return (
+    <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted">
+      {(Object.keys(TAG_LABEL) as SourceTag[]).map((k) => <span key={k} className="inline-flex items-center gap-1.5"><Tag kind={k} />{TAG_LABEL[k]}</span>)}
+    </span>
+  );
 }
 
 const CLASS_STYLE: Record<string, string> = {
@@ -74,14 +117,27 @@ export function Stat({ label, value, sub, tag, tone }: { label: string; value: R
   );
 }
 
-export function PageHeader({ eyebrow, title, children }: { eyebrow?: string; title: string; children?: ReactNode }) {
+export function PageHeader({ eyebrow, title, children, info }: { eyebrow?: string; title: string; children?: ReactNode; info?: ReactNode }) {
+  const [open, setOpen] = useState(false);
   return (
-    <div className="flex flex-wrap items-end justify-between gap-3">
-      <div>
-        {eyebrow && <div className="text-xs font-semibold uppercase tracking-widest text-acc-ink">{eyebrow}</div>}
-        <h1 className="h-display mt-1 text-4xl sm:text-5xl">{title}</h1>
+    <div className="flex flex-col items-center gap-3 text-center">
+      <div className="flex flex-col items-center">
+        {eyebrow && <div className="text-[11px] font-semibold uppercase tracking-widest text-acc-ink sm:text-xs">{eyebrow}</div>}
+        <h1 className="h-display mt-1 flex items-center gap-2.5 text-4xl sm:text-5xl">{title}{info && <InfoButton open={open} onClick={() => setOpen(!open)} label={`About ${title}`} />}</h1>
       </div>
+      {info && open && <div className="fhq-in max-w-2xl rounded-xl bg-panel px-4 py-3 text-left text-sm leading-relaxed text-muted">{info}<div className="mt-2"><SourceLegend /></div></div>}
       {children}
+    </div>
+  );
+}
+
+/** Win chance: 0% = a red sliver at the left, 100% = all the way green; the fill shades from red to green. */
+export function WinBar({ pct, className }: { pct: number; className?: string }) {
+  const p = Math.max(1.5, Math.min(100, pct));
+  return (
+    <div className={cx("h-3 w-full overflow-hidden rounded-full bg-panel2", className)} role="img" aria-label={`${Math.round(pct)}% win chance`}>
+      <div className="h-full rounded-full transition-[width] duration-700"
+        style={{ width: `${p}%`, backgroundImage: "linear-gradient(90deg, var(--neg), #eab308 50%, var(--pos))", backgroundSize: `${(100 / p) * 100}% 100%` }} />
     </div>
   );
 }

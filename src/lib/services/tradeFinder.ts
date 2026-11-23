@@ -63,7 +63,7 @@ export function teamProfiles(ctx: LeagueContext): TeamProfile[] {
   });
 }
 
-export function findTrades(ctx: LeagueContext, me: number, limit = 12): { profiles: TeamProfile[]; trades: FoundTrade[] } {
+export function findTrades(ctx: LeagueContext, me: number, limit = 12, onlyPartner: number | null = null): { profiles: TeamProfile[]; trades: FoundTrade[] } {
   const profiles = teamProfiles(ctx);
   const mine = profiles.find((p) => p.rosterId === me)!;
   const dynasty = ctx.valuationMode === "dynasty";
@@ -101,7 +101,7 @@ export function findTrades(ctx: LeagueContext, me: number, limit = 12): { profil
 
   const out: FoundTrade[] = [];
   for (const partner of profiles) {
-    if (partner.rosterId === me) continue;
+    if (partner.rosterId === me || (onlyPartner !== null && partner.rosterId !== onlyPartner)) continue;
     const theirIds = usable(partner.rosterId);
     const theirBase = ros(theirIds);
     // What I'd target from them: players at MY need positions that are THEIR surplus (or any position I need)
@@ -112,11 +112,16 @@ export function findTrades(ctx: LeagueContext, me: number, limit = 12): { profil
       })
       .sort((a, b) => val(b) - val(a))
       .slice(0, 6);
+    // Looking at one partner: widen the search to anyone useful on their roster.
+    if (onlyPartner !== null && targets.length < 4) {
+      for (const id of theirIds.filter((x) => SKILL.includes(ctx.players.get(x)!.pos) && val(x) >= 3 && !targets.includes(x)).sort((a, b) => val(b) - val(a)).slice(0, 6 - targets.length)) targets.push(id);
+    }
     // What I'd offer: players at positions THEY need, preferring my surplus positions
     const offers = myAssets.filter((id) => {
       const pos = ctx.players.get(id)!.pos;
       return partner.needs.includes(pos) || (mine.surplus.includes(pos) && !partner.surplus.includes(pos));
     }).slice(0, 8);
+    if (onlyPartner !== null && offers.length < 5) for (const id of myAssets.filter((x) => !offers.includes(x)).slice(0, 8 - offers.length)) offers.push(id);
     if (!targets.length || !offers.length) continue;
 
     const combos: [string[], string[]][] = [];
@@ -155,7 +160,7 @@ export function findTrades(ctx: LeagueContext, me: number, limit = 12): { profil
           (myRos > -8 || mine.cls === "Rebuilder" || mine.cls === "Tanking") &&
           // A contender won't give up this season's points; a pretender only a little.
           (partner.cls === "Contender" ? theirRos > -10 : partner.cls === "Pretender" ? theirRos > -25 : true)
-        : myRos > 2 && theirRos > -6 && fairness < 0.4;
+        : onlyPartner !== null ? myRos > 0.5 && theirRos > -12 && fairness < 0.5 : myRos > 2 && theirRos > -6 && fairness < 0.4;
       if (!ok) continue;
       const myGainNorm = dynasty ? myValue / total + myRos / 200 : myRos / 30 + myValue / total;
       const theirGainNorm = dynasty ? theirValue / total : theirRos / 30 + theirValue / total;
@@ -176,7 +181,7 @@ export function findTrades(ctx: LeagueContext, me: number, limit = 12): { profil
         partner: partner.rosterId, partnerName: partner.name,
         give: iGivePick ? [...giveL, ...extraPick] : giveL, get: !iGivePick && extraPick.length ? [...getL, ...extraPick] : getL,
         myRos: r1(myRos), theirRos: r1(theirRos), myValue: r1(myValue), theirValue: r1(theirValue), fairness: Math.round(fairness * 100) / 100, score, why,
-        link: `/trade?partner=${partner.rosterId}&a=${[...give.map((x) => `p:${x}`), ...(iGivePick ? extraPick.map((x) => x.id) : [])].join(",")}&b=${[...get.map((x) => `p:${x}`), ...(!iGivePick ? extraPick.map((x) => x.id) : [])].join(",")}`,
+        link: `/trade/?partner=${partner.rosterId}&a=${[...give.map((x) => `p:${x}`), ...(iGivePick ? extraPick.map((x) => x.id) : [])].join(",")}&b=${[...get.map((x) => `p:${x}`), ...(!iGivePick ? extraPick.map((x) => x.id) : [])].join(",")}`,
       });
     }
   }
@@ -187,7 +192,7 @@ export function findTrades(ctx: LeagueContext, me: number, limit = 12): { profil
   const perPartner = new Map<number, number>();
   for (const t of out) {
     const k = t.get[0].id;
-    if ((usedGet.get(k) ?? 0) >= 1 || (perPartner.get(t.partner) ?? 0) >= 2) continue;
+    if ((usedGet.get(k) ?? 0) >= (onlyPartner !== null ? 2 : 1) || (perPartner.get(t.partner) ?? 0) >= (onlyPartner !== null ? 8 : 2)) continue;
     picked.push(t);
     usedGet.set(k, (usedGet.get(k) ?? 0) + 1);
     perPartner.set(t.partner, (perPartner.get(t.partner) ?? 0) + 1);

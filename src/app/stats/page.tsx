@@ -6,7 +6,7 @@ import { LeaguePage, useQuery, type LeagueData } from "@/components/AppData";
 import { TeamLink } from "@/components/TeamPeek";
 import { PlayerImg } from "@/components/client";
 import { PlayerLink } from "@/components/PlayerCard";
-import { Card, InjuryChip, NflLogo, PageHeader, Tag, cx, signed } from "@/components/ui";
+import { Card, InjuryChip, NflLogo, PageHeader, Tag, cx, signed, Info } from "@/components/ui";
 import { formatLabel } from "@/lib/services/portfolio";
 import { defenseTable, playerStats, scheduleTable, SOS_POS, teamStats, type PlayerStatRow, type SosPos } from "@/lib/services/stats";
 
@@ -98,7 +98,7 @@ function Sos({ ctx, sched }: { ctx: Ctx; sched: ReturnType<typeof scheduleTable>
               </tbody>
             </table>
           </div>
-          <p className="border-t border-line px-5 py-2.5 text-xs text-muted">Green = that defense gives up more fantasy points to the position than average (easier), red = fewer (harder). Based on this season&apos;s points in your league&apos;s scoring.</p>
+          <Info className="border-t border-line px-5 py-2.5">Green = that defense gives up more fantasy points to the position than average (easier), red = fewer (harder). Based on this season&apos;s points in your league&apos;s scoring.</Info>
         </Card>
       )}
 
@@ -126,7 +126,7 @@ function Sos({ ctx, sched }: { ctx: Ctx; sched: ReturnType<typeof scheduleTable>
             </tbody>
           </table>
         </div>
-        <p className="border-t border-line px-5 py-2.5 text-xs text-muted">Rank 1 = easiest remaining schedule for {pos}s on that team (opponents give up the most fantasy points to {pos}s). Yellow weeks are your fantasy playoffs.</p>
+        <Info className="border-t border-line px-5 py-2.5">Rank 1 = easiest remaining schedule for {pos}s on that team (opponents give up the most fantasy points to {pos}s). Yellow weeks are your fantasy playoffs.</Info>
       </Card>
     </>
   );
@@ -167,7 +167,7 @@ function Dvp({ def }: { def: ReturnType<typeof defenseTable> }) {
           </tbody>
         </table>
       </div>
-      <p className="border-t border-line px-5 py-2.5 text-xs text-muted">#1 = gives up the most to that position (best matchup). Green = above average, red = below.</p>
+      <Info className="border-t border-line px-5 py-2.5">#1 = gives up the most to that position (best matchup). Green = above average, red = below.</Info>
     </Card>
   );
 }
@@ -295,7 +295,7 @@ function Teams({ ctx }: { ctx: Ctx }) {
           </tbody>
         </table>
       </div>
-      <p className="border-t border-line px-5 py-2.5 text-xs text-muted">Tap a team for its roster. Regular-season weeks played so far.</p>
+      <Info className="border-t border-line px-5 py-2.5">Tap a team for its roster. Regular-season weeks played so far.</Info>
     </Card>
   );
 }

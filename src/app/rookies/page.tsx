@@ -4,7 +4,7 @@ import { LeaguePage, type LeagueData } from "@/components/AppData";
 import Link from "next/link";
 import { formatLabel } from "@/lib/services/portfolio";
 import { rookieReport } from "@/lib/services/rookies";
-import { Card, Notice, PageHeader, Tag, cx } from "@/components/ui";
+import { Card, Notice, PageHeader, Tag, cx, Info } from "@/components/ui";
 import { PlayerImg } from "@/components/client";
 import { PlayerLink } from "@/components/PlayerCard";
 
@@ -24,7 +24,7 @@ function RookiePageBody({ setup, league, ctx, sp }: LeagueData) {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader eyebrow={`${league.name} · ${formatLabel(league)}`} title="Rookie Report" />
-      <p className="-mt-2 max-w-3xl text-sm text-muted">The {season} rookie class, scouted with real NFL data: draft capital, role (snap share), production in your league&apos;s scoring and dynasty value. Grades rank each rookie within this class.</p>
+      <Info className="-mt-2 self-center" label="About this tool">The {season} rookie class, scouted with real NFL data: draft capital, role (snap share), production in your league&apos;s scoring and dynasty value. Grades rank each rookie within this class.</Info>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {["QB", "RB", "WR", "TE"].map((p) => {
@@ -39,7 +39,7 @@ function RookiePageBody({ setup, league, ctx, sp }: LeagueData) {
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {["ALL", "QB", "RB", "WR", "TE"].map((p) => <Link key={p} href={`/rookies?pos=${p}`} className={chip(pos === p)}>{p === "ALL" ? "All rookies" : p}</Link>)}
+        {["ALL", "QB", "RB", "WR", "TE"].map((p) => <Link key={p} href={`/rookies/?pos=${p}`} className={chip(pos === p)}>{p === "ALL" ? "All rookies" : p}</Link>)}
       </div>
 
       <Card title={`${season} class`} right={<Tag kind="MODEL" />} pad={false}>
@@ -70,7 +70,7 @@ function RookiePageBody({ setup, league, ctx, sp }: LeagueData) {
             </tbody>
           </table>
         </div>
-        <p className="border-t border-line px-5 py-2.5 text-xs text-muted">Grade = rank within the class on 40% dynasty value, 25% snap share, 20% draft capital, 15% points per game. A = top 20%. &quot;Next yr&quot; applies a typical second-year jump (WR/TE +12%, others +5%) to current healthy production.</p>
+        <Info className="border-t border-line px-5 py-2.5">Grade = rank within the class on 40% dynasty value, 25% snap share, 20% draft capital, 15% points per game. A = top 20%. &quot;Next yr&quot; applies a typical second-year jump (WR/TE +12%, others +5%) to current healthy production.</Info>
       </Card>
 
       <Card title={`${season + 1} prospects`}>
