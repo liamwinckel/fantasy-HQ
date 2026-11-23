@@ -31,9 +31,9 @@ jobs:
       - name: Download and trim NFLverse + Sleeper player data
         run: npm run data
       - name: Build static site
-        run: npm run build
-        env:
-          NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
+        run: |
+          export NEXT_PUBLIC_BASE_PATH="/${GITHUB_REPOSITORY#*/}"   # served at /<repo name>
+          npm run build
       - run: touch out/.nojekyll
       - uses: actions/upload-pages-artifact@v3
         with:
