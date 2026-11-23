@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --bg: #f6f6f4; --panel: #ffffff; --panel2: #efefec; --border: #e0e0dc;
+  --text: #0a0a0a; --muted: #575757; --acc: #ffd60a; --acc-ink: #7a5f00; --on-acc: #0a0a0a;
+  --acc-soft: rgba(255, 214, 10, 0.28); --pos: #15803d; --neg: #b91c1c; --warn: #c2410c;
+}
+.dark {
+  --bg: #0a0a0a; --panel: #141414; --panel2: #1e1e1e; --border: #2a2a2a;
+  --text: #ffffff; --muted: #a3a3a3; --acc: #ffd60a; --acc-ink: #ffd60a; --on-acc: #0a0a0a;
+  --acc-soft: rgba(255, 214, 10, 0.12); --pos: #4ade80; --neg: #f87171; --warn: #fb923c;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-panel2: var(--panel2);
+  --color-line: var(--border);
+  --color-fg: var(--text);
+  --color-muted: var(--muted);
+  --color-acc: var(--acc);
+  --color-acc-ink: var(--acc-ink);
+  --color-on-acc: var(--on-acc);
+  --color-acc-soft: var(--acc-soft);
+  --color-pos: var(--pos);
+  --color-neg: var(--neg);
+  --color-warn: var(--warn);
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Barlow Condensed", "Arial Narrow", ui-sans-serif, sans-serif;
+}
+
+html, body { background: var(--bg); color: var(--text); }
+body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+.num { font-variant-numeric: tabular-nums; }
+.h-display { font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.02em; font-weight: 800; line-height: 1; }
+::selection { background: var(--acc); color: var(--on-acc); }
+:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
+
+/* Smooth, fluid motion: content eases in, controls animate state changes. */
+@keyframes fhq-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+main > div > * { animation: fhq-in 0.28s ease-out both; }
+main > div > *:nth-child(2) { animation-delay: 0.03s; }
+main > div > *:nth-child(3) { animation-delay: 0.06s; }
+main > div > *:nth-child(4) { animation-delay: 0.09s; }
+button, a, select, input { transition: background-color 0.15s, color 0.15s, border-color 0.15s, opacity 0.15s, transform 0.1s; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
