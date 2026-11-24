@@ -14,6 +14,13 @@ export interface KeeperRule {
   maxYears?: number;
   protectedRounds?: number;
   horizon?: 1 | 2;
+  draftedMode?: "drafted" | "adp" | "earlier";
+  undraftedMode?: "round" | "adp";
+  adpOffset?: number;
+  anyPick?: boolean;
+  missingPick?: "earlier" | "later" | "none";
+  /** Your plan: player → pick key he's kept with ("2027-10-4"), or "none" to not keep him. */
+  plan?: Record<string, string>;
 }
 
 export interface AppSettings {

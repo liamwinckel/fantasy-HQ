@@ -69,7 +69,7 @@ function Sos({ ctx, sched }: { ctx: Ctx; sched: ReturnType<typeof scheduleTable>
   return (
     <>
       {me && starters.length > 0 && (
-        <Card title="Your starters' schedule" right={<Tag kind="MODEL" />} pad={false}>
+        <Card title="Your starters' schedule" info={<>For each starter, how easy (+%) or hard (−%) each upcoming NFL opponent is: how many more or fewer fantasy points that defence allows to his position than an average defence.</>} right={<Tag kind="MODEL" />} pad={false}>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead><tr className="text-left text-[11px] uppercase tracking-wider text-muted">
@@ -102,7 +102,7 @@ function Sos({ ctx, sched }: { ctx: Ctx; sched: ReturnType<typeof scheduleTable>
         </Card>
       )}
 
-      <Card title="NFL strength of schedule" right={<PosChips pos={pos} setPos={(p) => setPos(p as SosPos)} options={SOS_POS} />} pad={false}>
+      <Card title="NFL strength of schedule" info={<>Upcoming opponents for each NFL team at the chosen position: green = defences that allow more fantasy points than average (good matchups), red = fewer.</>} right={<PosChips pos={pos} setPos={(p) => setPos(p as SosPos)} options={SOS_POS} />} pad={false}>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead><tr className="text-left text-[11px] uppercase tracking-wider text-muted">
@@ -143,7 +143,7 @@ function Dvp({ def }: { def: ReturnType<typeof defenseTable> }) {
   const [sortPos, setSortPos] = useState<SosPos>("WR");
   const rows = [...def].sort((a, b) => (a.rank[sortPos] ?? 99) - (b.rank[sortPos] ?? 99));
   return (
-    <Card title="Fantasy points allowed per game" right={<span className="text-[11px] text-muted">your league&apos;s scoring · tap a column to sort</span>} pad={false}>
+    <Card title="Fantasy points allowed per game" info={<>Average fantasy points each NFL defence has allowed per game to each position this season, in your league&apos;s scoring.</>} right={<span className="text-[11px] text-muted">your league&apos;s scoring · tap a column to sort</span>} pad={false}>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead><tr className="text-left text-[11px] uppercase tracking-wider text-muted">
@@ -258,7 +258,7 @@ function Teams({ ctx }: { ctx: Ctx }) {
   const rows = useMemo(() => teamStats(ctx), [ctx]);
   const max = Math.max(1, ...rows.flatMap((r) => r.weekly));
   return (
-    <Card title="Fantasy team scoring" right={<Tag kind="ACTUAL" />} pad={false}>
+    <Card title="Fantasy team scoring" info={<>Every fantasy team&apos;s points scored and allowed per week this season.</>} right={<Tag kind="ACTUAL" />} pad={false}>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead><tr className="text-left text-[11px] uppercase tracking-wider text-muted">

@@ -51,9 +51,9 @@ function LeagueBody({ league, ctx }: LeagueData) {
         </div>
       )}
 
-      <Card title="Power rankings" pad={false}>
+      <Card title="Power rankings" pad={false} info={<><b>Power /100</b> = overall team strength: 45% best-lineup strength now, 35% rest-of-season strength, 20% points per game, scaled so the best team ≈ 100. <b>Playoff % / Title %</b> = how often the team makes the playoffs / wins it all in thousands of simulated seasons. Tap any number for the detail.</>}>
         <div className="grid grid-cols-[1.75rem_minmax(0,1fr)_3rem_4.5rem] items-center gap-2 border-b border-line px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted sm:grid-cols-[2rem_minmax(0,1fr)_3.5rem_8rem_4rem_4rem] sm:px-5">
-          <span>#</span><span>Team</span><span>Record</span><span className="text-right sm:text-left">Power</span><span className="hidden text-right sm:block">Playoffs</span><span className="hidden text-right sm:block">Title</span>
+          <span>#</span><span>Team</span><span>Record</span><span className="text-right sm:text-left" title="Power score, 0–100 (best team ≈ 100)">Power /100</span><span className="hidden text-right sm:block">Playoff %</span><span className="hidden text-right sm:block">Title %</span>
         </div>
         <ul className="divide-y divide-line">
           {power.map((p) => {
@@ -80,23 +80,35 @@ function LeagueBody({ league, ctx }: LeagueData) {
         </ul>
       </Card>
 
-      <Card title="Positional ranks" pad={false} info={<>Rank 1 = strongest. <span className="text-pos">Green</span> = top third, <span className="text-neg">red</span> = bottom half. Based on the projected points each position contributes to the best lineup.</>}>
-        <div className={cx("grid items-center gap-1 border-b border-line px-3 py-2 text-center text-[10px] font-semibold uppercase tracking-wider text-muted sm:px-5")}
-          style={{ gridTemplateColumns: `minmax(0,1fr) repeat(${mainPos.length + 1}, 2.4rem)` }}>
-          <span className="text-left">Team</span>{mainPos.map((p) => <span key={p}>{p}</span>)}<span>Depth</span>
+      <Card title="Positional ranks" pad={false} info={<>Each number is that team&apos;s league rank at the position (1 = strongest), based on the projected points its starters there score in the best lineup. <span className="text-pos">Green</span> = top third, <span className="text-neg">red</span> = bottom half. <b>Depth</b> = quality of the best bench players. Tap any number for the players behind it.</>}>
+        {/* Team names stay put; the coloured blocks scroll sideways when there are more positions than fit. */}
+        <div className="flex">
+          <div className="w-[42%] shrink-0 border-r border-line sm:w-56">
+            <div className="flex h-9 items-center border-b border-line px-3 text-[10px] font-semibold uppercase tracking-wider text-muted sm:px-5">Team</div>
+            <ul className="divide-y divide-line">
+              {power.map((p) => (
+                <li key={p.rosterId} data-team={p.rosterId} className={cx("flex h-11 cursor-pointer items-center px-3 active:bg-panel2 sm:px-5", p.rosterId === ctx.myRosterId && "bg-acc-soft")}>
+                  <TeamLink rosterId={p.rosterId} name={team(p.rosterId).name} avatar={team(p.rosterId).avatar} size={22} className="max-w-full text-xs font-semibold sm:text-sm" />
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="min-w-0 flex-1 overflow-x-auto overscroll-x-contain" data-no-swipe>
+            <div className="min-w-max">
+              <div className="flex h-9 items-center gap-1 border-b border-line px-2 text-center text-[10px] font-semibold uppercase tracking-wider text-muted">
+                {[...mainPos, ...extraPos].map((pos) => <span key={pos} className="w-11">{pos}</span>)}<span className="w-12">Depth</span>
+              </div>
+              <ul className="divide-y divide-line">
+                {power.map((p) => (
+                  <li key={p.rosterId} className={cx("flex h-11 items-center gap-1 px-2", p.rosterId === ctx.myRosterId && "bg-acc-soft")}>
+                    {[...mainPos, ...extraPos].map((pos) => { const r = p.positions[pos]?.rank ?? 0; return <CellBtn key={pos} onClick={() => open({ k: "pos", rid: p.rosterId, pos })} title={`${p.positions[pos]?.pts.toFixed(1) ?? 0} projected pts`} className={cx("num w-11 rounded py-1.5 text-center text-xs font-bold", tone(r))}>{r || "—"}</CellBtn>; })}
+                    <CellBtn onClick={() => open({ k: "depth", rid: p.rosterId })} className={cx("num w-12 rounded py-1.5 text-center text-xs font-bold", tone(p.depthRank))}>{p.depthRank}</CellBtn>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
         </div>
-        <ul className="divide-y divide-line">
-          {power.map((p) => (
-            <li key={p.rosterId} data-team={p.rosterId} className={cx("cursor-pointer active:bg-panel2", "grid items-center gap-1 px-3 py-1.5 sm:px-5", p.rosterId === ctx.myRosterId && "bg-acc-soft")} style={{ gridTemplateColumns: `minmax(0,1fr) repeat(${mainPos.length + 1}, 2.4rem)` }}>
-              <TeamLink rosterId={p.rosterId} name={team(p.rosterId).name} avatar={team(p.rosterId).avatar} size={22} className="max-w-full text-xs font-semibold sm:text-sm" />
-              {mainPos.map((pos) => { const r = p.positions[pos]?.rank ?? 0; return <CellBtn key={pos} onClick={() => open({ k: "pos", rid: p.rosterId, pos })} title={`${p.positions[pos]?.pts.toFixed(1) ?? 0} projected pts`} className={cx("num rounded py-1 text-center text-xs font-bold", tone(r))}>{r || "—"}</CellBtn>; })}
-              <CellBtn onClick={() => open({ k: "depth", rid: p.rosterId })} className={cx("num rounded py-1 text-center text-xs font-bold", tone(p.depthRank))}>{p.depthRank}</CellBtn>
-            </li>
-          ))}
-        </ul>
-        {extraPos.length > 0 && mine && (
-          <div className="flex flex-wrap gap-x-2 border-t border-line px-5 py-2.5 text-xs text-muted">Your other ranks: {extraPos.map((pos) => <button key={pos} type="button" onClick={() => open({ k: "pos", rid: mine.rosterId, pos })} className="underline decoration-line underline-offset-2">{pos} {mine.positions[pos] ? ord(mine.positions[pos].rank) : "—"}</button>)}</div>
-        )}
       </Card>
 
       {fmt === "redraft" && <PlayoffPicture ctx={ctx} power={power} onOpen={open} />}

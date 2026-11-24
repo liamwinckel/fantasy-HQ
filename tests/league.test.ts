@@ -160,7 +160,7 @@ describe.skipIf(!have)("league context on fixtures", () => {
     const ctx = await mod.getLeagueContext("fx4", { userId: "389682598735060992" });
     expect(ctx.format).toBe("keeper");
     const picks = (await sleeper.draftPicks(ctx.league.draft_id!)).data;
-    const rules = { maxKeepers: 3, modifier: "+1" as const, undraftedRound: 16, direction: "earlier" as const, overrides: {}, perYearKept: 0, maxYears: 0, protectedRounds: 0, horizon: 1 as const };
+    const rules = { maxKeepers: 3, modifier: "+1" as const, undraftedRound: 16, direction: "earlier" as const, overrides: {}, perYearKept: 0, maxYears: 0, protectedRounds: 0, horizon: 1 as const, draftedMode: "drafted" as const, undraftedMode: "round" as const, adpOffset: 0, anyPick: true, missingPick: "earlier" as const };
     const rows = keeperPlan(ctx, 1, picks, rules, 16);
     const drafted = rows.find((r) => r.draftedRound && r.draftedRound > 1)!;
     expect(drafted.costRound).toBe(drafted.draftedRound! - 1);
@@ -170,6 +170,20 @@ describe.skipIf(!have)("league context on fixtures", () => {
     expect(rows.filter((r) => r.recommended).length).toBeLessThanOrEqual(3);
     const manual = keeperPlan(ctx, 1, picks, { ...rules, overrides: { [drafted.playerId]: 9 } }, 16);
     expect(manual.find((r) => r.playerId === drafted.playerId)!.costRound).toBe(9);
+  });
+
+  it("keeper board places your keepers and predicts other teams' keepers at picks they own", async () => {
+    const { loadKeeperPlan } = await import("@/lib/services/keeperData");
+    const { getSettings } = await import("@/lib/settings");
+    const ctx = await mod.getLeagueContext("fx4", { userId: "389682598735060992" });
+    const p = await loadKeeperPlan(getSettings(), ctx.league, ctx);
+    expect(p.board.length).toBe(p.rounds * p.order.length);
+    const kept = p.board.filter((c) => c.keeper);
+    expect(kept.length).toBeGreaterThan(0);
+    expect(new Set(kept.map((c) => c.key)).size).toBe(kept.length); // one keeper per pick
+    for (const c of kept) expect(c.keeper!.mine ? c.ownerRosterId === ctx.myRosterId : c.ownerRosterId !== ctx.myRosterId).toBe(true);
+    for (const t of p.others) expect(t.keepers.length).toBeLessThanOrEqual(p.rules.maxKeepers);
+    for (const r of p.rows) if (r.costRound !== null) expect(r.expectedRound).toBeGreaterThanOrEqual(1);
   });
 
   it("Trade Finder suggests deals that help both sides and only uses real assets", async () => {

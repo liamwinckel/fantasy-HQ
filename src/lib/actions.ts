@@ -13,7 +13,7 @@ export interface SettingsAction {
   removeLeagueId?: string;
   leagueMode?: { leagueId: string; mode: Mode | "auto" };
   classOverride?: { leagueId: string; rosterId: number; classification: ClassOverride | "auto" };
-  keeper?: { leagueId: string; override?: { playerId: string; round: number } } & Omit<KeeperRule, "overrides">;
+  keeper?: { leagueId: string; override?: { playerId: string; round: number }; planSet?: { playerId: string; key: string | null }; planAll?: Record<string, string>; planReset?: boolean } & Omit<KeeperRule, "overrides" | "plan">;
   clearCache?: boolean;
 }
 
@@ -44,7 +44,7 @@ export async function applySettings(b: SettingsAction): Promise<void> {
     patch.classOverrides = { ...s.classOverrides, [leagueId]: league };
   }
   if (b.keeper) {
-    const { leagueId, override, ...rest } = b.keeper;
+    const { leagueId, override, planSet, planAll, planReset, ...rest } = b.keeper;
     const cur: KeeperRule = { ...(s.keeperRules[leagueId] ?? {}) };
     Object.assign(cur, Object.fromEntries(Object.entries(rest).filter(([, v]) => v !== undefined)));
     if (override) {
@@ -53,6 +53,13 @@ export async function applySettings(b: SettingsAction): Promise<void> {
       else o[override.playerId] = override.round;
       cur.overrides = o;
     }
+    if (planSet) {
+      const pl = { ...(cur.plan ?? {}) };
+      if (planSet.key === null) delete pl[planSet.playerId]; else pl[planSet.playerId] = planSet.key;
+      cur.plan = pl;
+    }
+    if (planAll) cur.plan = planAll;
+    if (planReset) delete cur.plan;
     patch.keeperRules = { ...s.keeperRules, [leagueId]: cur };
   }
   if (b.clearCache) await clearCache();

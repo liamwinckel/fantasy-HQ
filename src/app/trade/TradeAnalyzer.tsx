@@ -301,7 +301,7 @@ function Result({ r, partner, busy, onApply, me, partnerId }: { r: TradeResult; 
         </Card>
       )}
 
-      <Card title="Package value" right={<span className="text-[11px] text-muted">simple sum vs consolidated</span>}>
+      <Card title="Package value" info={<>Two ways to total each side. <b>Simple sum</b> adds every asset&apos;s trade value (0–100 each). <b>Consolidated</b> weights stars more, because one great player is worth more than two average ones who take up two roster spots. The verdict uses consolidated.</>} right={<span className="text-[11px] text-muted">simple sum vs consolidated</span>}>
         <div className="flex flex-col gap-3">
           {[{ label: "You send", raw: r.market.aSendsRaw, pkg: r.market.aSends, tone: "bg-fg" }, { label: "You receive", raw: r.market.bSendsRaw, pkg: r.market.bSends, tone: "bg-acc" }].map((row) => {
             const max = Math.max(1, r.market.aSendsRaw, r.market.bSendsRaw);
@@ -323,7 +323,7 @@ function Result({ r, partner, busy, onApply, me, partnerId }: { r: TradeResult; 
         </Info>
       </Card>
 
-      <Card title="Make it fair" right={<Tag kind="MODEL" />}>
+      <Card title="Make it fair" info={<>Smallest additions (players or picks) that would bring the two sides within a fair range by consolidated value.</>} right={<Tag kind="MODEL" />}>
         {r.suggestions.length === 0 ? (
           <p className="text-sm text-muted">{Math.abs(r.market.netForA) <= Math.max(3, 0.08 * Math.max(r.market.aSends, r.market.bSends)) ? "Values are already within a fair range. No changes needed." : "No single asset closes the gap neatly. Try adding a smaller piece or swapping the main player."}</p>
         ) : (
@@ -344,11 +344,11 @@ function Result({ r, partner, busy, onApply, me, partnerId }: { r: TradeResult; 
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-[2fr_3fr]">
-        <Card title="Power rankings after trade" right={<span className="text-[11px] text-muted">score before → after · rank change</span>} pad={false}>
+        <Card title="Power rankings after trade" info={<>Each team&apos;s power score (0–100, best ≈ 100) before → after the trade, and how its rank moves.</>} right={<span className="text-[11px] text-muted">score before → after · rank change</span>} pad={false}>
           <PowerTable power={r.power} me={me} partnerId={partnerId} />
         </Card>
         <div className="flex flex-col gap-4">
-          <Card title="Positional ranks (1 = best)">
+          <Card title="Positional ranks (1 = best)" info={<>Each team&apos;s league rank at each position before → after the trade, from the projected points of its starters there.</>}>
             <div className="flex flex-col gap-4">
               <Positions title={`You${meP ? ` · power #${meP.before.rank} → #${meP.after.rank}` : ""}`} rows={r.positionsA} />
               <Positions title={`${partner}${themP ? ` · power #${themP.before.rank} → #${themP.after.rank}` : ""}`} rows={r.positionsB} />
@@ -356,7 +356,7 @@ function Result({ r, partner, busy, onApply, me, partnerId }: { r: TradeResult; 
           </Card>
         </div>
       </div>
-          <Card title="Value breakdown" pad={false}>
+          <Card title="Value breakdown" info={<>Every asset in the deal with its trade value (0–100, 100 = the league&apos;s most valuable asset) and where that value comes from.</>} pad={false}>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead><tr className="text-left text-[11px] uppercase tracking-wider text-muted">

@@ -17,5 +17,10 @@ export function keeperRulesFor(settings: AppSettings, league: League): KeeperRul
     maxYears: saved.maxYears ?? 0,
     protectedRounds: saved.protectedRounds ?? 0,
     horizon: saved.horizon ?? 1,
+    draftedMode: saved.draftedMode ?? "drafted",
+    undraftedMode: saved.undraftedMode ?? "round",
+    adpOffset: saved.adpOffset ?? 0,
+    anyPick: saved.anyPick ?? true,
+    missingPick: saved.missingPick ?? "earlier",
   };
 }

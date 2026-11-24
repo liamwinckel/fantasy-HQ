@@ -81,7 +81,6 @@ function DashboardBody({ setup, league, ctx, sp }: LeagueData) {
       <PageHeader eyebrow={`${league.name} · ${formatLabel(league)} · ${ctx.scoring} · ${ctx.teamsCount} teams`} title="Dashboard">
         <span className={cx("rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider", fmt === "dynasty" ? "bg-fg text-bg" : fmt === "keeper" ? "border border-acc text-acc-ink" : "bg-acc text-on-acc")}>{formatLabel(league)} league</span>
       </PageHeader>
-      <Info className="-mt-2 self-center" label="About this tool">{FORMAT_NOTE[fmt]}</Info>
       {!ctx.seasonOver && ctx.currentWeek > 1 && (
         <Card title="Weekly brief" href="/brief/"><p className="text-sm text-muted">Week {ctx.currentWeek - 1} recap, how SHS AI and the experts did, and your week {Math.min(ctx.currentWeek, ctx.lastWeek)} preview.</p></Card>
       )}
@@ -210,7 +209,8 @@ function PlayoffPath({ ctx, me, power }: { ctx: Ctx; me: number; power: ReturnTy
   const outlook = starters.map((id) => ({ id, name: ctx.players.get(id)!.name, pos: ctx.players.get(id)!.pos, f: ctx.extras.get(id)?.outlookPlayoffs ?? 1 })).sort((a, b) => b.f - a.f);
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Card title="Path to the playoffs" right={<Tag kind="MODEL" />}>
+      <Card title="Path to the playoffs" right={<Tag kind="MODEL" />} info={<>Your remaining regular-season games. <b>Power #</b> = the opponent&apos;s power rank (1 = best team). The bar and % are your chance to win that week, from both teams&apos; projected best lineups.</>}>
+        {weeks.length > 0 && <div className="mb-1.5 grid grid-cols-[3.5rem_1fr_6rem] gap-3 text-[10px] font-semibold uppercase tracking-wider text-muted"><span>Week</span><span>Opponent</span><span className="text-right">Win chance</span></div>}
         {weeks.length === 0 && <p className="text-sm text-muted">The regular season is over.</p>}
         <ul className="flex flex-col gap-2">
           {weeks.map((w) => {
@@ -228,7 +228,7 @@ function PlayoffPath({ ctx, me, power }: { ctx: Ctx; me: number; power: ReturnTy
           })}
         </ul>
       </Card>
-      <Card title={`Fantasy playoff schedule · weeks ${ctx.playoffStart}–${ctx.lastWeek}`} right={<span className="text-[11px] text-muted">opponent difficulty for your starters</span>}>
+      <Card title={`Fantasy playoff schedule · weeks ${ctx.playoffStart}–${ctx.lastWeek}`} info={<>For each of your starters: how many more (+) or fewer (−) points his NFL opponents in the fantasy playoffs usually allow to his position, vs an average opponent. Easy = +5% or more, Tough = −5% or worse.</>}>
         <ul className="flex flex-col gap-1.5 text-sm">
           {outlook.map((o) => (
             <li key={o.id} className="flex items-center justify-between gap-2">

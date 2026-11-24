@@ -32,7 +32,7 @@ function WaiverPageBody({ setup, league, ctx, sp }: LeagueData) {
         Injured, suspended and players not projected to play are left out. If your roster is full, the suggested drop is taken off first, so the gain is net of losing him.
       </Info>
 
-      <Card title="Your needs" right={<Tag kind="MODEL" />}>
+      <Card title="Your needs" info={<>Positions where your best lineup is weakest compared with the rest of the league, and how thin your bench is there.</>} right={<Tag kind="MODEL" />}>
         <div className="flex flex-wrap gap-2 text-sm">
           {r.needs.map((n) => <span key={n.pos} className="rounded-lg bg-neg/15 px-2.5 py-1.5 font-semibold text-neg">{n.pos} · {n.reason}</span>)}
           {r.holes.map((h) => <span key={h.id} className="rounded-lg bg-warn/15 px-2.5 py-1.5 font-semibold text-warn">This week: {h.name} ({h.pos}) {h.why}</span>)}
@@ -40,7 +40,7 @@ function WaiverPageBody({ setup, league, ctx, sp }: LeagueData) {
         </div>
       </Card>
 
-      <Card title="Best adds for your team" right={<Tag kind="SLEEPER" />} pad={false}>
+      <Card title="Best adds for your team" info={<>Free agents ranked by how much they improve your best lineup (this week and rest of season, in projected points), not by how good they are in general. Drop = the player SHS would release to make room.</>} right={<Tag kind="SLEEPER" />} pad={false}>
         <WaiverBoard
           leagueId={league.league_id}
           lastWeek={ctx.lastWeek}

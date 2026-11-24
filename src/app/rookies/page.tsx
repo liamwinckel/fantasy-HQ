@@ -43,7 +43,7 @@ function RookiePageBody({ league, ctx, sp }: LeagueData) {
         {["ALL", "QB", "RB", "WR", "TE"].map((p) => <Link key={p} href={`/rookies/?pos=${p}`} className={chip(pos === p)}>{p === "ALL" ? "All rookies" : p}</Link>)}
       </div>
 
-      <Card title={`${season} class`} pad={false}>
+      <Card title={`${season} class`} info={<>This year&apos;s rookies graded against other rookies at their position: draft capital, athletic testing, opportunity and production so far.</>} pad={false}>
         <div className="hidden grid-cols-[2rem_minmax(0,1.6fr)_2.5rem_5rem_3.5rem_4rem_6rem_minmax(0,1fr)] gap-x-3 border-b border-line px-5 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted md:grid">
           <span>#</span><span>Rookie</span><span>Grade</span><span>Drafted</span><span className="text-right">Pts/g</span><span className="text-right">Snaps</span><span className="text-right">Production</span><span>Owner</span>
         </div>
@@ -72,7 +72,7 @@ function RookiePageBody({ league, ctx, sp }: LeagueData) {
         </ul>
       </Card>
 
-      <Card title={`${season + 1} prospects`}>
+      <Card title={`${season + 1} prospects`} info={<>Next year&apos;s incoming class where data exists (draft projections are not available until spring).</>}>
         <p className="text-sm leading-relaxed text-muted">College prospects for the {season + 1} class arrive once NFLverse publishes combine results and the draft in the spring. Fantasy HQ picks them up automatically.</p>
       </Card>
     </div>

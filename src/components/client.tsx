@@ -3,7 +3,7 @@
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeftRight, BarChart3, FlaskConical, Newspaper, Check, ChevronDown, ChevronLeft, ChevronRight, Home, ListOrdered, Moon, RefreshCw, Scale, Sparkles, Sun, Swords, TrendingUp, Trophy, UserPlus, X } from "lucide-react";
+import { ArrowLeftRight, BarChart3, FlaskConical, Newspaper, Check, ChevronDown, ChevronLeft, ChevronRight, Home, ListOrdered, Moon, RefreshCw, Scale, Sparkles, Sun, Columns2, TrendingUp, Trophy, UserPlus, X } from "lucide-react";
 import { BASE_PATH } from "@/lib/net";
 import { cx, Logo } from "./ui";
 import { usePlayerCard } from "./PlayerCard";
@@ -58,7 +58,7 @@ export function RefreshButton({ compact = false }: { compact?: boolean }) {
 
 const TABS = [
   { href: "/", label: "Dashboard", icon: Home },
-  { href: "/matchup", label: "Matchup", icon: Swords },
+  { href: "/matchup", label: "Matchup", icon: Columns2 },
   { href: "/rankings", label: "Rankings", icon: ListOrdered },
   { href: "/league", label: "League", icon: Trophy },
 ];

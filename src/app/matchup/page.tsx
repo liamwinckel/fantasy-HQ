@@ -141,7 +141,7 @@ function MatchupPageBody({ setup, league, ctx, sp }: LeagueData) {
                     <div className="flex justify-between gap-2"><span className={cx("flex min-w-0 items-center gap-1.5", sa !== null && sb !== null && sa > sb && "font-bold")}><Logo src={av(a)} name={name(a)} size={18} /><span className="truncate">{name(a)}</span></span><span className="num">{sa?.toFixed(1) ?? "—"}</span></div>
                     <div className="flex justify-between gap-2"><span className={cx("flex min-w-0 items-center gap-1.5", sa !== null && sb !== null && sb > sa && "font-bold")}><Logo src={av(b)} name={name(b)} size={18} /><span className="truncate">{name(b)}</span></span><span className="num">{sb?.toFixed(1) ?? "—"}</span></div>
                   </div>
-                  {wp !== null && <div className="w-20 text-right text-[11px] text-muted"><WinBar pct={wp} className="h-2" />{wp.toFixed(0)}% / {(100 - wp).toFixed(0)}%</div>}
+                  {wp !== null && <div className="w-20 text-right text-[11px] text-muted" title="Win chance: left team / right team"><WinBar pct={wp} className="h-2" />{wp.toFixed(0)}% / {(100 - wp).toFixed(0)}%<div className="text-[9px]">win chance</div></div>}
                 </Link>
               </li>
             );
