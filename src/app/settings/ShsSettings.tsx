@@ -11,7 +11,7 @@ const FACTORS: [string, string][] = [
   ["ppg", "Points per game"], ["snap", "Snap share (RB/WR/TE)"], ["adv", "Opportunity & efficiency"], ["xfp", "Expected points"],
   ["track", "Player tracking"], ["chart", "Film charting"],
   ["weather", "Weather"], ["inj", "Injuries & practice"], ["matchup", "Defensive matchup"], ["vegas", "Team implied total"], ["script", "Game script"],
-  ["sched", "Schedule ahead"], ["age", "Age cliff"], ["team", "Team situation"], ["coach", "Coaching"], ["usage", "Usage (dynasty)"], ["draft", "Draft & combine"], ["college", "College production"],
+  ["sched", "Schedule ahead"], ["age", "Age cliff"], ["team", "Team situation"], ["coach", "Coaching"], ["usage", "Usage (dynasty)"], ["games", "Durability (dynasty)"], ["draft", "Draft & combine"], ["college", "College production"],
 ];
 
 /** While a finger is on a slider, the page can't scroll; released on lift. */
@@ -49,8 +49,24 @@ export function ShsSettings() {
   const [key, setKey] = useState(() => (typeof window === "undefined" ? "" : getSettings().cfbdKey ?? ""));
   const [msg, setMsg] = useState<string | null>(null);
   return (
-    <Card title="SHS AI" info={<>SHS AI starts from the expert consensus and moves a player up or down by what the evidence says. These sliders set how much each part counts. Factor weights multiply the default (1.00× = normal, 0 = ignore).</>}>
+    <Card title="SHS AI" info={<>SHS AI starts from the expert consensus and moves a player up or down by what the evidence says. The SHS formula uses only what beat the experts in five replayed seasons; a custom mix lets you set the shares yourself. Factor weights multiply the default (1.00× = normal, 0 = ignore).</>}>
       <div className="flex flex-col gap-5">
+        <div>
+          <h3 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted">Formula</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {([["shs", "SHS formula", "Learned from 2021–2025 · recommended"], ["custom", "Custom mix", "Set the shares yourself"]] as const).map(([m, t, sub]) => (
+              <button key={m} type="button" onClick={() => set({ mode: m })} className={cx("rounded-xl border p-3 text-left", w.mode === m ? "border-acc bg-acc/10" : "border-line")}>
+                <b className="block text-sm">{t}</b><span className="text-[11px] text-muted">{sub}</span>
+              </button>
+            ))}
+          </div>
+          {w.mode !== "custom" && <>
+            <p className="mt-2 text-xs text-muted">Each ranking type (week, rest of season, dynasty) and position has its own formula: the expert-rank value, moved only by the factors that beat the experts out of sample. See the SHS AI Lab for what made the cut.</p>
+            <div className="mt-3"><Slider label="Betting lines (this week)" value={w.lines} min={0} max={60} onChange={(v) => set({ lines: v })} /></div>
+            <p className="mt-1 text-xs text-muted">For players with prediction-market lines, this share of his value comes from the points the lines imply. Lines are saved before each game and graded in the Lab as weeks finish.</p>
+          </>}
+        </div>
+        {w.mode === "custom" && <>
         <div>
           <h3 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted">The mix</h3>
           <div className="flex flex-col gap-2">
@@ -70,8 +86,10 @@ export function ShsSettings() {
           </div>
           <p className="mt-1 text-xs text-muted">= {pc(w.mixLines.ecr, w.mixLines)} experts · {pc(w.mixLines.sleeper, w.mixLines)} Sleeper · {pc(w.mixLines.markets, w.mixLines)} lines · {pc(w.mixLines.factors, w.mixLines)} factors</p>
         </div>
+        </>}
         <div>
-          <h3 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted">Factor weights</h3>
+          <h3 className="mb-1 text-[11px] font-bold uppercase tracking-widest text-muted">Factor weights</h3>
+          <p className="mb-2 text-xs text-muted">{w.mode === "custom" ? "How much each factor counts in your mix." : "Scales each factor's learned effect. Factors with no proven edge have no effect to scale."}</p>
           <div className="grid gap-x-6 gap-y-2 md:grid-cols-2">
             {FACTORS.map(([k, l]) => <Slider key={k} label={l} value={w.factor[k] ?? 1} min={0} max={2} step={0.05} suffix="×" onChange={(v) => set({ factor: { ...w.factor, [k]: v } })} />)}
           </div>

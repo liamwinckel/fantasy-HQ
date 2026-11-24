@@ -17,7 +17,8 @@ import { scoreSleeperStats } from "../engine/scoring";
 import { usageFromLogs } from "../engine/projections";
 import type { LeagueContext } from "./league";
 import { rankings } from "./rankings";
-import { RESEARCH, shsAi } from "./shsai";
+import { shsAi } from "./shsai";
+import { shsFormula } from "./shsModel";
 import { buildSignals } from "./signals";
 import { DEFAULT_SHS, getSettings, type ShsWeights } from "../settings";
 
@@ -106,15 +107,18 @@ async function replayWeek(ctx: LeagueContext, w: number, snap: { at: string; row
   return res;
 }
 
-type Mix = { ecr: number; sleeper: number; factors: number };
-type MixLines = Mix & { markets: number };
-/** SHS AI points for a replayed row under a mix (same formula as the live app; lines only on weeks that saved them). */
-export function shsPoints(r: BtRow, mix: Mix, mult: Record<string, number>, lines?: MixLines) {
+type Cfg = Pick<ShsWeights, "mode" | "lines" | "mix" | "mixLines">;
+/** SHS AI points for a replayed row (same formula as the live app; betting lines only on weeks that saved them). */
+export function shsPoints(r: BtRow, cfg: Cfg, mult: Record<string, number>, withLines = false) {
+  const hasM = withLines && r.mkt !== null && r.mkt !== undefined;
+  if (cfg.mode !== "custom") {
+    const factors = Object.entries(r.f).map(([key, [value]]) => ({ key, value }));
+    return shsFormula("week", r.pos, r.ecrPts, r.proj > 0.3 ? r.proj : null, factors, hasM ? r.mkt! : null, cfg, (k) => mult[k] ?? 1).rating;
+  }
   let num = 0, den = 0;
-  for (const [k, [v, w]] of Object.entries(r.f)) { const ww = w * (RESEARCH.mult[k] ?? 1) * (mult[k] ?? 1); num += v * ww; den += ww; }
+  for (const [k, [v, w]] of Object.entries(r.f)) { const ww = w * (mult[k] ?? 1); num += v * ww; den += ww; }
   const F = den ? num / den : 0;
-  const hasM = !!lines && r.mkt !== null && r.mkt !== undefined;
-  const m = hasM ? lines! : { ...mix, markets: 0 };
+  const m = hasM ? cfg.mixLines : { ...cfg.mix, markets: 0 };
   const parts = { ecr: m.ecr, sleeper: r.proj > 0.3 ? m.sleeper : 0, markets: hasM ? m.markets : 0, factors: den ? m.factors : 0 };
   const t = parts.ecr + parts.sleeper + parts.markets + parts.factors || 1;
   return (parts.ecr * r.ecrPts + parts.sleeper * r.proj + parts.markets * (r.mkt ?? 0) + parts.factors * r.ecrPts * (1 + F)) / t;
@@ -133,8 +137,8 @@ function grade(list: { score: number; pred: number; actual: number; pos: string 
   return { pairAcc: all ? Math.round((good / all) * 1000) / 10 : 0, mae: list.length ? Math.round((err / list.length) * 100) / 100 : 0, pairs: all, n: list.length };
 }
 
-function gradeWeeks(weeks: BtWeek[], mix: Mix, mult: Record<string, number>) {
-  const shs = weeks.flatMap((w) => w.rows.map((r) => { const v = shsPoints(r, mix, mult); return { score: v, pred: v, actual: r.actual, pos: `${w.week}:${r.pos}` }; }));
+function gradeWeeks(weeks: BtWeek[], cfg: Cfg, mult: Record<string, number>) {
+  const shs = weeks.flatMap((w) => w.rows.map((r) => { const v = shsPoints(r, cfg, mult); return { score: v, pred: v, actual: r.actual, pos: `${w.week}:${r.pos}` }; }));
   return grade(shs);
 }
 
@@ -156,18 +160,17 @@ export async function runBacktest(ctx: LeagueContext, onProgress?: (done: number
   if (!weeks.length) return null;
   const cfg: ShsWeights = { ...DEFAULT_SHS, ...(getSettings().shs ?? {}) };
   const userMult = cfg.factor;
-  const mkw = cfg.mixLines;
   // On players with saved lines: markets alone vs experts vs SHS AI (with lines blended in).
   const mgrade = (rs: BtRow[]): MarketGrade | null => {
     const sub = rs.filter((r) => r.mkt !== null && r.mkt !== undefined);
     if (sub.length < 8) return null;
     const L = (f: (r: BtRow) => number) => sub.map((r) => ({ score: f(r), pred: f(r), actual: r.actual, pos: r.pos }));
-    return { n: sub.length, markets: grade(L((r) => r.mkt!)).pairAcc, experts: grade(L((r) => -r.ecrPos)).pairAcc, shs: grade(L((r) => shsPoints(r, cfg.mix, userMult, mkw))).pairAcc };
+    return { n: sub.length, markets: grade(L((r) => r.mkt!)).pairAcc, experts: grade(L((r) => -r.ecrPos)).pairAcc, shs: grade(L((r) => shsPoints(r, cfg, userMult, true))).pairAcc };
   };
 
   const weekGrades: WeekGrade[] = weeks.map((wk) => {
     const L = (f: (r: BtRow) => { score: number; pred: number }) => wk.rows.map((r) => ({ ...f(r), actual: r.actual, pos: r.pos }));
-    const shsL = L((r) => { const v = shsPoints(r, cfg.mix, userMult, mkw); return { score: v, pred: v }; });
+    const shsL = L((r) => { const v = shsPoints(r, cfg, userMult, true); return { score: v, pred: v }; });
     const ecrL = L((r) => ({ score: -r.ecrPos, pred: r.ecrPts }));
     const slL = L((r) => ({ score: r.proj, pred: r.proj }));
     const byPos: WeekGrade["byPos"] = {};
@@ -178,7 +181,7 @@ export async function runBacktest(ctx: LeagueContext, onProgress?: (done: number
     // Biggest disagreements with the experts, and whether SHS AI was right.
     const actualRank = new Map<string, number>();
     for (const pos of Object.keys(POS_CUT)) wk.rows.filter((r) => r.pos === pos).sort((a, b) => b.actual - a.actual).forEach((r, i) => actualRank.set(r.id, i + 1));
-    const calls = wk.rows.map((r) => ({ r, pct: Math.round((shsPoints(r, cfg.mix, userMult) / Math.max(0.5, r.ecrPts) - 1) * 100) }))
+    const calls = wk.rows.map((r) => ({ r, pct: Math.round((shsPoints(r, cfg, userMult, true) / Math.max(0.5, r.ecrPts) - 1) * 100) }))
       .filter((x) => Math.abs(x.pct) >= 5).sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct)).slice(0, 6)
       .map(({ r, pct }) => ({ id: r.id, pct, ecrPos: r.ecrPos, actualPosRank: actualRank.get(r.id)!, right: pct > 0 ? actualRank.get(r.id)! < r.ecrPos : actualRank.get(r.id)! > r.ecrPos }));
     return { week: wk.week, shs: grade(shsL), ecr: grade(ecrL), sleeper: grade(slL), mkt: mgrade(wk.rows), byPos, biggestCalls: calls };
@@ -186,7 +189,7 @@ export async function runBacktest(ctx: LeagueContext, onProgress?: (done: number
 
   const all = (f: (r: BtRow) => { score: number; pred: number }) => grade(weeks.flatMap((wk) => wk.rows.map((r) => ({ ...f(r), actual: r.actual, pos: `${wk.week}:${r.pos}` }))));
   const total = {
-    shs: all((r) => { const v = shsPoints(r, cfg.mix, userMult, mkw); return { score: v, pred: v }; }),
+    shs: all((r) => { const v = shsPoints(r, cfg, userMult, true); return { score: v, pred: v }; }),
     ecr: all((r) => ({ score: -r.ecrPos, pred: r.ecrPts })),
     sleeper: all((r) => ({ score: r.proj, pred: r.proj })),
   };
@@ -209,7 +212,7 @@ export async function runBacktest(ctx: LeagueContext, onProgress?: (done: number
   let tuned: BacktestReport["tuned"] = null;
   if (weeks.length >= 4) {
     const mult: Record<string, number> = Object.fromEntries(keys.map((k) => [k, 1]));
-    const score = () => gradeWeeks(weeks, cfg.mix, mult).pairAcc;
+    const score = () => gradeWeeks(weeks, cfg, mult).pairAcc;
     let best = score();
     for (let pass = 0; pass < 2; pass++) {
       for (const k of keys) {
@@ -217,7 +220,7 @@ export async function runBacktest(ctx: LeagueContext, onProgress?: (done: number
       }
     }
     const shrunk = Object.fromEntries(keys.map((k) => [k, Math.round((1 + (mult[k] - 1) / 2) * 100) / 100]));
-    tuned = { shs: gradeWeeks(weeks, cfg.mix, mult), mult: shrunk, expert: cfg.mix.ecr };
+    tuned = { shs: gradeWeeks(weeks, cfg, mult), mult: shrunk, expert: cfg.mix.ecr };
     for (const f of factors) f.mult = shrunk[f.key] ?? 1;
     try { localStorage.setItem(`fhq-tune-${ctx.league.league_id}`, JSON.stringify(shrunk)); } catch { /* ignore */ }
   }

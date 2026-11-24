@@ -1,17 +1,17 @@
 /**
- * SHS AI score: expert consensus (ECR) blended with SHS factors and, for the week ahead, prediction-market lines.
- *   Default: 75% ECR / 25% factors. Weekly with market lines: 50% ECR / 30% markets / 20% factors (Settings → SHS AI).
+ * SHS AI: how much higher (+) or lower (−) a player is worth than his expert rank.
  *
- * Each factor scores the player from −1 (points to him doing worse than his expert rank) to +1 (better),
- * compared with players ranked around him at his position. The factors are averaged (F), and
- *   SHS AI rating = ECR rating × (1 + 0.25 × F)
- * so the score shown, 25 × F, runs from −25% (strongly disagrees with the experts) to +25% (strongly agrees he's
- * underrated). 0% = the factors back the experts.
+ * Default ("SHS formula", see shsModel.ts): the expert-rank value × (1 + learned effects), where the effects — the
+ * pull toward Sleeper's projection and each SHS factor — were fitted on replayed seasons separately for week,
+ * rest of season and dynasty, and for each position, and kept only where they beat the experts out of sample.
+ * This week, players with betting lines also get a share of the points the lines imply.
+ * "Custom" (Settings): your own mix of experts / Sleeper / factors / lines.
  *
- *   All:     points per game · snap share · advanced metrics (opportunity share, efficiency, usage trend) · projection
- *   Weekly:  weather · injuries (his and teammates') · defensive matchup · Vegas team total
+ * Each factor scores the player from −1 (points to him doing worse than his expert rank) to +1 (better).
+ *   All:     points per game · snap share · advanced metrics · expected points · player tracking · film charting
+ *   Weekly:  weather · injuries & practice · defensive matchup · Vegas team total · game script
  *   Rest of season: schedule ahead · injury outlook
- *   Dynasty: age cliff · team situation & outlook · coaching stability · usage · combine & draft profile
+ *   Dynasty: age cliff · team situation · coaching · usage · snap share · durability · draft & combine · college
  */
 import type { LeagueContext } from "./league";
 import type { RankRow, RankScope } from "./rankings";
@@ -22,9 +22,10 @@ import { getTuning } from "./accuracy";
 import { marketPoints } from "../markets";
 import { DOMINATOR_AVG, type CollegeProfile } from "../cfbd";
 import RESEARCH_JSON from "./shsResearch.json";
+import { shsFormula } from "./shsModel";
 
-/** Weekly defaults learned by replaying every week since 2021 (scripts/research). */
-export const RESEARCH = RESEARCH_JSON as { expert: number; blend?: number; mult: Record<string, number>; summary: Record<string, number>; generatedAt: string; weeks: number; rows: number; seasons: number[]; projSource: string };
+/** Weekly research summary (scripts/research). */
+export const RESEARCH = RESEARCH_JSON as unknown as { summary: Record<string, number>; generatedAt: string; weeks: number; rows: number; seasons: number[]; projSource: string };
 
 export interface Factor { key: string; label: string; value: number; detail: string; weight: number }
 export interface ShsAi {
@@ -33,6 +34,10 @@ export interface ShsAi {
   market?: { pts: number; value: number; covered: string[] } | null;
   /** The mix used: shares of expert consensus / second opinion (Sleeper or dynasty model) / betting lines / SHS factors (sums to 1). */
   blend: { expert: number; sleeper: number; market: number; factors: number };
+  /** "shs" = research formula; "custom" = your mix. */
+  mode: "shs" | "custom";
+  /** SHS formula: each part's effect on his value (+0.05 = +5% vs his expert rank). */
+  parts: { key: string; effect: number }[];
 }
 export interface ShsOptions {
   college?: Map<string, CollegeProfile> | null;
@@ -45,7 +50,7 @@ export const SHS_METRICS: Record<RankScope | "all", string[]> = {
   all: ["Points per game", "Snap share", "Opportunity share (targets, carries, dropbacks)", "Efficiency per opportunity", "Usage trend", "Expected fantasy points from his opportunities, and over/under-performance", "Player-tracking: separation, yards after catch over expected, rush yards over expected, completion % over expected", "Charting: yards after contact, broken tackles, drops, rating when targeted, bad throws, pressure", "Projected points vs a typical player at his rank"],
   week: ["Prediction-market player lines (yards, receptions, touchdowns) turned into fantasy points in your scoring", "Weather at kickoff (wind, rain, snow)", "Injury status and this week's practice participation", "Injuries to his QB or teammates ahead of him", "Defensive matchup", "Team implied points", "Game script (point spread)"],
   ros: ["Strength of schedule ahead and in the fantasy playoffs", "Injury outlook"],
-  dynasty: ["Age vs his position's age cliff", "Team offense quality and trend", "Head-coach continuity", "Long-term usage", "Draft capital and athletic testing (speed score)", "College production share (optional)"],
+  dynasty: ["Age vs his position's age cliff", "Team offense quality and trend", "Head-coach continuity", "Long-term usage", "Season snap share", "Durability (games played)", "Draft capital and athletic testing (speed score)", "College production share (optional)"],
 };
 
 const clamp = (x: number, lo = -1, hi = 1) => Math.max(lo, Math.min(hi, x));
@@ -139,6 +144,7 @@ export function shsAi(ctx: LeagueContext, rows: RankRow[], scope: RankScope, wea
   };
   const scoring = ctx.league.scoring_settings as Record<string, number>;
 
+  const log0 = (id: string) => ctx.logs.get(id) ?? [];
   const out = new Map<string, ShsAi>();
   for (const r of rows) {
     const p = ctx.players.get(r.id);
@@ -153,7 +159,7 @@ export function shsAi(ctx: LeagueContext, rows: RankRow[], scope: RankScope, wea
         if (ref > 0) add("ppg", "Points per game", (f.ppg / ref - 1) / 0.35, `${f.ppg.toFixed(1)} pts/g vs ${ref.toFixed(1)} for players ranked near him`);
       }
       const peSnap = pe.map((x) => x.snap).filter((x): x is number => x !== null);
-      if (f.snap !== null && peSnap.length && ["RB", "WR", "TE"].includes(p.pos)) {
+      if (f.snap !== null && peSnap.length && ["RB", "WR", "TE"].includes(p.pos) && scope !== "dynasty") {
         const ref = median(peSnap);
         add("snap", "Snap share", (f.snap - ref) / 0.2, `${Math.round(f.snap * 100)}% of snaps (last 3) vs ${Math.round(ref * 100)}% typical at his rank`);
       }
@@ -271,6 +277,16 @@ export function shsAi(ctx: LeagueContext, rows: RankRow[], scope: RankScope, wea
           const snap = f.snap !== null && p.pos !== "QB" ? (f.snap - 0.6) / 0.3 : 0;
           add("usage", "Usage", (share + snap) / 2, `${f.snap !== null ? `${Math.round(f.snap * 100)}% snaps` : ""}${f.share !== null ? `${f.snap !== null ? ", " : ""}${p.pos === "QB" ? "volume" : "share of team looks"} ${Math.round(pctile(posVals(p.pos, (x) => x.share), f.share) * 100)}th pct` : ""}`);
         }
+        // Season snap share and durability: the two usage signals that held up in the dynasty research (WR/TE).
+        if (["RB", "WR", "TE"].includes(p.pos) && log0(r.id).length) {
+          const sn = log0(r.id).map((g) => g.snapPct).filter((x): x is number => x !== null);
+          if (sn.length) { const v = mean(sn); add("snap", "Snap share", (v - 0.6) / 0.3, `${Math.round(v * 100)}% of snaps this season`); }
+        }
+        if (w0 > 3) {
+          const played = log0(r.id).length, teamGames = Math.max(1, ctx.games.filter((g) => g.week < w0 && (g.home === p.team || g.away === p.team)).length);
+          const g17 = (played / teamGames) * 17;
+          add("games", "Durability", (g17 - 12) / 5, `Played ${played} of ${teamGames} games this season`);
+        }
         const dr = p.draftRound;
         const dc = dr === 1 ? 1 : dr === 2 ? 0.6 : dr === 3 ? 0.2 : dr && dr <= 5 ? -0.2 : -0.5;
         const sp = speed(p.gsis);
@@ -286,11 +302,8 @@ export function shsAi(ctx: LeagueContext, rows: RankRow[], scope: RankScope, wea
         }
       }
     }
-    // Research-fitted weekly weights × your weights (Settings) × auto-tuned multipliers from tracked results.
-    const rm = scope === "week" && !opts.neutral ? RESEARCH.mult : {};
-    for (const f of factors) f.weight = Math.round(f.weight * (rm[f.key] ?? 1) * (cfg.factor[f.key] ?? 1) * (tune[f.key] ?? 1) * 100) / 100;
-    const wsum = factors.reduce((a, x) => a + x.weight, 0);
-    const F = wsum ? factors.reduce((a, x) => a + x.value * x.weight, 0) / wsum : 0;
+    // Your weights (Settings) × auto-tuned multipliers from graded weeks.
+    const mult = (k: string) => (cfg.factor[k] ?? 1) * (tune[k] ?? 1);
     const ecrRating = r.ecrPos !== null ? atRank(r.pos, r.ecrPos) : r.pts;
 
     // Prediction markets (weekly): implied fantasy points vs a typical player at his expert rank.
@@ -300,19 +313,31 @@ export function shsAi(ctx: LeagueContext, rows: RankRow[], scope: RankScope, wea
       const mk = mp ? marketPoints(mp.lines, ctx.projStats.get(w0)?.get(r.id), scoring, p.pos) : null;
       if (mk && ecrRating > 0.5) market = { pts: Math.round(mk.pts * 10) / 10, value: Math.round(clamp((mk.pts / ecrRating - 1) / 0.3) * 100) / 100, covered: mk.covered };
     }
-    // The mix (Settings → SHS AI): expert consensus + a second opinion (Sleeper's projection for week / rest of season,
-    // the SHS dynasty model for dynasty) + SHS factors, and betting lines this week when he has them.
+    // Second opinion: Sleeper's projection (week / rest of season), the SHS dynasty model (dynasty).
     const second = r.pts > 0.3 ? r.pts : null;
-    const w = market && scope === "week" ? cfg.mixLines : { ...cfg.mix, markets: 0 };
-    const parts = { ecr: w.ecr, sleeper: second !== null ? w.sleeper : 0, markets: market ? w.markets : 0, factors: factors.length ? w.factors : 0 };
-    const tot = parts.ecr + parts.sleeper + parts.markets + parts.factors || 1;
-    let blend = { expert: parts.ecr / tot, sleeper: parts.sleeper / tot, market: parts.markets / tot, factors: parts.factors / tot };
-    if (r.ecrPos === null) blend = { expert: 0, sleeper: 1, market: 0, factors: 0 };
-    const rating = r.ecrPos === null ? r.pts * 0.9
-      : blend.expert * ecrRating + blend.sleeper * (second ?? ecrRating) + blend.market * (market?.pts ?? ecrRating) + blend.factors * ecrRating * (1 + F);
+    let rating: number, blend: ShsAi["blend"], parts: ShsAi["parts"] = [];
+    if (r.ecrPos === null) {
+      rating = r.pts * 0.9; blend = { expert: 0, sleeper: 1, market: 0, factors: 0 };
+    } else if (cfg.mode !== "custom") {
+      const calc = shsFormula(scope, r.pos, ecrRating, scope === "dynasty" ? null : second, factors, market?.pts ?? null, cfg, mult);
+      const fx = new Map(calc.parts.map((x) => [x.key, x.effect]));
+      for (const f of factors) f.weight = Math.round(Math.abs(fx.get(f.key) ?? 0) * 1000) / 1000;
+      rating = calc.rating; parts = calc.parts;
+      blend = { expert: 1 - calc.lineShare, sleeper: 0, market: calc.lineShare, factors: 0 };
+    } else {
+      const rm: Record<string, number> = {};
+      for (const f of factors) f.weight = Math.round(f.weight * (rm[f.key] ?? 1) * mult(f.key) * 100) / 100;
+      const wsum = factors.reduce((a, x) => a + x.weight, 0);
+      const F = wsum ? factors.reduce((a, x) => a + x.value * x.weight, 0) / wsum : 0;
+      const w = market && scope === "week" ? cfg.mixLines : { ...cfg.mix, markets: 0 };
+      const pw = { ecr: w.ecr, sleeper: second !== null ? w.sleeper : 0, markets: market ? w.markets : 0, factors: factors.length ? w.factors : 0 };
+      const tot = pw.ecr + pw.sleeper + pw.markets + pw.factors || 1;
+      blend = { expert: pw.ecr / tot, sleeper: pw.sleeper / tot, market: pw.markets / tot, factors: pw.factors / tot };
+      rating = blend.expert * ecrRating + blend.sleeper * (second ?? ecrRating) + blend.market * (market?.pts ?? ecrRating) + blend.factors * ecrRating * (1 + F);
+    }
     out.set(r.id, {
       pct: r.ecrPos !== null && ecrRating > 0.5 && (factors.length || market || second !== null) ? Math.round(100 * (rating / ecrRating - 1)) : null,
-      rating, rank: 0, factors, market, blend,
+      rating, rank: 0, factors, market, blend, mode: cfg.mode === "custom" ? "custom" : "shs", parts,
     });
   }
   // SHS AI rank at each position (players with an expert rank first)

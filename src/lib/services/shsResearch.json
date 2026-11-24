@@ -1,6 +1,6 @@
 {
- "generatedAt": "2026-11-24T08:07:08.954Z",
- "projSource": "sleeper",
+ "generatedAt": "2026-11-24T15:58:33.869Z",
+ "projSource": "fantasypros",
  "seasons": [
   2021,
   2022,
@@ -11,27 +11,69 @@
  ],
  "rows": 17959,
  "weeks": 95,
- "expert": 100,
- "mult": {
-  "adv": 1,
-  "chart": 1,
-  "inj": 1,
-  "matchup": 1,
-  "ppg": 1,
-  "script": 1,
-  "snap": 1,
-  "track": 1,
-  "vegas": 1,
-  "xfp": 1
+ "method": "pairwise logistic, leave-one-season-out, forward selection, 25% shrink",
+ "model": {
+  "QB": {
+   "gamma": 0,
+   "beta": {},
+   "gain": 0,
+   "seasons": {
+    "2021": 0,
+    "2022": 0,
+    "2023": 0,
+    "2024": 0,
+    "2025": 0,
+    "2026": 0
+   }
+  },
+  "RB": {
+   "gamma": 0,
+   "beta": {},
+   "gain": 0,
+   "seasons": {
+    "2021": 0,
+    "2022": 0,
+    "2023": 0,
+    "2024": 0,
+    "2025": 0,
+    "2026": 0
+   }
+  },
+  "WR": {
+   "gamma": 0,
+   "beta": {},
+   "gain": 0,
+   "seasons": {
+    "2021": 0,
+    "2022": 0,
+    "2023": 0,
+    "2024": 0,
+    "2025": 0,
+    "2026": 0
+   }
+  },
+  "TE": {
+   "gamma": 0,
+   "beta": {
+    "ppg": -0.076
+   },
+   "gain": 0.01,
+   "seasons": {
+    "2021": 0.11,
+    "2022": 0.06,
+    "2023": -0.15,
+    "2024": 0.27,
+    "2025": -0.2,
+    "2026": -0.04
+   }
+  }
  },
- "blend": 0,
  "summary": {
   "experts": 67.4,
-  "projection": 67,
-  "shsDefault": 67.1,
-  "shsTuned": 67.3,
-  "mix": 66.8,
-  "ecrSleeper": 67.4
+  "projection": 67.3,
+  "ecrSleeper": 67.3,
+  "mix": 66.7,
+  "shs": 67.4
  },
  "perSeason": [
   {
@@ -39,332 +81,178 @@
    "weeks": 17,
    "players": 3191,
    "experts": 66.4,
-   "expertsMae": 5.72,
-   "projection": 65.3,
-   "projectionMae": 5.93,
-   "shsDefault": 66.1,
-   "mix": 65.8,
-   "ecrSleeper": 65.9,
-   "shsTuned": 65.9,
-   "shsTunedMae": 5.72,
-   "fitted": {
-    "expert": 100,
-    "mult": {
-     "adv": 1,
-     "chart": 1,
-     "inj": 1,
-     "matchup": 1,
-     "ppg": 1,
-     "script": 1,
-     "snap": 1,
-     "track": 1,
-     "vegas": 1,
-     "xfp": 1
-    },
-    "blend": 0.5
-   }
+   "projection": 66.4,
+   "ecrSleeper": 66.4,
+   "mix": 66,
+   "shs": 66.5
   },
   {
    "season": 2022,
    "weeks": 17,
    "players": 3230,
    "experts": 66.9,
-   "expertsMae": 5.45,
    "projection": 66.8,
-   "projectionMae": 5.42,
-   "shsDefault": 66.5,
-   "mix": 66.1,
-   "ecrSleeper": 67,
-   "shsTuned": 66.9,
-   "shsTunedMae": 5.45,
-   "fitted": {
-    "expert": 100,
-    "mult": {
-     "adv": 1,
-     "chart": 1,
-     "inj": 1,
-     "matchup": 1,
-     "ppg": 1,
-     "script": 1,
-     "snap": 1,
-     "track": 1,
-     "vegas": 1,
-     "xfp": 1
-    },
-    "blend": 0
-   }
+   "ecrSleeper": 66.9,
+   "mix": 66,
+   "shs": 66.9
   },
   {
    "season": 2023,
    "weeks": 17,
    "players": 3232,
    "experts": 68.2,
-   "expertsMae": 5.29,
-   "projection": 67.7,
-   "projectionMae": 5.31,
-   "shsDefault": 68.1,
-   "mix": 68,
+   "projection": 68,
    "ecrSleeper": 68.1,
-   "shsTuned": 68.2,
-   "shsTunedMae": 5.29,
-   "fitted": {
-    "expert": 100,
-    "mult": {
-     "adv": 1,
-     "chart": 1,
-     "inj": 1,
-     "matchup": 1,
-     "ppg": 1,
-     "script": 1,
-     "snap": 1,
-     "track": 1,
-     "vegas": 1,
-     "xfp": 1
-    },
-    "blend": 0
-   }
+   "mix": 67.9,
+   "shs": 68.2
   },
   {
    "season": 2024,
    "weeks": 17,
    "players": 3199,
-   "experts": 67.3,
-   "expertsMae": 5.44,
-   "projection": 66.9,
-   "projectionMae": 5.43,
-   "shsDefault": 67.2,
-   "mix": 66.9,
+   "experts": 67.4,
+   "projection": 67.2,
    "ecrSleeper": 67.3,
-   "shsTuned": 67.3,
-   "shsTunedMae": 5.44,
-   "fitted": {
-    "expert": 100,
-    "mult": {
-     "adv": 1,
-     "chart": 1,
-     "inj": 1,
-     "matchup": 1,
-     "ppg": 1,
-     "script": 1,
-     "snap": 1,
-     "track": 1,
-     "vegas": 1,
-     "xfp": 1
-    },
-    "blend": 0
-   }
+   "mix": 66.6,
+   "shs": 67.4
   },
   {
    "season": 2025,
    "weeks": 17,
    "players": 3218,
    "experts": 67.6,
-   "expertsMae": 5.47,
    "projection": 67.5,
-   "projectionMae": 5.44,
-   "shsDefault": 67.1,
-   "mix": 66.8,
-   "ecrSleeper": 67.7,
-   "shsTuned": 67.6,
-   "shsTunedMae": 5.47,
-   "fitted": {
-    "expert": 100,
-    "mult": {
-     "adv": 1,
-     "chart": 1,
-     "inj": 1,
-     "matchup": 1,
-     "ppg": 1,
-     "script": 1,
-     "snap": 1,
-     "track": 1,
-     "vegas": 1,
-     "xfp": 1
-    },
-    "blend": 0
-   }
+   "ecrSleeper": 67.5,
+   "mix": 66.7,
+   "shs": 67.5
   },
   {
    "season": 2026,
    "weeks": 10,
    "players": 1889,
    "experts": 67.9,
-   "expertsMae": 5.4,
-   "projection": 67.9,
-   "projectionMae": 5.36,
-   "shsDefault": 67.6,
-   "mix": 67.4,
-   "ecrSleeper": 68.2,
-   "shsTuned": 67.9,
-   "shsTunedMae": 5.4,
-   "fitted": {
-    "expert": 100,
-    "mult": {
-     "adv": 1,
-     "chart": 1,
-     "inj": 1,
-     "matchup": 1,
-     "ppg": 1,
-     "script": 1,
-     "snap": 1,
-     "track": 1,
-     "vegas": 1,
-     "xfp": 1
-    },
-    "blend": 0
-   }
+   "projection": 67.7,
+   "ecrSleeper": 67.8,
+   "mix": 66.9,
+   "shs": 67.9
   }
  ],
  "factors": [
   {
-   "key": "adv",
-   "n": 14921,
-   "corr": -0.17,
-   "flipped": -0.11,
-   "bySeason": {
-    "2021": -0.18,
-    "2022": -0.19,
-    "2023": -0.17,
-    "2024": -0.08,
-    "2025": -0.19,
-    "2026": -0.23
+   "key": "gap",
+   "byPos": {
+    "QB": 0.01,
+    "RB": -0.04,
+    "WR": -0.02,
+    "TE": -0.06
    },
-   "mult": 1
-  },
-  {
-   "key": "chart",
-   "n": 14849,
-   "corr": -0.14,
-   "flipped": -0.12,
-   "bySeason": {
-    "2021": -0.15,
-    "2022": -0.18,
-    "2023": -0.1,
-    "2024": -0.16,
-    "2025": -0.1,
-    "2026": -0.17
-   },
-   "mult": 1
+   "kept": []
   },
   {
    "key": "inj",
-   "n": 17959,
-   "corr": -0.04,
-   "flipped": -0.06,
-   "bySeason": {
-    "2021": 0.01,
-    "2022": -0.07,
-    "2023": -0.04,
-    "2024": -0.04,
-    "2025": -0.07,
-    "2026": 0
+   "byPos": {
+    "QB": -0.01,
+    "RB": -0.05,
+    "WR": 0,
+    "TE": -0.11
    },
-   "mult": 1
+   "kept": []
   },
   {
    "key": "matchup",
-   "n": 17950,
-   "corr": -0.27,
-   "flipped": -0.26,
-   "bySeason": {
-    "2021": -0.25,
-    "2022": -0.24,
-    "2023": -0.21,
-    "2024": -0.35,
-    "2025": -0.24,
-    "2026": -0.35
+   "byPos": {
+    "QB": -0.09,
+    "RB": -0.13,
+    "WR": -0.14,
+    "TE": -0.13
    },
-   "mult": 1
-  },
-  {
-   "key": "ppg",
-   "n": 16396,
-   "corr": -0.34,
-   "flipped": -0.1,
-   "bySeason": {
-    "2021": -0.4,
-    "2022": -0.46,
-    "2023": -0.32,
-    "2024": -0.24,
-    "2025": -0.35,
-    "2026": -0.22
-   },
-   "mult": 1
-  },
-  {
-   "key": "script",
-   "n": 17958,
-   "corr": -0.19,
-   "flipped": -0.2,
-   "bySeason": {
-    "2021": -0.15,
-    "2022": -0.19,
-    "2023": -0.28,
-    "2024": -0.06,
-    "2025": -0.23,
-    "2026": -0.29
-   },
-   "mult": 1
-  },
-  {
-   "key": "snap",
-   "n": 13989,
-   "corr": -0.14,
-   "flipped": -0.24,
-   "bySeason": {
-    "2021": -0.12,
-    "2022": -0.08,
-    "2023": -0.14,
-    "2024": -0.19,
-    "2025": -0.18,
-    "2026": -0.09
-   },
-   "mult": 1
-  },
-  {
-   "key": "track",
-   "n": 11537,
-   "corr": -0.13,
-   "flipped": -0.13,
-   "bySeason": {
-    "2021": -0.1,
-    "2022": -0.19,
-    "2023": -0.06,
-    "2024": -0.14,
-    "2025": -0.19,
-    "2026": -0.11
-   },
-   "mult": 1
+   "kept": []
   },
   {
    "key": "vegas",
-   "n": 17958,
-   "corr": -0.13,
-   "flipped": -0.29,
-   "bySeason": {
-    "2021": -0.07,
-    "2022": -0.21,
-    "2023": -0.14,
-    "2024": -0.14,
-    "2025": -0.15,
-    "2026": -0.05
+   "byPos": {
+    "QB": 0.13,
+    "RB": -0.14,
+    "WR": -0.15,
+    "TE": 0.04
    },
-   "mult": 1
+   "kept": []
+  },
+  {
+   "key": "script",
+   "byPos": {
+    "QB": -0.22,
+    "RB": -0.17,
+    "WR": -0.14,
+    "TE": 0.01
+   },
+   "kept": []
+  },
+  {
+   "key": "ppg",
+   "byPos": {
+    "QB": -0.14,
+    "RB": -0.14,
+    "WR": -0.08,
+    "TE": 0.1
+   },
+   "kept": [
+    "TE"
+   ]
+  },
+  {
+   "key": "snap",
+   "byPos": {
+    "QB": -0.07,
+    "RB": -0.13,
+    "WR": -0.14,
+    "TE": -0.12
+   },
+   "kept": []
   },
   {
    "key": "xfp",
-   "n": 16367,
-   "corr": -0.23,
-   "flipped": -0.21,
-   "bySeason": {
-    "2021": -0.18,
-    "2022": -0.35,
-    "2023": -0.27,
-    "2024": -0.09,
-    "2025": -0.28,
-    "2026": -0.2
+   "byPos": {
+    "QB": -0.12,
+    "RB": -0.15,
+    "WR": -0.15,
+    "TE": -0.16
    },
-   "mult": 1
+   "kept": []
+  },
+  {
+   "key": "track",
+   "byPos": {
+    "QB": -0.01,
+    "RB": -0.1,
+    "WR": -0.15,
+    "TE": -0.14
+   },
+   "kept": []
+  },
+  {
+   "key": "adv",
+   "byPos": {
+    "QB": -0.14,
+    "RB": -0.12,
+    "WR": -0.11,
+    "TE": -0.11
+   },
+   "kept": []
+  },
+  {
+   "key": "chart",
+   "byPos": {
+    "QB": -0.02,
+    "RB": -0.14,
+    "WR": -0.13,
+    "TE": -0.13
+   },
+   "kept": []
   }
- ]
+ ],
+ "calls": {
+  "flipped": 1363,
+  "right": 51.9
+ }
 }

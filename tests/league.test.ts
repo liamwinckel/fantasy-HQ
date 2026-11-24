@@ -303,7 +303,9 @@ describe.skipIf(!have)("league context on fixtures", () => {
     ctx.signals.markets = null;
     expect(a.market).not.toBeNull();
     const { DEFAULT_SHS: D } = await import("@/lib/settings");
-    const L = D.mixLines; expect(a.blend.market).toBeCloseTo(L.markets / (L.ecr + L.sleeper + L.markets + (a.factors.length ? L.factors : 0)));
+    expect(a.mode).toBe("shs"); expect(a.blend.market).toBeCloseTo(D.lines / 100);
+    // Lines above his rank value pull the SHS value up.
+    expect(a.parts.some((x) => x.key === "lines")).toBe(true);
     // Markets imply roughly double his projected receiving yards → more points than Sleeper projects.
     expect(a.market!.pts).toBeGreaterThan(target.pts);
     expect(Math.abs(a.market!.value)).toBeLessThanOrEqual(1);

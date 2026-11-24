@@ -6,7 +6,7 @@ import { LeaguePage, useQuery, type LeagueData } from "@/components/AppData";
 import { PlayerImg, TabSwitch } from "@/components/client";
 import { PlayerLink } from "@/components/PlayerCard";
 import { InfoButton, InjuryChip, NflLogo, PageHeader, cx } from "@/components/ui";
-import { AiChip, ShsExplainer, shsVerdict, useCollege, useShsWeights } from "@/components/ShsAiParts";
+import { AiChip, label, ShsExplainer, shsVerdict, useCollege, useShsWeights } from "@/components/ShsAiParts";
 import { accuracy, snapshotWeek } from "@/lib/services/accuracy";
 import { BacktestCard } from "@/components/Backtest";
 import { playerDist } from "@/lib/engine/ranges";
@@ -63,12 +63,14 @@ export function Factors({ a }: { a: ShsAi }) {
   ];
   return (
     <>
-    <p className="mb-2 text-[11px] text-muted">Mix: {pc(a.blend.expert)} expert rank{a.blend.sleeper ? ` · ${pc(a.blend.sleeper)} projection` : ""}{a.blend.market ? ` · ${pc(a.blend.market)} betting lines` : ""} · {pc(a.blend.factors)} SHS factors</p>
+    {a.mode === "custom"
+      ? <p className="mb-2 text-[11px] text-muted">Custom mix: {pc(a.blend.expert)} expert rank{a.blend.sleeper ? ` · ${pc(a.blend.sleeper)} projection` : ""}{a.blend.market ? ` · ${pc(a.blend.market)} betting lines` : ""} · {pc(a.blend.factors)} SHS factors</p>
+      : <p className="mb-2 text-[11px] text-muted">SHS formula: his expert-rank value, moved only by what has beaten the experts in past seasons{a.blend.market ? `, with ${pc(a.blend.market)} from betting lines` : ""}. {a.parts.filter((x) => Math.abs(x.effect) >= 0.005).map((x) => `${label(x.key)} ${x.effect > 0 ? "+" : "−"}${Math.abs(Math.round(x.effect * 1000) / 10)}%`).join(" · ") || "Nothing moved him."} Dim rows are tracked but have no proven edge.</p>}
     <ul className="flex flex-col gap-1.5">
       {rowsF.map((f) => (
-        <li key={f.key} className="text-[11px]">
+        <li key={f.key} className={cx("text-[11px]", a.mode !== "custom" && f.key !== "market" && !a.parts.some((x) => x.key === f.key) && "opacity-50")}>
           <div className="grid grid-cols-[minmax(0,1fr)_6rem_2.5rem] items-center gap-2">
-            <span className="font-semibold">{f.label}{f.key !== "market" && f.weight !== 1 ? ` ×${f.weight}` : ""}</span>
+            <span className="font-semibold">{f.label}{a.mode === "custom" && f.key !== "market" && f.weight !== 1 ? ` ×${f.weight}` : ""}</span>
             <span className="relative h-2 rounded-full bg-panel2">
               <span className="absolute inset-y-0 left-1/2 w-px bg-line" />
               <span className={cx("absolute inset-y-0 rounded-full", f.value >= 0 ? "left-1/2 bg-pos" : "right-1/2 bg-neg")} style={{ width: `${Math.abs(f.value) * 50}%` }} />

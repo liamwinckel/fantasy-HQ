@@ -40,7 +40,14 @@ export interface AppSettings {
 }
 
 export interface ShsWeights {
-  /** The mix: expert consensus / second opinion (Sleeper's projection; SHS dynasty model in dynasty) / SHS factors. */
+  /**
+   * "shs" = the research formula (default): expert rank × (1 + learned pull toward the projection + learned factor
+   * effects), per ranking type and position, plus betting lines this week. "custom" = your own mix below.
+   */
+  mode: "shs" | "custom";
+  /** Research formula: share given to betting-line points for players with lines this week (0–60%). */
+  lines: number;
+  /** Custom mix: expert consensus / second opinion (Sleeper's projection; SHS dynasty model in dynasty) / SHS factors. */
   mix: { ecr: number; sleeper: number; factors: number };
   /** This week, for players with betting lines. */
   mixLines: { ecr: number; sleeper: number; markets: number; factors: number };
@@ -49,7 +56,7 @@ export interface ShsWeights {
   /** Let graded results nudge factor weights. */
   autoTune: boolean;
 }
-export const DEFAULT_SHS: ShsWeights = { mix: { ecr: 25, sleeper: 25, factors: 50 }, mixLines: { ecr: 25, sleeper: 25, markets: 30, factors: 20 }, factor: {}, autoTune: true };
+export const DEFAULT_SHS: ShsWeights = { mode: "shs", lines: 25, mix: { ecr: 25, sleeper: 25, factors: 50 }, mixLines: { ecr: 25, sleeper: 25, markets: 30, factors: 20 }, factor: {}, autoTune: true };
 
 const DEFAULTS: AppSettings = {
   username: null,
