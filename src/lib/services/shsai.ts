@@ -351,7 +351,7 @@ export function shsAi(ctx: LeagueContext, rows: RankRow[], scope: RankScope, wea
     const want = new Map(byValue.map((r, i) => [r.id, i + 1]));
     const ecrOrder = new Map([...ranked].sort((a, b) => a.ecrPos! - b.ecrPos!).map((r, i) => [r.id, i + 1]));
     const key = (r: RankRow) => { const e = ecrOrder.get(r.id)!; const move = Math.max(-rankMoveLimit(e), Math.min(rankMoveLimit(e), e - want.get(r.id)!)); return e - move; };
-    const order = [...ranked].sort((a, b) => key(a) - key(b) || out.get(b.id)!.rating - out.get(a.id)!.rating);
+    const order = [...ranked].sort((a, b) => key(a) - key(b) || ecrOrder.get(a.id)! - ecrOrder.get(b.id)!);
     order.forEach((r, i) => (out.get(r.id)!.rank = i + 1));
     [...arr.filter((r) => r.ecrPos === null)].sort((a, b) => out.get(b.id)!.rating - out.get(a.id)!.rating).forEach((r, i) => (out.get(r.id)!.rank = order.length + i + 1));
   }
