@@ -8,7 +8,12 @@
  *   γ, β are fitted separately for each ranking type (week / rest of season / dynasty) and position, and only where
  *   they beat the experts out of sample. Everything else gets 0: tracked and shown, but it doesn't move the number.
  * This week, for players with betting lines, the result is blended with the points the lines imply.
+ * Expert rank is the baseline: the formula moves value by at most ±20% (lines ±15% more), and the SHS rank can
+ * move a player only a few spots from his expert rank (see rankMoveLimit).
  */
+
+/** Most spots SHS AI may move a player from his expert rank: 1 near the top, growing slowly further down (max 5). */
+export const rankMoveLimit = (ecr: number) => Math.max(1, Math.min(5, Math.round(ecr * 0.2)));
 import WEEK from "./shsResearch.json";
 import LONG from "./shsResearchLong.json";
 import type { RankScope } from "./rankings";
@@ -34,7 +39,9 @@ export const provenKeys = (scope: RankScope, pos: string) => {
 
 const clamp = (x: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, x));
 /** Largest move the formula makes on its own (before betting lines). */
-export const MAX_TILT = 0.35;
+export const MAX_TILT = 0.2;
+/** Largest move betting lines make on their own. */
+export const MAX_LINES = 0.15;
 
 export interface ShsCalc {
   rating: number;
@@ -57,8 +64,9 @@ export function shsFormula(scope: RankScope, pos: string, ecrRating: number, sec
   let rating = ecrRating * (1 + tilt);
   const lineShare = scope === "week" && market !== null ? clamp(cfg.lines, 0, 60) / 100 : 0;
   if (lineShare) {
-    parts.push({ key: "lines", effect: lineShare * (market! / Math.max(0.5, ecrRating) - 1 - tilt) });
-    rating = (1 - lineShare) * rating + lineShare * market!;
+    const eff = clamp(lineShare * (market! / Math.max(0.5, ecrRating) - 1 - tilt), -MAX_LINES, MAX_LINES);
+    parts.push({ key: "lines", effect: eff });
+    rating += ecrRating * eff;
   }
   return { rating, parts, lineShare };
 }

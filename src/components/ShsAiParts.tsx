@@ -101,15 +101,15 @@ export function MovePill({ move, pct, big }: { move: number | null; pct?: number
  * SHS AI's view as a small pill: where it ranks him vs the experts at his position (▲2, ▼1, =).
  * Tap for the exact ranks, the value difference and why.
  */
-export function AiChip({ v, ai, name, className }: { v: number | null | undefined; ai?: ShsAiT | null; name?: string; className?: string; label?: boolean }) {
+export function AiChip({ v, ai, name, className, onTap, active }: { v: number | null | undefined; ai?: ShsAiT | null; name?: string; className?: string; label?: boolean; onTap?: () => void; active?: boolean }) {
   const [open, setOpen] = useState(false);
   const move = rankMove(ai);
   if ((v === null || v === undefined) && move === null) return null;
   return (
     <>
-      <button type="button" onClick={(e) => { e.stopPropagation(); setOpen(true); }}
+      <button type="button" aria-expanded={onTap ? !!active : open} onClick={(e) => { e.stopPropagation(); if (onTap) onTap(); else setOpen((o) => !o); }}
         aria-label={move !== null ? (move === 0 ? "SHS AI ranks him where the experts do. Tap for why." : `SHS AI ranks him ${Math.abs(move)} spot${Math.abs(move) === 1 ? "" : "s"} ${move > 0 ? "higher" : "lower"} than the experts. Tap for why.`) : "SHS AI. Tap for why."}
-        className={cx("inline-flex shrink-0 items-center rounded-full transition-transform active:scale-95", className)}>
+        className={cx("inline-flex shrink-0 items-center rounded-full transition-transform active:scale-95", active && "ring-2 ring-acc/60", className)}>
         <MovePill move={move} pct={v} />
       </button>
       <Sheet open={open} onClose={() => setOpen(false)} title="SHS AI" sub={name}>

@@ -22,7 +22,7 @@ import { getTuning } from "./accuracy";
 import { marketPoints } from "../markets";
 import { DOMINATOR_AVG, type CollegeProfile } from "../cfbd";
 import RESEARCH_JSON from "./shsResearch.json";
-import { shsFormula } from "./shsModel";
+import { rankMoveLimit, shsFormula } from "./shsModel";
 
 /** Weekly research summary (scripts/research). */
 export const RESEARCH = RESEARCH_JSON as unknown as { summary: Record<string, number>; generatedAt: string; weeks: number; rows: number; seasons: number[]; projSource: string };
@@ -258,7 +258,7 @@ export function shsAi(ctx: LeagueContext, rows: RankRow[], scope: RankScope, wea
         const ex = ctx.extras.get(r.id);
         if (ex) add("sched", "Schedule ahead", (ex.outlookRos - 1) / 0.08, `${ex.outlookRos >= 1 ? "Easier" : "Harder"} than average (${Math.round((ex.outlookRos - 1) * 100)}%), playoffs ${Math.round((ex.outlookPlayoffs - 1) * 100)}%`);
         const inj = p.injury;
-        add("inj", "Injury outlook", inj === "IR" || inj === "PUP" ? -0.7 : inj === "Out" ? -0.35 : inj === "Doubtful" ? -0.2 : inj === "Questionable" ? -0.05 : 0.05, inj ? `Currently ${inj}` : "Healthy");
+        add("inj", "Injury outlook", inj === "IR" || inj === "PUP" ? -0.75 : inj === "Out" ? -0.4 : inj === "Doubtful" ? -0.25 : inj === "Questionable" ? -0.1 : 0, inj ? `Currently ${inj}` : "Healthy");
       }
       // --- dynasty ---
       if (scope === "dynasty") {
@@ -344,6 +344,16 @@ export function shsAi(ctx: LeagueContext, rows: RankRow[], scope: RankScope, wea
     });
   }
   // SHS AI rank at each position (players with an expert rank first)
-  for (const arr of byPos.values()) [...arr].sort((a, b) => (a.ecrPos === null ? 1 : 0) - (b.ecrPos === null ? 1 : 0) || out.get(b.id)!.rating - out.get(a.id)!.rating).forEach((r, i) => (out.get(r.id)!.rank = i + 1));
+  // Expert rank is the baseline: SHS AI's preferred order (by value) can move a player only a few spots from it.
+  for (const arr of byPos.values()) {
+    const ranked = arr.filter((r) => r.ecrPos !== null);
+    const byValue = [...ranked].sort((a, b) => out.get(b.id)!.rating - out.get(a.id)!.rating);
+    const want = new Map(byValue.map((r, i) => [r.id, i + 1]));
+    const ecrOrder = new Map([...ranked].sort((a, b) => a.ecrPos! - b.ecrPos!).map((r, i) => [r.id, i + 1]));
+    const key = (r: RankRow) => { const e = ecrOrder.get(r.id)!; const move = Math.max(-rankMoveLimit(e), Math.min(rankMoveLimit(e), e - want.get(r.id)!)); return e - move; };
+    const order = [...ranked].sort((a, b) => key(a) - key(b) || out.get(b.id)!.rating - out.get(a.id)!.rating);
+    order.forEach((r, i) => (out.get(r.id)!.rank = i + 1));
+    [...arr.filter((r) => r.ecrPos === null)].sort((a, b) => out.get(b.id)!.rating - out.get(a.id)!.rating).forEach((r, i) => (out.get(r.id)!.rank = order.length + i + 1));
+  }
   return out;
 }

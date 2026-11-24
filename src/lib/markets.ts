@@ -118,9 +118,11 @@ export function fitMean(stat: MarketStat, pts: { line: number; p: number }[]): n
 }
 
 /** Expected stats implied by the markets, e.g. { rec_yd: 54.2, td: 0.41 }. */
+/** Highest believable single-game line per stat; anything above is a season-long or mis-parsed market and is ignored. */
+export const GAME_MAX: Partial<Record<MarketStat, number>> = { pass_yd: 525, rush_yd: 225, rec_yd: 225, rr_yd: 275, rec: 15.5, td: 3.5, pass_td: 6.5, rush_td: 3.5, rec_td: 3.5, pass_int: 4.5 };
 export function marketMeans(lines: MarketLine[]): Partial<Record<MarketStat, number>> {
   const by = new Map<MarketStat, { line: number; p: number }[]>();
-  for (const l of lines) (by.get(l.stat) ?? by.set(l.stat, []).get(l.stat)!).push(l);
+  for (const l of lines) if (l.line <= (GAME_MAX[l.stat] ?? Infinity)) (by.get(l.stat) ?? by.set(l.stat, []).get(l.stat)!).push(l);
   const out: Partial<Record<MarketStat, number>> = {};
   for (const [stat, pts] of by) { const m = fitMean(stat, pts); if (m !== null) out[stat] = m; }
   return out;
@@ -154,5 +156,9 @@ export function marketPoints(lines: MarketLine[], proj: Record<string, number> |
     } else set(k, v);
   }
   if (means.rec_yd !== undefined && means.rec === undefined && proj?.rec && proj?.rec_yd) st.rec = proj.rec * (means.rec_yd / proj.rec_yd) ** 0.6;
-  return { pts: scoreSleeperStats(st, scoring, pos), covered: keys, means };
+  const pts = scoreSleeperStats(st, scoring, pos);
+  // Sanity check against the projection: a market can disagree, but not by 2.5× either way.
+  const base = proj ? scoreSleeperStats(proj, scoring, pos) : 0;
+  if (base > 3 && (pts > base * 2.5 || pts < base / 2.5)) return null;
+  return { pts, covered: keys, means };
 }

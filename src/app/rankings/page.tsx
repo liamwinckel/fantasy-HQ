@@ -48,9 +48,9 @@ function SortHead({ k, by, desc, onSort, children, className }: { k: "experts" |
 }
 
 /** SHS AI column: "=" or up/down ticks; tap for the exact number and why. */
-function Shs({ a, name }: { a: ShsAi | undefined; name: string }) {
+function Shs({ a, name, open, onToggle }: { a: ShsAi | undefined; name: string; open: boolean; onToggle: () => void }) {
   if (!a || a.pct === null) return <span className="text-[10px] text-muted">—</span>;
-  return <AiChip v={a.pct} ai={a} name={name} />;
+  return <AiChip v={a.pct} ai={a} name={name} onTap={onToggle} active={open} />;
 }
 
 /** Why SHS AI agrees or disagrees: each factor from −1 (worse than his rank) to +1 (better). */
@@ -178,7 +178,7 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
                 </div>
               </div>
               <div className="hidden truncate text-xs text-muted sm:block">{statLine(r, scope)}</div>
-              <div className="flex justify-center"><Shs a={ai.get(r.id)} name={r.name} /></div>
+              <div className="flex justify-center"><Shs a={ai.get(r.id)} name={r.name} open={open === r.id} onToggle={() => setOpen(open === r.id ? null : r.id)} /></div>
               <div className="text-right">
                 <div className="num font-[family-name:var(--font-display)] text-xl font-bold leading-none">{(dyn ? r.value : r.pts).toFixed(dyn ? 0 : 1)}</div>
                 {scope === "ros" && r.games > 0 && <div className="text-[10px] text-muted">{(r.pts / r.games).toFixed(1)}/g</div>}
