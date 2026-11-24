@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { AiChip } from "./ShsAiParts";
 import { createPortal } from "react-dom";
 import { Lock, X } from "lucide-react";
 import { PlayerImg, Segmented } from "@/components/client";
@@ -14,6 +15,8 @@ export interface LabPlayer {
   median: number; low: number; high: number; base: number; seasonAvg: number; last4: number; games: number;
   confidence: string; opp: string | null; onBye: boolean; matchup: number; usage: number; notes: string[];
   snapL3: number[] | null; recent: { week: number; pts: number }[]; actual?: number | null;
+  /** SHS AI ±% vs expert rank this week. */
+  ai?: number | null;
 }
 
 type View = "current" | "optimal";
@@ -247,15 +250,15 @@ function SlotSheet({ slot, index, lineup, players, byId, onPick, onClose }: {
   const cur = lineup[index] ? byId.get(lineup[index]!) : undefined;
   const options = players.filter((p) => p.eligible[index] && !p.unavailable && !p.locked && p.id !== cur?.id).sort((a, b) => b.median - a.median);
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center" role="dialog" aria-modal="true" aria-label={`Choose who plays ${slot}`}>
+    <div className="fixed inset-0 z-[65] flex items-end justify-center md:items-center" role="dialog" aria-modal="true" aria-label={`Choose who plays ${slot}`}>
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="fhq-in relative w-full max-w-md rounded-t-2xl border border-line bg-bg p-4 pb-[max(env(safe-area-inset-bottom),1rem)] shadow-2xl md:rounded-2xl">
+      <div className="fhq-in relative w-full max-w-md rounded-t-2xl border border-line bg-bg p-4 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] shadow-2xl md:rounded-2xl">
         <div className="mb-3 flex items-center gap-3">
           <span className="rounded-md bg-acc px-2.5 py-1.5 text-sm font-extrabold text-on-acc">{short(slot)}</span>
           <div className="min-w-0 flex-1"><div className="h-display text-2xl">Who plays here?</div><div className="truncate text-xs text-muted">Now: {cur ? `${cur.name} · ${cur.median.toFixed(1)}` : "empty"}</div></div>
           <button type="button" onClick={onClose} aria-label="Close" className="rounded-full bg-panel2 p-2"><X size={16} /></button>
         </div>
-        <ul className="flex max-h-[55vh] flex-col gap-1.5 overflow-y-auto">
+        <ul className="flex max-h-[55dvh] flex-col gap-1.5 overflow-y-auto">
           {options.map((p) => {
             const at = lineup.indexOf(p.id);
             return (
@@ -263,7 +266,7 @@ function SlotSheet({ slot, index, lineup, players, byId, onPick, onClose }: {
                 <button type="button" onClick={() => onPick(p.id)} className="flex w-full items-center gap-3 rounded-xl border border-line bg-panel px-3 py-2 text-left hover:border-acc">
                   <PlayerImg id={p.id} name={p.name} pos={p.pos} size={32} />
                   <span className="min-w-0 flex-1">
-                    <span className="flex items-center gap-1.5 text-sm font-semibold"><span className="truncate">{p.name}</span><InjuryChip status={p.injury} /></span>
+                    <span className="flex items-center gap-1.5 text-sm font-semibold"><span className="truncate">{p.name}</span><InjuryChip status={p.injury} /><AiChip v={p.ai} label /></span>
                     <span className="block truncate text-xs text-muted">{p.pos} · {p.onBye ? "BYE" : p.opp ? `vs ${p.opp}` : "no game"}{at >= 0 ? " · starting (they swap)" : " · bench"}</span>
                   </span>
                   <span className="text-right"><span className="num block text-sm font-bold">{p.median.toFixed(1)}</span><span className={cx("num block text-[11px] font-semibold", p.median - (cur?.median ?? 0) >= 0 ? "text-pos" : "text-neg")}>{signed(p.median - (cur?.median ?? 0))}</span></span>
@@ -299,6 +302,7 @@ function Versus({ slots, lineup, bench, byId, opponent, live, changed, onSlot, b
           <div className="flex min-w-0 items-center gap-1 text-xs font-semibold sm:text-sm">
             {p ? <><PlayerLink id={p.id} name={shortName(p.name)} className="sm:hidden" /><PlayerLink id={p.id} name={p.name} className="hidden sm:inline" /></> : <span className="text-muted">Empty</span>}
             {p && <InjuryChip status={p.injury} />}
+            {p && <AiChip v={p.ai} className="hidden sm:inline-flex" />}
           </div>
           <div className="flex items-center gap-1 truncate text-[10px] text-muted sm:text-[11px]">{p && <NflLogo team={p.team} size={11} />}<span className="truncate">{p ? `${p.team ?? p.pos} ${p.onBye ? "BYE" : p.opp ? `v ${p.opp}` : ""}` : ""}</span></div>
         </div>

@@ -10,6 +10,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { gunzipSync } from "node:zlib";
+import { parseNgs, parsePfrAdv, parseXfp } from "../src/lib/nflverse/signals";
+import { kalshiProb, normName, parseKalshiLabel, parsePolyQuestion, statFromText, type MarketLine, type MarketPlayer } from "../src/lib/markets";
 import { parseCombine, parseCsv, parseContracts, parseInjuries, parsePlayers, parseSchedule, parseSnaps, parseWeekly } from "../src/lib/nflverse/parse";
 
 const OUT = path.join(process.cwd(), "public", "data");
@@ -65,6 +67,9 @@ async function main() {
   const seasons = [String(s), String(s - 1)];
   const jobs: [string, () => Promise<void>][] = [];
   const recent = new Set<string>();
+  let sleeperAll: Record<string, Record<string, unknown>> = {};
+  const opt = async (url: string, fixture: string) => (FX && !fs.existsSync(path.join(FX, fixture)) ? "" : text(url, fixture));
+  const optGz = async (url: string, fixture: string) => (FX && !fs.existsSync(path.join(FX, fixture)) ? "" : gz(url, fixture));
   for (const yr of seasons) {
     jobs.push([`stats ${yr}`, async () => {
       const rows = parseWeekly(await text(`${REL}/stats_player/stats_player_week_${yr}.csv`, `stats_${yr}.csv`));
@@ -95,6 +100,7 @@ async function main() {
       ? fs.readFileSync(path.join(FX, "..", "sleeper", "players__nfl.json"), "utf8")
       : await (await fetch("https://api.sleeper.app/v1/players/nfl")).text();
     const all = JSON.parse(raw) as Record<string, Record<string, unknown>>;
+    sleeperAll = all;
     const out: Record<string, Record<string, unknown>> = {};
     for (const [id, p] of Object.entries(all)) {
       const pos = String(p.position ?? "");
@@ -145,6 +151,99 @@ async function main() {
     delete out._;
     for (const r of parseCsv(values)) { const id = toSleeper.get(r.fp_id); put(id, "v1", r.value_1qb); put(id, "v2", r.value_2qb); }
     write("consensus.json", JSON.stringify({ ecrDate, weeklyDate, source: "FantasyPros ECR via DynastyProcess", players: out }));
+  }]);
+
+  // ---- SHS AI signals ----
+  jobs.push(["xfp", async () => {
+    const body = await opt(`https://github.com/ffverse/ffopportunity/releases/download/latest-data/ep_weekly_${s}.csv`, `ep_weekly_${s}.csv`);
+    write(`xfp-${s}.json`, columns(body ? parseXfp(body, s) : []));
+  }]);
+  jobs.push(["next gen stats", async () => {
+    const [rec, rush, pass] = await Promise.all(["receiving", "rushing", "passing"].map((t) => optGz(`${REL}/nextgen_stats/ngs_${t}.csv.gz`, `ngs_${t}.csv.gz`)));
+    write(`ngs-${s}.json`, columns(parseNgs(rec, rush, pass, s)));
+  }]);
+  jobs.push(["pfr advanced", async () => {
+    const players = parsePlayers(await text(`${REL}/players/players.csv`, "players.csv"));
+    const pfrToGsis = new Map(players.filter((p) => p.pfr).map((p) => [p.pfr!, p.gsis]));
+    const [rec, rush, pass] = await Promise.all(["rec", "rush", "pass"].map((t) => opt(`${REL}/pfr_advstats/advstats_week_${t}_${s}.csv`, `advstats_week_${t}_${s}.csv`)));
+    write(`pfr-${s}.json`, columns(parsePfrAdv(rec, rush, pass, pfrToGsis, s)));
+  }]);
+  // Prediction-market player lines (public, no key): Kalshi and Polymarket. Open markets only = this week's games.
+  jobs.push(["markets", async () => {
+    const OFF = new Set(["QB", "RB", "WR", "TE"]);
+    const byName = new Map<string, { id: string; team: string | null }[]>();
+    for (const [id, p] of Object.entries(sleeperAll)) {
+      if (!OFF.has(String(p.position)) || !p.team) continue;
+      const k = normName(String(p.full_name ?? `${p.first_name} ${p.last_name}`));
+      (byName.get(k) ?? byName.set(k, []).get(k)!).push({ id, team: String(p.team) });
+    }
+    const resolve = (name: string, hint: string) => {
+      const c = byName.get(normName(name)) ?? [];
+      if (c.length <= 1) return c[0];
+      return c.find((x) => x.team && hint.toUpperCase().includes(x.team)) ?? null;
+    };
+    const players: Record<string, MarketPlayer> = {};
+    const counts: Record<string, number> = { kalshi: 0, polymarket: 0, unmatched: 0 };
+    const put = (src: string, name: string, hint: string, l: MarketLine) => {
+      if (!(l.p >= 0 && l.p <= 1) || !Number.isFinite(l.line)) return;
+      const hit = resolve(name, hint);
+      if (!hit) { counts.unmatched++; return; }
+      const pl = (players[hit.id] ??= { name, team: hit.team, lines: [], src: [] });
+      // Same stat & line from two venues: average them.
+      const same = pl.lines.find((x) => x.stat === l.stat && x.line === l.line);
+      if (same) same.p = Math.round(((same.p + l.p) / 2) * 1000) / 1000; else pl.lines.push({ ...l, p: Math.round(l.p * 1000) / 1000 });
+      if (!pl.src.includes(src)) pl.src.push(src);
+      counts[src]++;
+    };
+    const getJson = async (url: string) => { const r = await fetch(url, { headers: { accept: "application/json" } }); if (!r.ok) throw new Error(`${r.status} ${url}`); return r.json(); };
+    if (!FX) {
+      // Kalshi: discover NFL per-game player-prop series, then read their open markets.
+      const K = "https://api.elections.kalshi.com/trade-api/v2";
+      try {
+        const known = ["KXNFLRECYDS", "KXNFLRSHYDS", "KXNFLRUSHYDS", "KXNFLPASSYDS", "KXNFLANYTD", "KXNFLREC", "KXNFLRRYDS", "KXNFLPASSTDS", "KXNFLRECS"];
+        const series = new Map<string, string>();
+        try {
+          const ss = await getJson(`${K}/series?category=Sports`);
+          for (const x of ss.series ?? []) if (String(x.ticker).startsWith("KXNFL") && statFromText(String(x.title ?? ""))) series.set(x.ticker, x.title);
+        } catch (e) { console.warn(`kalshi series list: ${(e as Error).message}`); }
+        for (const t of known) if (!series.has(t)) series.set(t, "");
+        for (const [ticker, title] of series) {
+          let cursor = "";
+          for (let page = 0; page < 10; page++) {
+            let res;
+            try { res = await getJson(`${K}/markets?series_ticker=${ticker}&status=open&limit=1000${cursor ? `&cursor=${cursor}` : ""}`); } catch { break; }
+            for (const m of res.markets ?? []) {
+              const label = String(m.yes_sub_title || m.subtitle || m.title || "");
+              const stat = statFromText(title) ?? statFromText(String(m.title ?? "")) ?? statFromText(String(m.rules_primary ?? ""));
+              const pl = parseKalshiLabel(label) ?? parseKalshiLabel(String(m.title ?? ""));
+              const p = kalshiProb(m);
+              if (stat && pl && p !== null) put("kalshi", pl.name, String(m.event_ticker ?? ""), { stat, line: pl.line, p });
+            }
+            cursor = res.cursor || "";
+            if (!cursor) break;
+          }
+        }
+      } catch (e) { console.warn(`kalshi: ${(e as Error).message}`); }
+      // Polymarket: NFL events with player-prop markets.
+      try {
+        for (let off = 0; off < 2000; off += 500) {
+          const evs = await getJson(`https://gamma-api.polymarket.com/events?tag_slug=nfl&closed=false&active=true&limit=500&offset=${off}`);
+          if (!Array.isArray(evs) || !evs.length) break;
+          for (const ev of evs) for (const m of ev.markets ?? []) {
+            if (m.closed) continue;
+            const parse = (v: unknown) => (typeof v === "string" ? JSON.parse(v) : v) as unknown[];
+            try {
+              const outs = parse(m.outcomes).map(String), prices = parse(m.outcomePrices).map(Number);
+              const r = parsePolyQuestion(String(m.question ?? ""), outs, prices);
+              if (r) put("polymarket", r.name, `${ev.title ?? ""} ${ev.slug ?? ""}`, { stat: r.stat, line: r.line, p: r.p });
+            } catch { /* malformed market */ }
+          }
+          if (evs.length < 500) break;
+        }
+      } catch (e) { console.warn(`polymarket: ${(e as Error).message}`); }
+    }
+    console.log(`markets: ${Object.keys(players).length} players · kalshi ${counts.kalshi} · polymarket ${counts.polymarket} · unmatched ${counts.unmatched}`);
+    write("markets.json", JSON.stringify({ builtAt: new Date().toISOString(), counts, players }));
   }]);
 
   const failed: string[] = [];

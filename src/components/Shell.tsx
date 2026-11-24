@@ -103,7 +103,7 @@ function Frame({ children }: { children: ReactNode }) {
             </div>
           </header>
           <div ref={scroller} id="fhq-scroll" className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-            <main className="mx-auto w-full max-w-[1320px] px-3 pb-32 pt-5 sm:px-6 md:pb-10"><Boundary>{children}</Boundary></main>
+            <main className="app-bottom-pad mx-auto w-full max-w-[1320px] px-3 pt-5 sm:px-6"><Boundary>{children}</Boundary></main>
           </div>
         </div>
       </div>

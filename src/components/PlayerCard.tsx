@@ -43,14 +43,14 @@ export function PlayerCardProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={{ open }}>
       {children}
-      <div className={cx("fixed inset-0 z-50 transition", id ? "pointer-events-auto" : "pointer-events-none")} aria-hidden={!id}>
+      <div className={cx("fixed inset-0 z-[70] transition", id ? "pointer-events-auto" : "pointer-events-none")} aria-hidden={!id}>
         <div className={cx("absolute inset-0 bg-black/50 transition-opacity duration-300", id ? "opacity-100" : "opacity-0")} onClick={close} />
         <aside ref={swipe.ref} {...swipe.handlers} role="dialog" aria-modal="true" aria-label={data?.name ?? "Player"}
-          className={cx("absolute bottom-0 right-0 flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-2xl border border-line bg-bg shadow-2xl transition-transform duration-300 ease-out md:top-0 md:max-h-none md:w-[520px] md:rounded-none md:rounded-l-2xl",
+          className={cx("absolute bottom-0 right-0 flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-2xl border border-line bg-bg shadow-2xl transition-transform duration-300 ease-out md:top-0 md:max-h-none md:w-[520px] md:rounded-none md:rounded-l-2xl",
             id ? "translate-y-0 md:translate-x-0" : "translate-y-full md:translate-x-full md:translate-y-0")}>
           <button type="button" onClick={close} aria-label="Close player card" className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-panel2"><X size={18} /></button>
           <div className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-muted/40 md:hidden" aria-hidden />
-          <div ref={swipe.scrollRef} className="overflow-y-auto overscroll-contain">
+          <div ref={swipe.scrollRef} className="sheet-bottom-pad min-h-0 flex-1 overflow-y-auto overscroll-contain">
             {!data && !err && id && <div className="p-6"><div className="h-20 animate-pulse rounded-xl bg-panel2" /><div className="mt-4 h-40 animate-pulse rounded-xl bg-panel2" /></div>}
             {err && <p className="p-6 text-sm text-neg">{err}</p>}
             {data && <CardBody d={data} />}

@@ -7,6 +7,7 @@ import { breakouts, CLASS_LABEL, type BreakoutRow } from "@/lib/services/breakou
 import { NflLogo, Card, InjuryChip, Notice, PageHeader, Tag, cx, Info } from "@/components/ui";
 import { PlayerImg } from "@/components/client";
 import { PlayerLink } from "@/components/PlayerCard";
+import { AiChip, useShsAiMap } from "@/components/ShsAiParts";
 
 export default function BreakoutPage() {
   return <LeaguePage>{(d) => <BreakoutPageBody {...d} />}</LeaguePage>;
@@ -17,6 +18,7 @@ function BreakoutPageBody({ setup, league, ctx, sp }: LeagueData) {
   const avail = sp.avail === "fa" || sp.avail === "mine" ? sp.avail : "all";
   const yr = ["0", "1", "2"].includes(sp.yr ?? "") ? sp.yr! : "all";
   const all = breakouts(ctx);
+  const ai = useShsAiMap(ctx, ctx.valuationMode === "dynasty" ? "dynasty" : "ros");
   const rows = all.filter((r) => (pos === "ALL" || r.pos === pos) && (yr === "all" || r.yearsExp === Number(yr)) && (avail === "all" || (avail === "fa" ? r.owner === "Free agent" : r.mine))).slice(0, 40);
   const q = (patch: Record<string, string>) => `/breakouts/?${new URLSearchParams({ pos, avail, yr, ...patch }).toString()}`;
   const chip = (on: boolean) => cx("rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors", on ? "border-acc bg-acc text-on-acc" : "border-line text-muted hover:text-fg");
@@ -37,14 +39,14 @@ function BreakoutPageBody({ setup, league, ctx, sp }: LeagueData) {
       </Info>
       {rows.length === 0 && <Card><p className="text-sm text-muted">No candidates match these filters.</p></Card>}
       <div className="grid gap-4 lg:grid-cols-2">
-        {rows.map((r, i) => <BreakoutCard key={r.id} r={r} rank={i + 1} />)}
+        {rows.map((r, i) => <BreakoutCard key={r.id} r={r} rank={i + 1} ai={ai.get(r.id)?.pct} />)}
       </div>
       <Info className="">Model weights are on <Link href="/methodology" className="underline">How it&apos;s calculated</Link>. Data: Sleeper league scoring, NFLverse stats and snap counts.</Info>
     </div>
   );
 }
 
-function BreakoutCard({ r, rank }: { r: BreakoutRow; rank: number }) {
+function BreakoutCard({ r, rank, ai }: { r: BreakoutRow; rank: number; ai?: number | null }) {
   const tierStyle = r.tier === "Strong" ? "bg-acc text-on-acc" : r.tier === "Moderate" ? "border border-acc-ink text-acc-ink" : "border border-line text-muted";
   return (
     <Card>
@@ -52,7 +54,7 @@ function BreakoutCard({ r, rank }: { r: BreakoutRow; rank: number }) {
         <span className="num w-6 pt-1 text-sm font-bold text-muted">{rank}</span>
         <PlayerImg id={r.id} name={r.name} pos={r.pos} size={44} />
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2"><PlayerLink id={r.id} name={r.name} className="text-base font-bold" /><InjuryChip status={r.injury} /></div>
+          <div className="flex items-center gap-2"><PlayerLink id={r.id} name={r.name} className="text-base font-bold" /><InjuryChip status={r.injury} /><AiChip v={ai} label /></div>
           <div className="flex flex-wrap items-center gap-x-1 text-xs text-muted"><NflLogo team={r.team} size={14} />{r.pos} · {r.team} · {CLASS_LABEL[r.yearsExp]}{r.age ? ` · age ${Math.floor(r.age)}` : ""}{r.draftRound ? ` · R${r.draftRound} pick` : " · undrafted"} · <span className={r.mine ? "font-semibold text-acc-ink" : r.owner === "Free agent" ? "font-semibold text-pos" : ""}>{r.owner}</span></div>
         </div>
         <div className="text-right">

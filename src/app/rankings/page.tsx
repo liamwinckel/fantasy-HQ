@@ -5,7 +5,10 @@ import { Search } from "lucide-react";
 import { LeaguePage, useQuery, type LeagueData } from "@/components/AppData";
 import { PlayerImg, Segmented } from "@/components/client";
 import { PlayerLink } from "@/components/PlayerCard";
-import { InjuryChip, NflLogo, PageHeader, cx } from "@/components/ui";
+import { InfoButton, InjuryChip, NflLogo, PageHeader, cx } from "@/components/ui";
+import { ShsExplainer, useCollege, useShsWeights } from "@/components/ShsAiParts";
+import { accuracy, snapshotWeek } from "@/lib/services/accuracy";
+import { useEffect } from "react";
 import { formatLabel } from "@/lib/services/portfolio";
 import { rankings, type RankRow, type RankScope } from "@/lib/services/rankings";
 import { shsAi, type ShsAi } from "@/lib/services/shsai";
@@ -38,14 +41,21 @@ function Shs({ v }: { v: number | null }) {
 }
 
 /** Why SHS AI agrees or disagrees: each factor from −1 (worse than his rank) to +1 (better). */
-function Factors({ a }: { a: ShsAi }) {
-  if (!a.factors.length) return <p className="text-xs text-muted">Not enough data on this player for SHS AI factors.</p>;
+export function Factors({ a }: { a: ShsAi }) {
+  if (!a.factors.length && !a.market) return <p className="text-xs text-muted">Not enough data on this player for SHS AI factors.</p>;
+  const pc = (x: number) => `${Math.round(x * 100)}%`;
+  const rowsF = [
+    ...(a.market ? [{ key: "market", label: "Betting markets", value: a.market.value, weight: 1, detail: `Markets imply ${a.market.pts.toFixed(1)} pts in your scoring (${a.market.covered.map((c) => MKT[c] ?? c).join(", ")})` }] : []),
+    ...a.factors,
+  ];
   return (
+    <>
+    <p className="mb-2 text-[11px] text-muted">Blend: {pc(a.blend.expert)} expert rank{a.blend.market ? ` · ${pc(a.blend.market)} betting markets` : ""} · {pc(a.blend.factors)} SHS factors</p>
     <ul className="flex flex-col gap-1.5">
-      {a.factors.map((f) => (
+      {rowsF.map((f) => (
         <li key={f.key} className="text-[11px]">
           <div className="grid grid-cols-[minmax(0,1fr)_6rem_2.5rem] items-center gap-2">
-            <span className="font-semibold">{f.label}{f.weight > 1 ? " ×1.5" : ""}</span>
+            <span className="font-semibold">{f.label}{f.key !== "market" && f.weight !== 1 ? ` ×${f.weight}` : ""}</span>
             <span className="relative h-2 rounded-full bg-panel2">
               <span className="absolute inset-y-0 left-1/2 w-px bg-line" />
               <span className={cx("absolute inset-y-0 rounded-full", f.value >= 0 ? "left-1/2 bg-pos" : "right-1/2 bg-neg")} style={{ width: `${Math.abs(f.value) * 50}%` }} />
@@ -56,8 +66,10 @@ function Factors({ a }: { a: ShsAi }) {
         </li>
       ))}
     </ul>
+    </>
   );
 }
+const MKT: Record<string, string> = { pass_yd: "pass yds", rush_yd: "rush yds", rec_yd: "rec yds", rr_yd: "rush+rec yds", rec: "receptions", td: "anytime TD", pass_td: "pass TDs", rush_td: "rush TDs", rec_td: "rec TDs", pass_int: "INTs" };
 
 function RankingsBody({ league, ctx, sp }: LeagueData) {
   const { set } = useQuery();
@@ -65,17 +77,29 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
   const w0 = Math.min(ctx.currentWeek, ctx.lastWeek);
   const all = useMemo(() => rankings(ctx, scope), [ctx, scope]);
   const wx = useAsync(() => (scope === "week" ? weekWeather(ctx.games, w0) : Promise.resolve(null)), [ctx, scope, w0]);
-  const ai = useMemo(() => shsAi(ctx, all, scope, wx.data), [ctx, all, scope, wx.data]);
+  const college = useCollege(ctx, scope === "dynasty" ? all.slice(0, 400) : []);
+  const weights = useShsWeights();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const ai = useMemo(() => shsAi(ctx, all, scope, wx.data, { college }), [ctx, all, scope, wx.data, college, weights]);
+  // Save this week's rankings (before kickoff) so SHS AI can be graded against what actually happens.
+  useEffect(() => { if (scope === "week" && !wx.loading) snapshotWeek(ctx, all, ai).catch(() => {}); }, [ctx, all, ai, scope, wx.loading]);
+  const acc = useAsync(() => accuracy(ctx), [ctx]);
+  const [aiInfo, setAiInfo] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
   const [pos, setPos] = useState("ALL");
   const [own, setOwn] = useState<"all" | "fa" | "mine">("all");
-  const [by, setBy] = useState<"experts" | "ai" | "pts">("experts");
+  const [by, setBy] = useState<"experts" | "ai">("experts");
   const [q, setQ] = useState("");
   const [limit, setLimit] = useState(75);
   const positions = ["ALL", ...["QB", "RB", "WR", "TE", "K", "DEF", "DL", "LB", "DB"].filter((p) => all.some((r) => r.pos === p))];
-  const rows = all
-    .filter((r) => (pos === "ALL" || r.pos === pos) && (own === "all" || (own === "fa" ? r.owner === "Free agent" : r.mine)) && (!q || r.name.toLowerCase().includes(q.toLowerCase())))
-    .sort((a, b) => (by === "pts" ? b.pts - a.pts : by === "ai" ? ai.get(b.id)!.rating - ai.get(a.id)!.rating : a.rank - b.rank));
+  // Ranks come from the full list, so filters (position, owner, search) never renumber players.
+  const ranked = useMemo(() => {
+    const ecr = [...all].sort((a, b) => a.rank - b.rank);
+    const byAi = [...all].sort((a, b) => (a.ecrPos === null ? 1 : 0) - (b.ecrPos === null ? 1 : 0) || ai.get(b.id)!.rating - ai.get(a.id)!.rating);
+    return { ecr, ai: byAi, ecrN: new Map(ecr.map((r, i) => [r.id, i + 1])), aiN: new Map(byAi.map((r, i) => [r.id, i + 1])) };
+  }, [all, ai]);
+  const rows = ranked[by === "ai" ? "ai" : "ecr"]
+    .filter((r) => (pos === "ALL" || r.pos === pos) && (own === "all" || (own === "fa" ? r.owner === "Free agent" : r.mine)) && (!q || r.name.toLowerCase().includes(q.toLowerCase())));
   const dates = ctx.consensusDates;
   const dyn = scope === "dynasty";
   const numLabel = dyn ? "Value" : "Pts";
@@ -85,9 +109,7 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
         info={<>
           <b>ECR</b> (default order) = FantasyPros&apos; expert consensus, the average of dozens of analysts, via DynastyProcess{dates ? ` (updated ${scope === "week" ? dates.weekly : dates.ecr})` : ""}.
           {" "}<b>{dyn ? "Value" : "Pts"}</b> = {dyn ? <>dynasty trade value in this league (0–100{ctx.superflex ? ", superflex" : ""})</> : <>Sleeper&apos;s projection in your scoring, {scope === "week" ? `Week ${w0}` : `Weeks ${w0}–${ctx.lastWeek}`}</>}.
-          {" "}<b>SHS AI</b> = 75% ECR + 25% SHS factors, shown as how far it moves him: <b className="text-pos">+</b> = the factors say he&apos;s better than his expert rank, <b className="text-neg">−</b> = worse (±25% max).
-          {" "}Factors: points per game, snap share, advanced metrics (opportunity share, efficiency, usage trend) and the projection{scope === "week" ? "; plus weather (Open-Meteo forecast at kickoff), injuries to him and his QB or teammates, defensive matchup and the Vegas team total" : scope === "ros" ? "; plus schedule ahead and injury outlook" : "; plus age cliff, team situation & outlook, coaching stability, usage, and combine & draft profile"}.
-          {" "}Tap a player to see each factor.
+          {" "}<b>SHS</b> = SHS AI&apos;s agreement with the experts: <b className="text-pos">+</b> = better than his expert rank, <b className="text-neg">−</b> = worse. Tap the ⓘ on the SHS column for what goes into it, or a player to see each factor.
         </>}>
         <Segmented label="Span" value={scope} onChange={(v) => { set({ scope: v === "week" ? undefined : v }, true); setLimit(75); }}
           options={[{ value: "week", label: `Week ${w0}` }, { value: "ros", label: "Rest of season" }, { value: "dynasty", label: "Dynasty" }]} />
@@ -102,23 +124,28 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
           {positions.map((p) => <button key={p} type="button" onClick={() => setPos(p)} className={cx("rounded-full px-3 py-1 text-xs font-semibold", pos === p ? "bg-acc text-on-acc" : "bg-panel2 text-muted")}>{p === "ALL" ? "All" : p}</button>)}
         </div>
         <div className="flex flex-wrap items-center gap-1">
-          {([["experts", "ECR"], ["ai", "SHS AI"], ["pts", dyn ? "Value" : "Projection"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => setBy(k)} className={cx("rounded-full px-3 py-1 text-xs font-semibold", by === k ? "bg-fg text-bg" : "bg-panel2 text-muted")}>{l}</button>)}
+          <span className="mr-1 text-[11px] font-semibold text-muted">Order</span>
+          {([["experts", "ECR"], ["ai", "SHS AI"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => setBy(k)} className={cx("rounded-full px-3 py-1 text-xs font-semibold", by === k ? "bg-fg text-bg" : "bg-panel2 text-muted")}>{l}</button>)}
           <span className="mx-1 h-4 w-px bg-line" />
           {([["all", "Everyone"], ["fa", "Free agents"], ["mine", "My team"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => setOwn(k)} className={cx("rounded-full px-3 py-1 text-xs font-semibold", own === k ? "bg-fg text-bg" : "bg-panel2 text-muted")}>{l}</button>)}
         </div>
       </div>
 
+      {acc.data && <TrackRecord a={acc.data} />}
+
       <section className="overflow-hidden rounded-xl border border-line bg-panel">
         <div className="grid grid-cols-[2.25rem_minmax(0,1fr)_3.25rem_3.5rem] items-center gap-2 border-b border-line px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted sm:grid-cols-[2.5rem_minmax(0,1fr)_minmax(0,14rem)_4rem_4.5rem] sm:px-4">
-          <span>{by === "experts" ? "ECR" : by === "ai" ? "AI" : "#"}</span><span>Player</span><span className="hidden sm:block">{dyn ? "Profile" : "Projected stats"}</span><span className="text-center">SHS AI</span><span className="text-right">{numLabel}</span>
+          <span>{by === "experts" ? "ECR" : "AI"}</span><span>Player</span><span className="hidden sm:block">{dyn ? "Profile" : "Projected stats"}</span>
+          <span className="flex items-center justify-center gap-1">SHS<InfoButton open={aiInfo} onClick={() => setAiInfo(!aiInfo)} label="What is SHS AI?" /></span><span className="text-right">{numLabel}</span>
         </div>
+        {aiInfo && <div className="fhq-in border-b border-line bg-panel2/40 px-3 py-3 sm:px-4"><ShsExplainer scope={scope} /></div>}
         <ul className="divide-y divide-line">
-          {rows.slice(0, limit).map((r, i) => (
+          {rows.slice(0, limit).map((r) => (
             <Fragment key={r.id}>
             <li onClick={() => setOpen(open === r.id ? null : r.id)} className={cx("cursor-pointer", "grid grid-cols-[2.25rem_minmax(0,1fr)_3.25rem_3.5rem] items-center gap-2 px-3 py-2 sm:grid-cols-[2.5rem_minmax(0,1fr)_minmax(0,14rem)_4rem_4.5rem] sm:px-4", r.mine && "bg-acc-soft")}>
               <div className="text-center">
-                <div className="num text-sm font-bold">{pos === "ALL" ? i + 1 : by === "experts" ? (r.ecrPos ?? "–") : by === "ai" ? ai.get(r.id)!.rank : r.shsPos}</div>
-                <div className="text-[9px] font-semibold text-muted">{r.pos}{by === "experts" ? r.ecrPos ?? "" : by === "ai" ? ai.get(r.id)!.rank : r.shsPos}</div>
+                <div className="num text-sm font-bold">{by === "experts" ? (r.ecrPos !== null ? ranked.ecrN.get(r.id) : "–") : ranked.aiN.get(r.id)}</div>
+                <div className="text-[9px] font-semibold text-muted">{r.pos}{by === "experts" ? r.ecrPos ?? "–" : ai.get(r.id)!.rank}</div>
               </div>
               <div className="flex min-w-0 items-center gap-2.5">
                 <PlayerImg id={r.id} name={r.name} pos={r.pos} size={34} />
@@ -151,5 +178,24 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
         {rows.length === 0 && <p className="p-5 text-sm text-muted">No players match.</p>}
       </section>
     </div>
+  );
+}
+
+function TrackRecord({ a }: { a: NonNullable<Awaited<ReturnType<typeof accuracy>>> }) {
+  const best = Math.max(a.experts, a.shs, a.sleeper);
+  const cell = (l: string, v: number) => (
+    <div className={cx("rounded-lg px-2 py-1.5 text-center", v === best ? "bg-pos/15" : "bg-panel2")}>
+      <div className={cx("num text-lg font-bold leading-none", v === best && "text-pos")}>{v.toFixed(1)}%</div><div className="mt-0.5 text-[10px] text-muted">{l}</div>
+    </div>
+  );
+  return (
+    <section className="rounded-xl border border-line bg-panel p-3">
+      <div className="mb-2 flex items-baseline justify-between gap-2">
+        <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted">Weekly track record</h2>
+        <span className="text-[11px] text-muted">{a.weeks.length} week{a.weeks.length === 1 ? "" : "s"} · {a.pairs.toLocaleString()} matchups</span>
+      </div>
+      <div className="grid grid-cols-3 gap-2">{cell("Experts", a.experts)}{cell("SHS AI", a.shs)}{cell("Projection", a.sleeper)}</div>
+      <p className="mt-2 text-[11px] text-muted">How often each ranking put the higher scorer first, comparing every pair of players at a position (saved on this device before kickoff each week).{a.weeks.length >= 3 ? " SHS AI is now tuning its factor weights from these results." : " Factor auto-tuning starts after 3 graded weeks."}</p>
+    </section>
   );
 }

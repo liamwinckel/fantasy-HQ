@@ -8,6 +8,7 @@ import { applyKeeperBonus, blendWithMarket, computeValues, replacementLevels, ty
 import { optimizeLineup, lineupTotal, scoreStarters, type SlotAssignment } from "../engine/lineup";
 import { simulateSeason, type SimResult, type TeamWeek } from "../engine/simulate";
 import { classifyTeams, type Classification, type TeamClass, type TeamMetrics } from "../engine/classify";
+import { emptySignals, loadSignals, type Signals } from "./signals";
 import { buildPicks, type PickAsset, type Tier } from "../engine/picks";
 import { easternToEpoch } from "../time";
 import { getSettings, type Mode } from "../settings";
@@ -97,6 +98,8 @@ export interface LeagueContext {
   consensusDates: { ecr: string; weekly: string } | null;
   /** Sleeper's projected stat lines: week → player → stats (Sleeper keys). */
   projStats: Map<number, Map<string, Record<string, number>>>;
+  /** SHS AI inputs: expected points, Next Gen Stats, PFR charting, prediction markets, practice reports. */
+  signals: Signals;
   /** NFLverse weekly stat lines for this season (all players). */
   stats: WeekStat[];
   logs: Map<string, GameLog[]>;
@@ -606,10 +609,12 @@ async function buildLeagueContext(
   const stale = [stateR, leagueR, rostersR].some((r) => r.stale);
   if (stale) warnings.push("Sleeper could not be reached; showing the last saved data.");
 
+  const signals = await loadSignals(season, injNowR?.data ?? [], Math.min(currentWeek, lastWeek), force).catch(() => emptySignals());
+
   const out: LeagueContext = {
     league, format, valuationMode, scoring: scoringLabel(league.scoring_settings), superflex: isSuperflex(league.roster_positions),
     teamsCount, currentWeek, playoffStart, lastWeek, inPlayoffs, seasonOver, teams, myRosterId, players, projections, values,
-    replacement, waiverLevel, consensus: cons, consensusDates: consR ? { ecr: consR.data.ecrDate, weekly: consR.data.weeklyDate } : null, projStats, stats, logs, lineups, weekStrength, sim, remainingSchedule: Object.fromEntries(remaining.map((r) => [r.week, r.games])), classifications, picks, matchupsThisWeek: thisWeekMatchups, matchupsByWeek: matchupWeeks, healthyStrength, showClasses, extras, nflOpponents: opponents, liveScore,
+    replacement, waiverLevel, consensus: cons, consensusDates: consR ? { ecr: consR.data.ecrDate, weekly: consR.data.weeklyDate } : null, projStats, stats, logs, signals, lineups, weekStrength, sim, remainingSchedule: Object.fromEntries(remaining.map((r) => [r.week, r.games])), classifications, picks, matchupsThisWeek: thisWeekMatchups, matchupsByWeek: matchupWeeks, healthyStrength, showClasses, extras, nflOpponents: opponents, liveScore,
     fetchedAt: Math.min(rostersR.fetchedAt, leagueR.fetchedAt), stale, warnings, keeperSurplus: new Map(), games,
     prevCoach: new Map((prevSchedR?.data ?? []).flatMap((g) => [[g.home, g.homeCoach ?? ""], [g.away, g.awayCoach ?? ""]] as [string, string][]).filter(([, c]) => c)),
     combine: combineR?.data ?? new Map(),

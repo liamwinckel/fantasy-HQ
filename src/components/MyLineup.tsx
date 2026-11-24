@@ -7,8 +7,11 @@ import { lineupSwaps, projectionFor, weekKind, type TeamWeek } from "@/lib/servi
 import { canFill } from "@/lib/engine/positions";
 import { optimizeLineup } from "@/lib/engine/lineup";
 import { LineupLab, type LabPlayer } from "./LineupLab";
+import { useShsAiMap } from "./ShsAiParts";
 
 export function MyLineup({ ctx, me, week, onTotal, opponent }: { ctx: LeagueContext; me: TeamInfo; week: number; onTotal?: (t: number) => void; opponent?: TeamWeek | null }) {
+  const ai = useShsAiMap(ctx, "week");
+  const thisWeek = week === Math.min(ctx.currentWeek, ctx.lastWeek);
   const data = useMemo(() => {
     const kind = weekKind(ctx, week);
     const lu = ctx.lineups.get(me.rosterId)!;
@@ -22,7 +25,7 @@ export function MyLineup({ ctx, me, week, onTotal, opponent }: { ctx: LeagueCont
       const snaps = log.slice(-3).map((g) => g.snapPct).filter((x): x is number => x !== null);
       const opp = p.team ? ctx.nflOpponents.get(p.team)?.get(week) ?? null : null;
       return {
-        id: pid, name: p.name, pos: p.pos, team: p.team, injury: p.injury,
+        id: pid, name: p.name, pos: p.pos, team: p.team, injury: p.injury, ai: thisWeek ? ai.get(pid)?.pct ?? null : null,
         eligible: slots.map((s) => canFill(s, p.positions)),
         unavailable: me.reserve.includes(pid) ? "IR slot" : me.taxi.includes(pid) ? "Taxi" : null,
         locked: kind === "current" && lu.locked.includes(pid), median: pw.median, low: pw.low, high: pw.high, base: pr.base, seasonAvg: pr.seasonAvg, last4: pr.last4Avg,
@@ -45,7 +48,7 @@ export function MyLineup({ ctx, me, week, onTotal, opponent }: { ctx: LeagueCont
 
     return { slots, players, current, optimal, swaps };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ctx, me, week]);
+  }, [ctx, me, week, ai, thisWeek]);
   return (
     <LineupLab key={`${week}:${me.rosterId}`} {...data} rosterSlots={ctx.league.roster_positions.filter((s) => s !== "BN").join(" · ")} week={week} onTotal={onTotal} opponent={opponent} myName={me.name} live={weekKind(ctx, week) === "current"} />
   );

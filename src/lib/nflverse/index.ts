@@ -44,3 +44,17 @@ export const consensus = (force = false) =>
 export type { CombineRow } from "./parse";
 export const combine = (force = false) =>
   cached("nflverse:combine", "nflverse", 24 * HOUR, get("combine.json"), (b) => new Map(fromColumns<import("./parse").CombineRow>(b).map((c) => [c.gsis, c])), { force });
+
+// ---- SHS AI signals (all optional: a missing file just drops that factor) ----
+import type { NgsRow, PfrRow, XfpRow } from "./signals";
+import type { MarketsFile } from "../markets";
+export type { NgsRow, PfrRow, XfpRow };
+export const xfp = (season: string, force = false) =>
+  cached(`nflverse:xfp:${season}`, "nflverse", 6 * HOUR, get(`xfp-${season}.json`), (b) => fromColumns<XfpRow>(b), { force });
+export const ngs = (season: string, force = false) =>
+  cached(`nflverse:ngs:${season}`, "nflverse", 6 * HOUR, get(`ngs-${season}.json`), (b) => new Map(fromColumns<NgsRow>(b).map((r) => [r.gsis, r])), { force });
+export const pfrAdv = (season: string, force = false) =>
+  cached(`nflverse:pfr:${season}`, "nflverse", 6 * HOUR, get(`pfr-${season}.json`), (b) => new Map(fromColumns<PfrRow>(b).map((r) => [r.gsis, r])), { force });
+/** Prediction-market lines; refreshed hourly on game days, so cache briefly. */
+export const markets = (force = false) =>
+  cached("data:markets", "nflverse", 20 * 60_000, get("markets.json"), (b) => JSON.parse(b) as MarketsFile, { force });

@@ -26,14 +26,14 @@ export function TeamPeekProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={{ open }}>
       {children}
-      <div className={cx("fixed inset-0 z-40 transition", rid !== null ? "pointer-events-auto" : "pointer-events-none")} aria-hidden={rid === null}>
+      <div className={cx("fixed inset-0 z-[60] transition", rid !== null ? "pointer-events-auto" : "pointer-events-none")} aria-hidden={rid === null}>
         <div className={cx("absolute inset-0 bg-black/50 transition-opacity duration-300", rid !== null ? "opacity-100" : "opacity-0")} onClick={() => setRid(null)} />
         <aside ref={swipe.ref} {...swipe.handlers} role="dialog" aria-modal="true" aria-label="Team"
-          className={cx("absolute bottom-0 right-0 flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-2xl border border-line bg-bg shadow-2xl transition-transform duration-300 ease-out md:top-0 md:max-h-none md:w-[560px] md:rounded-none md:rounded-l-2xl",
+          className={cx("absolute bottom-0 right-0 flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-2xl border border-line bg-bg shadow-2xl transition-transform duration-300 ease-out md:top-0 md:max-h-none md:w-[560px] md:rounded-none md:rounded-l-2xl",
             rid !== null ? "translate-y-0 md:translate-x-0" : "translate-y-full md:translate-x-full md:translate-y-0")}>
           <button type="button" onClick={() => setRid(null)} aria-label="Close team" className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-panel2"><X size={18} /></button>
           <div className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-muted/40 md:hidden" aria-hidden />
-          <div ref={swipe.scrollRef} className="overflow-y-auto overscroll-contain">{rid !== null && <TeamBody rosterId={rid} />}</div>
+          <div ref={swipe.scrollRef} className="sheet-bottom-pad min-h-0 flex-1 overflow-y-auto overscroll-contain">{rid !== null && <TeamBody rosterId={rid} />}</div>
         </aside>
       </div>
     </Ctx.Provider>
@@ -102,6 +102,7 @@ function TeamBody({ rosterId }: { rosterId: number }) {
           )}
         </div>
       )}
+      {dyn && <DraftCapital rosterId={rosterId} />}
       {groups.map(({ g, list }) => (
         <section key={g} className="border-t border-line px-5 py-3">
           <h3 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted">{g}</h3>
@@ -126,5 +127,48 @@ function TeamBody({ rosterId }: { rosterId: number }) {
       ))}
       <Info className="px-5">Value = SHS trade value, 0–100 in this league. Tap a player for their card.</Info>
     </div>
+  );
+}
+
+/** Dynasty: every draft pick this team owns, by year, with where it came from and its trade value. */
+function DraftCapital({ rosterId }: { rosterId: number }) {
+  const { ctx } = useApp();
+  if (!ctx) return null;
+  const own = ctx.picks.filter((k) => k.ownerRosterId === rosterId).sort((a, b) => a.season.localeCompare(b.season) || a.round - b.round || (a.estimatedSlot ?? 99) - (b.estimatedSlot ?? 99));
+  const byYear = new Map<string, typeof own>();
+  for (const k of own) (byYear.get(k.season) ?? byYear.set(k.season, []).get(k.season)!).push(k);
+  const total = own.reduce((a, k) => a + k.value, 0);
+  const ranks = ctx.teams.map((t) => ({ r: t.rosterId, v: ctx.picks.filter((k) => k.ownerRosterId === t.rosterId).reduce((a, k) => a + k.value, 0) })).sort((a, b) => b.v - a.v);
+  const rank = ranks.findIndex((x) => x.r === rosterId) + 1;
+  const firsts = own.filter((k) => k.round === 1).length;
+  const name = (rid: number) => ctx.teams.find((t) => t.rosterId === rid)?.name ?? `Team ${rid}`;
+  return (
+    <section className="border-t border-line px-5 py-3">
+      <div className="mb-2 flex items-baseline justify-between gap-2">
+        <h3 className="text-[11px] font-bold uppercase tracking-widest text-muted">Draft capital</h3>
+        <span className="text-xs text-muted">{own.length} picks · {firsts} first{firsts === 1 ? "" : "s"} · {rank ? `${ord(rank)} in league` : ""}</span>
+      </div>
+      {own.length === 0 && <p className="text-sm text-muted">No draft picks owned.</p>}
+      <div className="flex flex-col gap-2">
+        {[...byYear.entries()].map(([yr, list]) => (
+          <div key={yr} className="rounded-xl bg-panel p-2.5">
+            <div className="mb-1.5 flex items-center justify-between text-xs"><b>{yr}</b><span className="num text-muted">value {list.reduce((a, k) => a + k.value, 0).toFixed(0)}</span></div>
+            <div className="flex flex-wrap gap-1.5">
+              {list.map((k) => {
+                const traded = k.originalRosterId !== rosterId;
+                return (
+                  <span key={k.key} title={traded ? `From ${name(k.originalRosterId)}` : "Own pick"}
+                    className={cx("rounded-lg border px-2 py-1 text-xs font-semibold", k.round === 1 ? "border-acc/60 bg-acc-soft text-acc-ink" : "border-line bg-panel2")}>
+                    {`Rd ${k.round} · ${k.tier}`}{traded && <span className="ml-1 font-normal text-muted">via {name(k.originalRosterId)}</span>}
+                    <span className="num ml-1.5 text-muted">{k.value.toFixed(0)}</span>
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+      {own.length > 0 && <p className="mt-1.5 text-[11px] text-muted">Total pick value {total.toFixed(0)}. Tiers (early/mid/late) are estimated from each original owner's projected finish.</p>}
+    </section>
   );
 }

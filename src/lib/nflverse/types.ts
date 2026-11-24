@@ -59,5 +59,5 @@ export interface Contract {
   capPct: number; // APY as share of the cap
 }
 
-export interface InjuryReport { gsis: string; season: number; week: number; status: string; injury: string }
+export interface InjuryReport { gsis: string; season: number; week: number; status: string; injury: string; practice?: string }
 

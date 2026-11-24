@@ -36,10 +36,23 @@ export async function kvSet(row: Row): Promise<void> {
   try { await tx("readwrite", (s) => s.put(row)); } catch { /* private mode / quota: memory copy is enough */ }
 }
 
+/** Clears cached data. Keys starting "keep:" (your own history, e.g. SHS AI accuracy) survive. */
 export async function kvClear(): Promise<void> {
-  mem.clear();
+  for (const k of [...mem.keys()]) if (!k.startsWith("keep:")) mem.delete(k);
   if (!hasIdb()) return;
-  try { await tx("readwrite", (s) => s.clear()); } catch { /* ignore */ }
+  try {
+    const keys = await tx<IDBValidKey[]>("readonly", (s) => s.getAllKeys());
+    for (const k of keys) if (!String(k).startsWith("keep:")) await tx("readwrite", (s) => s.delete(k));
+  } catch { /* ignore */ }
+}
+
+/** All rows whose key starts with prefix. */
+export async function kvList(prefix: string): Promise<Row[]> {
+  if (!hasIdb()) return [...mem.values()].filter((r) => r.key.startsWith(prefix));
+  try {
+    const rows = await tx<Row[]>("readonly", (s) => s.getAll(IDBKeyRange.bound(prefix, prefix + "\uffff")) as IDBRequest<Row[]>);
+    return rows;
+  } catch { return [...mem.values()].filter((r) => r.key.startsWith(prefix)); }
 }
 
 export async function kvTimes(prefix: string): Promise<number[]> {

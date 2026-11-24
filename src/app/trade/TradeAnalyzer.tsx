@@ -10,6 +10,7 @@ import { getLeagueContext } from "@/lib/services/league";
 import { useApp } from "@/components/AppData";
 import { rankings } from "@/lib/services/rankings";
 import { shsAi, type ShsAi } from "@/lib/services/shsai";
+import { useShsWeights } from "@/components/ShsAiParts";
 
 type Tier = "early" | "mid" | "late";
 export interface Asset {
@@ -35,11 +36,13 @@ export function TradeAnalyzer({ leagueId, mode, me, teams, initialPartner, initi
   const mine = teams.find((t) => t.rosterId === me)!;
   const theirs = teams.find((t) => t.rosterId === partner);
   // SHS AI on the same horizon as the league: dynasty for dynasty, rest of season for redraft/keeper.
+  const shsW = useShsWeights();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const ai = useMemo(() => {
     if (!ctx) return new Map<string, ShsAi>();
     const scope = mode === "dynasty" ? "dynasty" : "ros";
     return shsAi(ctx, rankings(ctx, scope), scope, null);
-  }, [ctx, mode]);
+  }, [ctx, mode, shsW]);
 
   useEffect(() => {
     if (!aSends.length && !bSends.length) { setResult(null); return; }

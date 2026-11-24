@@ -260,4 +260,22 @@ describe.skipIf(!have)("league context on fixtures", () => {
       }
     }
   });
+
+  it("weekly SHS AI blends prediction markets when a player has lines", async () => {
+    const { rankings } = await import("@/lib/services/rankings");
+    const { shsAi } = await import("@/lib/services/shsai");
+    const ctx = await mod.getLeagueContext("fx3", { userId: "389682598735060992" });
+    const rows = rankings(ctx, "week").filter((r) => r.ecrPos !== null && ["WR", "RB"].includes(r.pos));
+    const target = rows[0];
+    const proj = ctx.projStats.get(Math.min(ctx.currentWeek, ctx.lastWeek))?.get(target.id);
+    ctx.signals.markets = { builtAt: new Date().toISOString(), counts: {}, players: { [target.id]: { name: target.name, team: target.team, src: ["kalshi"], lines: [{ stat: "rec_yd", line: Math.round((proj?.rec_yd ?? 50) * 2), p: 0.6 }] } } };
+    const a = shsAi(ctx, rankings(ctx, "week"), "week", null).get(target.id)!;
+    ctx.signals.markets = null;
+    expect(a.market).not.toBeNull();
+    expect(a.blend.market).toBeCloseTo(0.3);
+    // Markets imply roughly double his projected receiving yards → more points than Sleeper projects.
+    expect(a.market!.pts).toBeGreaterThan(target.pts);
+    expect(Math.abs(a.market!.value)).toBeLessThanOrEqual(1);
+    expect(Math.abs(a.pct!)).toBeLessThanOrEqual(50);
+  });
 });

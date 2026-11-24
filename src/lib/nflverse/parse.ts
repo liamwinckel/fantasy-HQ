@@ -100,5 +100,16 @@ export function parseContracts(body: string): Contract[] {
 
 export const parseInjuries = (body: string): InjuryReport[] =>
   parseCsv(body)
-        .filter((r) => r.game_type === "REG" && r.gsis_id && r.report_status && r.report_status !== "NA")
-        .map((r) => ({ gsis: r.gsis_id, season: n(r.season), week: n(r.week), status: r.report_status, injury: r.report_primary_injury || "" }));
+        .filter((r) => r.game_type === "REG" && r.gsis_id && ((r.report_status && r.report_status !== "NA") || (r.practice_status && r.practice_status !== "NA")))
+        .map((r) => ({ gsis: r.gsis_id, season: n(r.season), week: n(r.week), status: r.report_status && r.report_status !== "NA" ? r.report_status : "",
+          injury: r.report_primary_injury || r.practice_primary_injury || "", practice: practiceCode(r.practice_status, r.practice_primary_injury) }));
+
+/** Practice participation: DNP / LP (limited) / FP (full); "" when not listed or a rest day. */
+export function practiceCode(status: string | undefined, injury: string | undefined): string {
+  if (!status || status === "NA") return "";
+  if (/not injury related|rest/i.test(injury ?? "")) return "";
+  if (/did not/i.test(status)) return "DNP";
+  if (/limited/i.test(status)) return "LP";
+  if (/full/i.test(status)) return "FP";
+  return "";
+}

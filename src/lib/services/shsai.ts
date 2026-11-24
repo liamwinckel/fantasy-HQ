@@ -1,5 +1,6 @@
 /**
- * SHS AI score: 75% FantasyPros expert consensus (ECR), 25% SHS factors.
+ * SHS AI score: expert consensus (ECR) blended with SHS factors and, for the week ahead, prediction-market lines.
+ *   Default: 75% ECR / 25% factors. Weekly with market lines: 50% ECR / 30% markets / 20% factors (Settings → SHS AI).
  *
  * Each factor scores the player from −1 (points to him doing worse than his expert rank) to +1 (better),
  * compared with players ranked around him at his position. The factors are averaged (F), and
@@ -16,9 +17,28 @@ import type { LeagueContext } from "./league";
 import type { RankRow, RankScope } from "./rankings";
 import type { GameWeather } from "../weather";
 import { defenseTable } from "./stats";
+import { DEFAULT_SHS, getSettings } from "../settings";
+import { getTuning } from "./accuracy";
+import { marketPoints } from "../markets";
+import { DOMINATOR_AVG, type CollegeProfile } from "../cfbd";
 
 export interface Factor { key: string; label: string; value: number; detail: string; weight: number }
-export interface ShsAi { pct: number | null; rating: number; rank: number; factors: Factor[] }
+export interface ShsAi {
+  pct: number | null; rating: number; rank: number; factors: Factor[];
+  /** Weekly: points the prediction markets imply in this league's scoring, and which stats they covered. */
+  market?: { pts: number; value: number; covered: string[] } | null;
+  /** The blend used: share of experts / markets / factors (sums to 1). */
+  blend: { expert: number; market: number; factors: number };
+}
+export interface ShsOptions { college?: Map<string, CollegeProfile> | null }
+
+/** Plain-language list of what SHS AI looks at, by scope (no data sources). */
+export const SHS_METRICS: Record<RankScope | "all", string[]> = {
+  all: ["Points per game", "Snap share", "Opportunity share (targets, carries, dropbacks)", "Efficiency per opportunity", "Usage trend", "Expected fantasy points from his opportunities, and over/under-performance", "Player-tracking: separation, yards after catch over expected, rush yards over expected, completion % over expected", "Charting: yards after contact, broken tackles, drops, rating when targeted, bad throws, pressure", "Projected points vs a typical player at his rank"],
+  week: ["Prediction-market player lines (yards, receptions, touchdowns) turned into fantasy points in your scoring", "Weather at kickoff (wind, rain, snow)", "Injury status and this week's practice participation", "Injuries to his QB or teammates ahead of him", "Defensive matchup", "Team implied points", "Game script (point spread)"],
+  ros: ["Strength of schedule ahead and in the fantasy playoffs", "Injury outlook"],
+  dynasty: ["Age vs his position's age cliff", "Team offense quality and trend", "Head-coach continuity", "Long-term usage", "Draft capital and athletic testing (speed score)", "College production share (optional)"],
+};
 
 const clamp = (x: number, lo = -1, hi = 1) => Math.max(lo, Math.min(hi, x));
 const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
@@ -27,8 +47,11 @@ const pctile = (arr: number[], v: number) => (arr.length ? arr.filter((x) => x <
 const CLIFF: Record<string, number> = { RB: 27, WR: 30, TE: 30, QB: 34 };
 const OUT = ["Out", "IR", "PUP", "NFI", "Sus", "Doubtful"];
 
-export function shsAi(ctx: LeagueContext, rows: RankRow[], scope: RankScope, weather: Map<string, GameWeather> | null): Map<string, ShsAi> {
+export function shsAi(ctx: LeagueContext, rows: RankRow[], scope: RankScope, weather: Map<string, GameWeather> | null, opts: ShsOptions = {}): Map<string, ShsAi> {
   const w0 = Math.min(ctx.currentWeek, ctx.lastWeek);
+  const cfg = { ...DEFAULT_SHS, ...(getSettings().shs ?? {}) };
+  const tune = cfg.autoTune ? getTuning(ctx.league.league_id) : {};
+  const sig = ctx.signals;
   // ---- season inputs ----
   const byGsis = new Map<string, typeof ctx.stats>();
   for (const s of ctx.stats) if (s.week < ctx.currentWeek) (byGsis.get(s.gsis) ?? byGsis.set(s.gsis, []).get(s.gsis)!).push(s);
@@ -87,6 +110,27 @@ export function shsAi(ctx: LeagueContext, rows: RankRow[], scope: RankScope, wea
   const speedByPos = new Map<string, number[]>();
   for (const r of rows) { const p = ctx.players.get(r.id); const sp = speed(p?.gsis ?? null); if (p && sp) (speedByPos.get(p.pos) ?? speedByPos.set(p.pos, []).get(p.pos)!).push(sp); }
 
+  // ---- advanced signal distributions (by position, among ranked players) ----
+  const sigDist = new Map<string, number[]>();
+  const pushD = (k: string, v: number | null | undefined) => { if (v !== null && v !== undefined && Number.isFinite(v)) (sigDist.get(k) ?? sigDist.set(k, []).get(k)!).push(v); };
+  for (const r of rows) {
+    const g = ctx.players.get(r.id)?.gsis; if (!g) continue;
+    const n = sig.ngs.get(g), pf = sig.pfr.get(g);
+    if (n && n.tgt >= 15) { pushD(`${r.pos}:sep`, n.sep); pushD(`${r.pos}:yacoe`, n.yacoe); }
+    if (n && n.att >= 30 && r.pos === "RB") pushD("RB:ryoe", n.ryoe);
+    if (n && n.att >= 60 && r.pos === "QB") pushD("QB:cpoe", n.cpoe);
+    if (pf && pf.games >= 3) {
+      if (r.pos === "RB") { pushD("RB:yaco", pf.yacoAtt); pushD("RB:bt", pf.btPerG); }
+      if (r.pos === "WR" || r.pos === "TE") { pushD(`${r.pos}:rat`, pf.tgtRating); pushD(`${r.pos}:drop`, pf.dropPct); }
+      if (r.pos === "QB") { pushD("QB:bad", pf.badPct); pushD("QB:press", pf.pressPct); }
+    }
+  }
+  const sigP = (k: string, v: number | null | undefined, invert = false) => {
+    const arr = sigDist.get(k); if (v === null || v === undefined || !arr || arr.length < 8) return null;
+    const q = pctile(arr, v); return { v: (invert ? 1 - q : q) * 2 - 1, pct: Math.round((invert ? 1 - q : q) * 100) };
+  };
+  const scoring = ctx.league.scoring_settings as Record<string, number>;
+
   const out = new Map<string, ShsAi>();
   for (const r of rows) {
     const p = ctx.players.get(r.id);
@@ -114,6 +158,39 @@ export function shsAi(ctx: LeagueContext, rows: RankRow[], scope: RankScope, wea
         parts.push((uf - 1) / 0.12); bits.push(uf === 1 ? "usage steady" : `usage ${uf > 1 ? "up" : "down"} ${Math.round(Math.abs(uf - 1) / 0.4 * 100)}%`);
         add("adv", "Advanced metrics", mean(parts), bits.join(" · "));
       }
+      // Expected fantasy points: how much opportunity he's getting, and whether he's been lucky or unlucky with it.
+      const xf = p.gsis ? sig.xfp.get(p.gsis) : undefined;
+      if (xf && xf.games >= 2 && ["QB", "RB", "WR", "TE"].includes(p.pos)) {
+        const pxs = peers(r).map((x) => ctx.players.get(x.id)?.gsis).map((g) => (g ? sig.xfp.get(g) : undefined)).filter((x): x is NonNullable<typeof x> => !!x && x.games >= 2).map((x) => x.recentXfp);
+        if (pxs.length) {
+          const ref = median(pxs);
+          const vol = ref > 0 ? (xf.recentXfp / ref - 1) / 0.3 : 0;
+          const luck = xf.xfp > 0 ? (xf.fp - xf.xfp) / xf.xfp : 0;
+          // Over-performing his opportunity tends to fade; under-performing tends to bounce back (less so in dynasty).
+          const reg = scope === "dynasty" ? 0 : -clamp(luck / 0.35) * 0.35;
+          add("xfp", "Expected points", clamp(vol) * 0.75 + reg,
+            `${xf.recentXfp.toFixed(1)} expected pts/g from his opportunities (last 4) vs ${ref.toFixed(1)} near his rank; scoring ${luck >= 0 ? "+" : ""}${Math.round(luck * 100)}% vs expected${Math.abs(luck) > 0.15 && scope !== "dynasty" ? (luck > 0 ? " (likely to cool)" : " (due to bounce back)") : ""}`);
+        }
+      }
+      // Player tracking (separation, YAC over expected, rush yards over expected, completion % over expected).
+      if (p.gsis && ["QB", "RB", "WR", "TE"].includes(p.pos)) {
+        const n = sig.ngs.get(p.gsis);
+        const parts: { v: number; pct: number; l: string }[] = [];
+        const push = (x: { v: number; pct: number } | null, l: string) => { if (x) parts.push({ ...x, l }); };
+        if (n && (p.pos === "WR" || p.pos === "TE") && n.tgt >= 15) { push(sigP(`${p.pos}:sep`, n.sep), "separation"); push(sigP(`${p.pos}:yacoe`, n.yacoe), "YAC over expected"); }
+        if (n && p.pos === "RB" && n.att >= 30) push(sigP("RB:ryoe", n.ryoe), "rush yds over expected");
+        if (n && p.pos === "QB" && n.att >= 60) push(sigP("QB:cpoe", n.cpoe), "completion % over expected");
+        if (parts.length) add("track", "Player tracking", mean(parts.map((x) => x.v)) * 0.8, parts.map((x) => `${x.l} ${x.pct}th pct`).join(" · "));
+        const pf = sig.pfr.get(p.gsis);
+        const cp: { v: number; pct: number; l: string }[] = [];
+        const pushC = (x: { v: number; pct: number } | null, l: string) => { if (x) cp.push({ ...x, l }); };
+        if (pf && pf.games >= 3) {
+          if (p.pos === "RB") { pushC(sigP("RB:yaco", pf.yacoAtt), "yards after contact"); pushC(sigP("RB:bt", pf.btPerG), "broken tackles"); }
+          if (p.pos === "WR" || p.pos === "TE") { pushC(sigP(`${p.pos}:rat`, pf.tgtRating), "rating when targeted"); pushC(sigP(`${p.pos}:drop`, pf.dropPct, true), "hands (drops)"); }
+          if (p.pos === "QB") { pushC(sigP("QB:bad", pf.badPct, true), "accuracy (bad throws)"); pushC(sigP("QB:press", pf.pressPct, true), "protection (pressure)"); }
+        }
+        if (cp.length) add("chart", "Film charting", mean(cp.map((x) => x.v)) * 0.7, cp.map((x) => `${x.l} ${x.pct}th pct`).join(" · "));
+      }
       if (scope !== "dynasty") {
         const ref = atRank(r.pos, r.ecrPos);
         if (ref > 0.5) add("proj", "Projection", (r.pts / ref - 1) / 0.3, `Sleeper projects ${r.pts.toFixed(1)} vs ${ref.toFixed(1)} for a ${r.pos}${r.ecrPos}`, 1.5);
@@ -136,7 +213,17 @@ export function shsAi(ctx: LeagueContext, rows: RankRow[], scope: RankScope, wea
         }
         let inj = 0;
         const notes: string[] = [];
-        if (p.injury === "Questionable") { inj -= 0.3; notes.push("he's Questionable"); }
+        const pr = p.gsis ? sig.practice.get(p.gsis) : undefined;
+        const lastDay = pr?.days[pr.days.length - 1];
+        if (p.injury === "Questionable") {
+          // Practice tells you how real a Questionable tag is.
+          const q = lastDay === "DNP" ? -0.65 : lastDay === "LP" ? -0.3 : lastDay === "FP" ? -0.08 : -0.3;
+          inj += q; notes.push(`he's Questionable${lastDay ? ` (${pr!.days.join("/")} at practice)` : ""}`);
+        } else if (pr?.days.length && !["Doubtful", "Out", "IR", "PUP", "NFI", "Sus"].includes(p.injury ?? "")) {
+          if (lastDay === "DNP") { inj -= 0.25; notes.push(`missed practice (${pr.days.join("/")})`); }
+          else if (lastDay === "LP") { inj -= 0.1; notes.push(`limited at practice (${pr.days.join("/")})`); }
+          else if (pr.days.includes("DNP") || pr.days.includes("LP")) { inj += 0.05; notes.push(`practiced fully by week's end (${pr.days.join("/")})`); }
+        }
         if (p.injury === "Doubtful") { inj -= 0.8; notes.push("he's Doubtful"); }
         if (["Out", "IR", "PUP", "NFI", "Sus"].includes(p.injury ?? "")) { inj -= 1; notes.push(`he's ${p.injury}`); }
         const qbOut = p.pos !== "QB" ? startingQbOut(p.team) : null;
@@ -149,6 +236,13 @@ export function shsAi(ctx: LeagueContext, rows: RankRow[], scope: RankScope, wea
         if (opp && df) add("matchup", "Defensive matchup", (df - 1) / 0.2, `${opp} allows ${Math.round((df - 1) * 100)}% ${df >= 1 ? "more" : "fewer"} points to ${p.pos}s than average`);
         const imp = implied.get(p.team);
         if (imp) add("vegas", "Vegas team total", (imp - avgImplied) / 6, `${p.team} implied ${imp.toFixed(1)} pts vs ${avgImplied.toFixed(1)} average`);
+        const gm = wkGames.find((g) => g.home === p.team || g.away === p.team);
+        if (gm && gm.spread !== null && gm.spread !== undefined && ["QB", "RB", "WR", "TE"].includes(p.pos)) {
+          const margin = gm.home === p.team ? gm.spread : -gm.spread; // + = favoured
+          // Favourites run more late (helps RBs); underdogs throw more (helps pass catchers, QB volume).
+          const v = p.pos === "RB" ? margin / 10 : p.pos === "QB" ? -margin / 20 : -margin / 14;
+          add("script", "Game script", v, margin === 0 ? "Pick'em game" : `${p.team} ${margin > 0 ? "favoured" : "underdog"} by ${Math.abs(margin)}: ${p.pos === "RB" ? (margin > 0 ? "more late carries likely" : "may abandon the run if behind") : margin > 0 ? "fewer late passes likely" : "more passing likely if trailing"}`, 0.6);
+        }
       }
       // --- rest of season ---
       if (scope === "ros") {
@@ -184,14 +278,42 @@ export function shsAi(ctx: LeagueContext, rows: RankRow[], scope: RankScope, wea
         const vetDiscount = (p.yearsExp ?? 0) >= 4 ? 0.4 : 1; // a long track record outweighs the draft profile
         add("draft", "Combine & draft profile", (spPct !== null ? 0.6 * dc + 0.4 * spPct : dc) * vetDiscount,
           `${dr ? `Round ${dr} pick` : "Undrafted"}${sp ? `, speed score ${Math.round(sp)} (${Math.round(((spPct ?? 0) + 1) * 50)}th pct)` : ", no combine data"}${vetDiscount < 1 ? "; counts less for a veteran" : ""}`);
+        const col = opts.college?.get(r.id);
+        if (col && (p.yearsExp ?? 9) <= 3) {
+          const avgD = DOMINATOR_AVG[p.pos] ?? 0.2;
+          add("college", "College production", ((col.dominator - avgD) / (avgD * 0.6)) * ((p.yearsExp ?? 0) >= 2 ? 0.5 : 1),
+            `${Math.round(col.dominator * 100)}% of ${col.team}'s ${p.pos === "RB" ? "yards & TDs" : "receiving yards & TDs"} in ${col.season} (typical ${Math.round(avgD * 100)}%)`);
+        }
       }
     }
+    // Your weights (Settings) × auto-tuned multipliers from tracked results.
+    for (const f of factors) f.weight = Math.round(f.weight * (cfg.factor[f.key] ?? 1) * (tune[f.key] ?? 1) * 100) / 100;
     const wsum = factors.reduce((a, x) => a + x.weight, 0);
     const F = wsum ? factors.reduce((a, x) => a + x.value * x.weight, 0) / wsum : 0;
     const ecrRating = r.ecrPos !== null ? atRank(r.pos, r.ecrPos) : r.pts;
-    out.set(r.id, { pct: r.ecrPos !== null && factors.length ? Math.round(25 * F) : null, rating: r.ecrPos !== null ? ecrRating * (1 + 0.25 * F) : r.pts * 0.9, rank: 0, factors });
+
+    // Prediction markets (weekly): implied fantasy points vs a typical player at his expert rank.
+    let market: ShsAi["market"] = null;
+    if (scope === "week" && p && r.ecrPos !== null && sig.markets) {
+      const mp = sig.markets.players[r.id];
+      const mk = mp ? marketPoints(mp.lines, ctx.projStats.get(w0)?.get(r.id), scoring, p.pos) : null;
+      if (mk && ecrRating > 0.5) market = { pts: Math.round(mk.pts * 10) / 10, value: Math.round(clamp((mk.pts / ecrRating - 1) / 0.3) * 100) / 100, covered: mk.covered };
+    }
+    let blend = { expert: cfg.expert / 100, market: 0, factors: 1 - cfg.expert / 100 };
+    if (market) {
+      const t = cfg.wkExpert + cfg.wkMarket + cfg.wkFactors || 1;
+      blend = { expert: cfg.wkExpert / t, market: cfg.wkMarket / t, factors: cfg.wkFactors / t };
+    }
+    if (!factors.length && !market) blend = { expert: 1, market: 0, factors: 0 };
+    const nonExpert = blend.market + blend.factors;
+    const T = nonExpert > 0 ? ((market ? market.value * blend.market : 0) + F * (factors.length ? blend.factors : 0)) / nonExpert : 0;
+    const shift = nonExpert * T; // e.g. 0.25 × F, or 0.3 × M + 0.2 × F
+    out.set(r.id, {
+      pct: r.ecrPos !== null && (factors.length || market) ? Math.round(100 * shift) : null,
+      rating: r.ecrPos !== null ? ecrRating * (1 + shift) : r.pts * 0.9, rank: 0, factors, market, blend,
+    });
   }
-  // SHS AI rank at each position
-  for (const arr of byPos.values()) [...arr].sort((a, b) => out.get(b.id)!.rating - out.get(a.id)!.rating).forEach((r, i) => (out.get(r.id)!.rank = i + 1));
+  // SHS AI rank at each position (players with an expert rank first)
+  for (const arr of byPos.values()) [...arr].sort((a, b) => (a.ecrPos === null ? 1 : 0) - (b.ecrPos === null ? 1 : 0) || out.get(b.id)!.rating - out.get(a.id)!.rating).forEach((r, i) => (out.get(r.id)!.rank = i + 1));
   return out;
 }

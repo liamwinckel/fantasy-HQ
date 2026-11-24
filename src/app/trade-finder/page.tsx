@@ -7,6 +7,8 @@ import { formatLabel } from "@/lib/services/portfolio";
 import { findTrades } from "@/lib/services/tradeFinder";
 import { Card, ClassBadge, Logo, Notice, PageHeader, Tag, cx, signed, Info } from "@/components/ui";
 import { PlayerLink } from "@/components/PlayerCard";
+import { AiChip, useShsAiMap } from "@/components/ShsAiParts";
+import type { ShsAi } from "@/lib/services/shsai";
 
 export default function TradeFinderPage() {
   return <LeaguePage>{(d) => <TradeFinderPageBody {...d} />}</LeaguePage>;
@@ -14,6 +16,7 @@ export default function TradeFinderPage() {
 
 function TradeFinderPageBody({ league, ctx, sp }: LeagueData) {
   const { set } = useQuery();
+  const ai = useShsAiMap(ctx, ctx.valuationMode === "dynasty" ? "dynasty" : "ros");
   if (ctx.myRosterId === null) return <Notice tone="warn">You don&apos;t own a team in {league.name}.</Notice>;
   const partnerFilter = Number(sp.partner) && ctx.teams.some((t) => t.rosterId === Number(sp.partner) && t.rosterId !== ctx.myRosterId) ? Number(sp.partner) : null;
   const { profiles, trades } = findTrades(ctx, ctx.myRosterId, partnerFilter ? 8 : 14, partnerFilter);
@@ -77,9 +80,10 @@ function TradeFinderPageBody({ league, ctx, sp }: LeagueData) {
           return (
             <Card key={i} title={<span className="flex items-center gap-2"><Logo src={ctx.teams.find((x) => x.rosterId === t.partner)?.avatar} name={t.partnerName} size={28} />With {t.partnerName}</span>} right={<Tag kind="MODEL" />}>
               <div className="grid grid-cols-2 gap-3">
-                <Side label="You give" items={t.give} />
-                <Side label="You get" items={t.get} accent />
+                <Side label="You give" items={t.give} ai={ai} />
+                <Side label="You get" items={t.get} accent ai={ai} />
               </div>
+              <AiEdge give={t.give} get={t.get} ai={ai} />
               <div className="mt-3 grid grid-cols-3 gap-2 text-center">
                 <Metric label={dyn ? "Value to you" : "Your lineups, rest of season"} value={dyn ? signed(t.myValue) : `${signed(t.myRos)} pts`} tone={(dyn ? t.myValue : t.myRos) >= 0 ? "pos" : "neg"} />
                 <Metric label={dyn ? "Value to them" : "Their lineups"} value={dyn ? signed(t.theirValue) : `${signed(t.theirRos)} pts`} tone={(dyn ? t.theirValue : t.theirRos) >= 0 ? "pos" : "neg"} />
@@ -96,7 +100,20 @@ function TradeFinderPageBody({ league, ctx, sp }: LeagueData) {
   );
 }
 
-function Side({ label, items, accent }: { label: string; items: { id: string; name: string; pos: string; value: number }[]; accent?: boolean }) {
+type Item = { id: string; name: string; pos: string; value: number };
+/** How SHS AI's adjustments shift the deal: value received minus value sent, each scaled by its ±%. */
+function AiEdge({ give, get, ai }: { give: Item[]; get: Item[]; ai: Map<string, ShsAi> }) {
+  const adj = (xs: Item[]) => xs.reduce((a, x) => a + (x.id.startsWith("p:") ? (x.value * (ai.get(x.id.slice(2))?.pct ?? 0)) / 100 : 0), 0);
+  const edge = Math.round((adj(get) - adj(give)) * 10) / 10;
+  if (!get.concat(give).some((x) => x.id.startsWith("p:") && ai.get(x.id.slice(2))?.pct !== null && ai.get(x.id.slice(2))?.pct !== undefined)) return null;
+  return (
+    <p className={cx("mt-2 rounded-lg px-3 py-1.5 text-xs", edge > 1 ? "bg-pos/10 text-pos" : edge < -1 ? "bg-neg/10 text-neg" : "bg-panel2 text-muted")}>
+      <b>SHS AI:</b> {Math.abs(edge) <= 1 ? "agrees with the experts on this deal" : edge > 0 ? `the evidence favours you (+${edge} value beyond the expert view)` : `the evidence favours them (${edge} value vs the expert view)`}
+    </p>
+  );
+}
+
+function Side({ label, items, accent, ai }: { label: string; items: Item[]; accent?: boolean; ai: Map<string, ShsAi> }) {
   return (
     <div className={cx("rounded-xl p-3", accent ? "bg-acc-soft" : "bg-panel2")}>
       <div className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-muted">{label}</div>
@@ -104,7 +121,7 @@ function Side({ label, items, accent }: { label: string; items: { id: string; na
         {items.map((x) => (
           <li key={x.id} className="flex items-center justify-between gap-2">
             <span className="min-w-0 truncate">{x.id.startsWith("p:") ? <PlayerLink id={x.id.slice(2)} name={x.name} className="font-semibold" /> : <b>{x.name}</b>} <span className="text-xs text-muted">{x.pos}</span></span>
-            <span className="num text-xs">{x.value.toFixed(0)}</span>
+            <span className="flex items-center gap-1.5">{x.id.startsWith("p:") && <AiChip v={ai.get(x.id.slice(2))?.pct} />}<span className="num text-xs">{x.value.toFixed(0)}</span></span>
           </li>
         ))}
       </ul>

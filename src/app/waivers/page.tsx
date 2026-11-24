@@ -8,6 +8,8 @@ import { WaiverBoard } from "./WaiverBoard";
 import { Card, InjuryChip, NflLogo, Notice, PageHeader, Tag, signed, Info } from "@/components/ui";
 import { PlayerImg } from "@/components/client";
 import { PlayerLink } from "@/components/PlayerCard";
+import { AiChip, useShsAiMap } from "@/components/ShsAiParts";
+import type { ShsAi } from "@/lib/services/shsai";
 
 export default function WaiverPage() {
   return <LeaguePage>{(d) => <WaiverPageBody {...d} />}</LeaguePage>;
@@ -15,6 +17,9 @@ export default function WaiverPage() {
 
 function WaiverPageBody({ setup, league, ctx, sp }: LeagueData) {
   const me = ctx.teams.find((t) => t.rosterId === ctx.myRosterId);
+  const dyn = ctx.valuationMode === "dynasty";
+  const aiWeek = useShsAiMap(ctx, "week");
+  const aiRos = useShsAiMap(ctx, dyn ? "dynasty" : "ros");
   if (!me) return <Notice tone="warn">You don&apos;t own a team in {league.name}.</Notice>;
   const r = waiverReport(ctx, me.rosterId);
   const valueLabel = ctx.valuationMode === "dynasty" ? "Dynasty trade value" : "Trade value";
@@ -47,14 +52,15 @@ function WaiverPageBody({ setup, league, ctx, sp }: LeagueData) {
           rows={r.topAdds.map((w) => ({
             id: w.player.id, name: w.player.name, pos: w.player.pos, team: w.player.team, age: w.player.age, injury: w.player.injury,
             median: w.proj.median, base: w.proj.base, weekGain: w.weekGain, rosGain: w.rosGain, value: w.value, reasons: w.reasons, dropId: w.drop?.id ?? null, dropName: w.drop?.name ?? null, fills: w.fills,
+            aiWeek: aiWeek.get(w.player.id)?.pct ?? null, aiRos: aiRos.get(w.player.id)?.pct ?? null, aiRosLabel: dyn ? "dyn" : "ROS",
           }))}
         />
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <ListCard title="Streamers this week" hint="Biggest boost to this week's lineup only." items={r.streamers} stat={(w) => signed(w.weekGain)} statLabel="pts this week" />
-        <ListCard title="Rising usage" hint="Healthy free agents whose opportunity or snap share is trending up over the last 3 games." items={r.rising} stat={(w) => w.proj.base.toFixed(1)} statLabel="proj pts/g" />
-        <ListCard title="Handcuffs" hint="Free-agent RBs who are next up on their NFL depth chart. Backups to your own RBs first." items={r.handcuffs} stat={(w) => w.proj.base.toFixed(1)} statLabel="pts/game" />
+        <ListCard title="Streamers this week" hint="Biggest boost to this week's lineup only." items={r.streamers} stat={(w) => signed(w.weekGain)} statLabel="pts this week" ai={aiWeek} />
+        <ListCard title="Rising usage" hint="Healthy free agents whose opportunity or snap share is trending up over the last 3 games." items={r.rising} stat={(w) => w.proj.base.toFixed(1)} statLabel="proj pts/g" ai={aiRos} />
+        <ListCard title="Handcuffs" hint="Free-agent RBs who are next up on their NFL depth chart. Backups to your own RBs first." items={r.handcuffs} stat={(w) => w.proj.base.toFixed(1)} statLabel="pts/game" ai={aiRos} />
       </div>
 
       <Card title="Drop candidates" info={<>Bench players (not in any of your best lineups) who are worse than the best free agent at the same position right now{" "}— in redraft by rest-of-season points per game, in dynasty by trade value. Players out long-term (IR, PUP, suspended) are flagged too.</>} right={<Tag kind="MODEL" />} pad={false}>
@@ -63,7 +69,7 @@ function WaiverPageBody({ setup, league, ctx, sp }: LeagueData) {
             <li key={d.player.id} className="flex items-center gap-3 px-5 py-2.5 text-sm">
               <PlayerImg id={d.player.id} name={d.player.name} pos={d.player.pos} size={30} />
               <div className="min-w-0 flex-1"><PlayerLink id={d.player.id} name={d.player.name} className="font-bold" /> <span className="text-muted">{d.player.pos}{d.player.team ? ` · ${d.player.team}` : ""}</span><div className="text-xs text-muted">{d.reason}</div></div>
-              <InjuryChip status={d.player.injury} />
+              <InjuryChip status={d.player.injury} /><AiChip v={aiRos.get(d.player.id)?.pct} />
               <div className="w-20 text-right"><div className="num font-bold">{d.value.toFixed(1)}</div><div className="text-[10px] text-muted">{ctx.valuationMode === "dynasty" ? "dynasty value" : "value"}</div></div>
             </li>
           ))}
@@ -75,7 +81,7 @@ function WaiverPageBody({ setup, league, ctx, sp }: LeagueData) {
   );
 }
 
-function ListCard({ title, hint, items, stat, statLabel }: { title: string; hint: string; items: WaiverPlayer[]; stat: (w: WaiverPlayer) => string; statLabel: string }) {
+function ListCard({ title, hint, items, stat, statLabel, ai }: { title: string; hint: string; items: WaiverPlayer[]; stat: (w: WaiverPlayer) => string; statLabel: string; ai: Map<string, ShsAi> }) {
   return (
     <Card title={title}>
       <Info className="-mt-1 mb-3">{hint}</Info>
@@ -84,7 +90,7 @@ function ListCard({ title, hint, items, stat, statLabel }: { title: string; hint
         {items.map((w) => (
           <li key={w.player.id} className="flex items-center gap-3">
             <PlayerImg id={w.player.id} name={w.player.name} pos={w.player.pos} size={32} />
-            <div className="min-w-0 flex-1"><div className="truncate text-sm font-semibold"><PlayerLink id={w.player.id} name={w.player.name} /></div><div className="flex items-center gap-1 truncate text-xs text-muted"><NflLogo team={w.player.team} size={13} />{w.player.pos} · {w.player.team}{w.proj.opponent ? ` · vs ${w.proj.opponent}` : ""}</div></div>
+            <div className="min-w-0 flex-1"><div className="flex min-w-0 items-center gap-1.5 text-sm font-semibold"><span className="truncate"><PlayerLink id={w.player.id} name={w.player.name} /></span><AiChip v={ai.get(w.player.id)?.pct} /></div><div className="flex items-center gap-1 truncate text-xs text-muted"><NflLogo team={w.player.team} size={13} />{w.player.pos} · {w.player.team}{w.proj.opponent ? ` · vs ${w.proj.opponent}` : ""}</div></div>
             <div className="text-right"><div className="num text-sm font-bold text-acc-ink">{stat(w)}</div><div className="text-[10px] text-muted">{statLabel}</div></div>
           </li>
         ))}

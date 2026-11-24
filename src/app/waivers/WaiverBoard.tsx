@@ -5,10 +5,13 @@ import { ArrowDown, ArrowUp, ChevronDown } from "lucide-react";
 import { PlayerImg } from "@/components/client";
 import { PlayerLink } from "@/components/PlayerCard";
 import { InjuryChip, NflLogo, cx, signed } from "@/components/ui";
+import { AiChip } from "@/components/ShsAiParts";
 import { waiverImpact } from "@/lib/services/waivers";
 import { useApp } from "@/components/AppData";
 
 export interface WaiverRow {
+  /** SHS AI ±% this week and rest of season (or dynasty). */
+  aiWeek?: number | null; aiRos?: number | null; aiRosLabel?: string;
   id: string; name: string; pos: string; team: string | null; age: number | null; injury: string | null;
   median: number; weekGain: number; rosGain: number; value: number; reasons: string[]; dropId: string | null; dropName: string | null; fills: string | null; base: number;
 }
@@ -45,7 +48,7 @@ export function WaiverBoard({ leagueId, rows, roster, full, limit, used, valueLa
                   <td className="px-3 py-3 sm:px-5">
                     <div className="flex items-center gap-2.5">
                       <PlayerImg id={w.id} name={w.name} pos={w.pos} />
-                      <div className="min-w-0"><div className="flex items-center gap-1.5 font-semibold"><PlayerLink id={w.id} name={w.name} /><InjuryChip status={w.injury} /></div><div className="flex items-center gap-1 text-xs text-muted"><NflLogo team={w.team} size={14} />{w.pos}{w.team ? ` · ${w.team}` : ""}{w.age ? ` · age ${Math.floor(w.age)}` : ""}</div>{w.fills && <span className="mt-1 inline-block rounded bg-acc px-1.5 py-0.5 text-[10px] font-bold uppercase text-on-acc">Fills {w.fills}</span>}</div>
+                      <div className="min-w-0"><div className="flex items-center gap-1.5 font-semibold"><PlayerLink id={w.id} name={w.name} /><InjuryChip status={w.injury} /></div>{(w.aiWeek != null || w.aiRos != null) && <div className="mt-0.5 flex flex-wrap items-center gap-1 text-[10px] text-muted">{w.aiWeek != null && <span className="flex items-center gap-0.5">wk <AiChip v={w.aiWeek} /></span>}{w.aiRos != null && <span className="flex items-center gap-0.5">{w.aiRosLabel ?? "ROS"} <AiChip v={w.aiRos} /></span>}</div>}<div className="flex items-center gap-1 text-xs text-muted"><NflLogo team={w.team} size={14} />{w.pos}{w.team ? ` · ${w.team}` : ""}{w.age ? ` · age ${Math.floor(w.age)}` : ""}</div>{w.fills && <span className="mt-1 inline-block rounded bg-acc px-1.5 py-0.5 text-[10px] font-bold uppercase text-on-acc">Fills {w.fills}</span>}</div>
                     </div>
                   </td>
                   <td className="num px-2 py-3 text-right">{w.median.toFixed(1)}</td>

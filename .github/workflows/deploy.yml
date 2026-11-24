@@ -1,5 +1,5 @@
 # Builds the web app and publishes it to GitHub Pages.
-# Runs on every push to main and every 6 hours, so NFLverse stats and Sleeper's player list stay fresh.
+# Runs on every push to main, every 6 hours, and hourly on game days, so NFLverse stats and Sleeper's player list stay fresh.
 name: Deploy
 
 on:
@@ -7,6 +7,8 @@ on:
     branches: [main]
   schedule:
     - cron: "17 */6 * * *"
+    # Game days (Thu, Sun, Mon US time → UTC Thu–Tue): hourly, so prediction-market lines stay fresh.
+    - cron: "47 * * * 0,1,2,4,5"
   workflow_dispatch:
 
 permissions:
