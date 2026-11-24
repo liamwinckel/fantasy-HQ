@@ -4,13 +4,15 @@ import { consensus, contracts, injuryReports, playerInfo, schedule, snapCounts, 
 import { canFill, isSuperflex, playerPositions, primaryPosition, starterDemand, startingSlots } from "../engine/positions";
 import { scoreSleeperStats, scoreStatLine, scoringLabel } from "../engine/scoring";
 import { applySleeper, opportunityOf, priorFor, project, type GameLog, type PlayerLite, type Projection } from "../engine/projections";
-import { blendWithMarket, computeValues, replacementLevels, type Consensus, type PlayerValue } from "../engine/values";
+import { applyKeeperBonus, blendWithMarket, computeValues, replacementLevels, type Consensus, type PlayerValue } from "../engine/values";
 import { optimizeLineup, lineupTotal, scoreStarters, type SlotAssignment } from "../engine/lineup";
 import { simulateSeason, type SimResult, type TeamWeek } from "../engine/simulate";
 import { classifyTeams, type Classification, type TeamClass, type TeamMetrics } from "../engine/classify";
 import { buildPicks, type PickAsset, type Tier } from "../engine/picks";
 import { easternToEpoch } from "../time";
 import { getSettings, type Mode } from "../settings";
+import { keeperPlan } from "../engine/keepers";
+import { keeperRulesFor } from "./keeperRules";
 
 export type LeagueFormat = "redraft" | "keeper" | "dynasty";
 
@@ -84,6 +86,8 @@ export interface LeagueContext {
   waiverLevel: Record<string, number>;
   /** FantasyPros expert consensus (ECR) by Sleeper ID, and its dates. */
   consensus: Record<string, Consensus>;
+  /** Keeper leagues: next-season keeper surplus (pts/g above what that keeper round returns), by player. */
+  keeperSurplus: Map<string, number>;
   consensusDates: { ecr: string; weekly: string } | null;
   /** Sleeper's projected stat lines: week → player → stats (Sleeper keys). */
   projStats: Map<number, Map<string, Record<string, number>>>;
@@ -594,12 +598,23 @@ async function buildLeagueContext(
   const stale = [stateR, leagueR, rostersR].some((r) => r.stale);
   if (stale) warnings.push("Sleeper could not be reached; showing the last saved data.");
 
-  return {
+  const out: LeagueContext = {
     league, format, valuationMode, scoring: scoringLabel(league.scoring_settings), superflex: isSuperflex(league.roster_positions),
     teamsCount, currentWeek, playoffStart, lastWeek, inPlayoffs, seasonOver, teams, myRosterId, players, projections, values,
     replacement, waiverLevel, consensus: cons, consensusDates: consR ? { ecr: consR.data.ecrDate, weekly: consR.data.weeklyDate } : null, projStats, stats, logs, lineups, weekStrength, sim, remainingSchedule: Object.fromEntries(remaining.map((r) => [r.week, r.games])), classifications, picks, matchupsThisWeek: thisWeekMatchups, matchupsByWeek: matchupWeeks, healthyStrength, showClasses, extras, nflOpponents: opponents, liveScore,
-    fetchedAt: Math.min(rostersR.fetchedAt, leagueR.fetchedAt), stale, warnings,
+    fetchedAt: Math.min(rostersR.fetchedAt, leagueR.fetchedAt), stale, warnings, keeperSurplus: new Map(),
   };
+  // Keeper leagues: a player who'd be a cheap keeper next year is worth more in a trade now.
+  if (format === "keeper" && !seasonOver) {
+    try {
+      const rounds = league.settings.draft_rounds || 15;
+      const rules = keeperRulesFor(getSettings(), league);
+      const picks = league.draft_id ? (await sleeper.draftPicks(league.draft_id)).data : [];
+      for (const t of teams) for (const r of keeperPlan(out, t.rosterId, picks, rules, rounds)) if (r.surplus !== null && r.surplus > 0) out.keeperSurplus.set(r.playerId, r.surplus);
+      applyKeeperBonus(values, out.keeperSurplus);
+    } catch { warnings.push("Keeper costs couldn't be loaded, so trade values ignore keeper value for now."); }
+  }
+  return out;
 }
 
 // ---------- helpers ----------

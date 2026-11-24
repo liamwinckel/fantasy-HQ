@@ -25,6 +25,9 @@ export interface PlayerValue {
   rosVorp: number; // redraft: rest-of-season points above replacement
   posRankRedraft: number;
   posRankDynasty: number;
+  /** SHS model alone, before blending with the market (0–100 scale of the model). */
+  redraftModel?: number;
+  dynastyModel?: number;
 }
 
 // Multiplier vs peak production at a given age.
@@ -181,6 +184,7 @@ export function blendWithMarket(values: Map<string, PlayerValue>, players: Playe
     if (superflex && pos.get(id) === "QB" && c.rp) return ecrToValue(c.rp * 2.2 - 1);
     return c.ro ? ecrToValue(c.ro) : null;
   };
+  for (const v of values.values()) { v.redraftModel = v.redraft; v.dynastyModel = v.dynasty; }
   for (const v of values.values()) {
     const m = mk(v.id);
     if (m) {
@@ -206,4 +210,15 @@ export function blendWithMarket(values: Map<string, PlayerValue>, players: Playe
     [...arr].sort((a, b) => b.redraft - a.redraft).forEach((v, i) => (v.posRankRedraft = i + 1));
     [...arr].sort((a, b) => b.dynasty - a.dynasty).forEach((v, i) => (v.posRankDynasty = i + 1));
   }
+}
+
+/**
+ * Keeper leagues: add next-season keeper surplus to trade value. The best keeper bargain in the league adds
+ * up to 25 points; values are then rescaled so the top asset = 100.
+ */
+export function applyKeeperBonus(values: Map<string, PlayerValue>, surplus: Map<string, number>) {
+  const max = Math.max(1e-9, ...surplus.values());
+  for (const [id, s] of surplus) { const v = values.get(id); if (v) v.redraft = round1(v.redraft + (25 * s) / max); }
+  const maxR = Math.max(1e-9, ...[...values.values()].map((v) => v.redraft));
+  for (const v of values.values()) v.redraft = round1((100 * v.redraft) / maxR);
 }

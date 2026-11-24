@@ -47,6 +47,6 @@ export function MyLineup({ ctx, me, week, onTotal, opponent }: { ctx: LeagueCont
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ctx, me, week]);
   return (
-    <LineupLab key={`${week}:${me.rosterId}`} {...data} rosterSlots={ctx.league.roster_positions.filter((s) => s !== "BN").join(" · ")} week={week} onTotal={onTotal} opponent={opponent} live={weekKind(ctx, week) === "current"} />
+    <LineupLab key={`${week}:${me.rosterId}`} {...data} rosterSlots={ctx.league.roster_positions.filter((s) => s !== "BN").join(" · ")} week={week} onTotal={onTotal} opponent={opponent} myName={me.name} live={weekKind(ctx, week) === "current"} />
   );
 }

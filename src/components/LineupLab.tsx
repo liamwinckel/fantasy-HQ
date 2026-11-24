@@ -21,36 +21,48 @@ const short = (slot: string) => slot.replace("SUPER_FLEX", "SFLX").replace("IDP_
 /** Same columns for the header and every row, so titles sit over their numbers. */
 const GRID = "grid grid-cols-[3.25rem_2.25rem_minmax(0,1fr)_3.5rem] items-center gap-x-2.5 sm:grid-cols-[3.5rem_2.25rem_minmax(0,1fr)_11rem_3.5rem] sm:gap-x-3";
 
-/** FLIP: rows glide from where they were to where they are after a swap. */
-function useFlip(deps: unknown[]) {
+/**
+ * FLIP: after a swap, rows glide from where they were to where they are now. Only runs when `armed`
+ * (a swap just happened); switching Current/Optimal cross-fades instead. All reads happen before any
+ * writes, so there's a single layout pass and no stutter.
+ */
+function useFlip(deps: unknown[], armed: React.MutableRefObject<boolean>) {
   const box = useRef<HTMLDivElement>(null);
   const last = useRef(new Map<string, number>());
   useLayoutEffect(() => {
     const el = box.current;
     if (!el) return;
-    const now = new Map<string, number>();
-    el.querySelectorAll<HTMLElement>("[data-flip]").forEach((n) => now.set(n.dataset.flip!, n.getBoundingClientRect().top));
-    el.querySelectorAll<HTMLElement>("[data-flip]").forEach((n) => {
-      const before = last.current.get(n.dataset.flip!);
-      const after = now.get(n.dataset.flip!)!;
-      if (before === undefined || Math.abs(before - after) < 1) return;
-      n.classList.remove("flip-move");
-      n.style.transform = `translateY(${before - after}px)`;
-      n.style.zIndex = "2";
-      void n.offsetHeight; // commit the starting position
-      n.classList.add("flip-move");
-      n.style.transform = "";
-      setTimeout(() => { n.classList.remove("flip-move"); n.style.zIndex = ""; }, 450);
-    });
+    const nodes = [...el.querySelectorAll<HTMLElement>("[data-flip]")];
+    const now = new Map(nodes.map((n) => [n.dataset.flip!, n.getBoundingClientRect().top]));
+    if (armed.current) {
+      armed.current = false;
+      const moves: HTMLElement[] = [];
+      for (const n of nodes) {
+        const before = last.current.get(n.dataset.flip!);
+        const dy = before === undefined ? 0 : before - now.get(n.dataset.flip!)!;
+        if (Math.abs(dy) < 1) continue;
+        n.style.transition = "none";
+        n.style.transform = `translateY(${dy}px)`;
+        n.style.position = "relative";
+        n.style.zIndex = "2";
+        moves.push(n);
+      }
+      if (moves.length) {
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          for (const n of moves) { n.style.transition = "transform 0.42s cubic-bezier(0.22, 1, 0.36, 1)"; n.style.transform = ""; }
+          setTimeout(() => { for (const n of moves) { n.style.transition = ""; n.style.zIndex = ""; } }, 460);
+        }));
+      }
+    }
     last.current = now;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
   return box;
 }
 
-export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots, week, onTotal, opponent, live = false }: {
+export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots, week, onTotal, opponent, live = false, myName = "You" }: {
   slots: string[]; players: LabPlayer[]; current: (string | null)[]; optimal: (string | null)[]; swaps: Swap[]; rosterSlots: string; week: number; onTotal?: (t: number) => void;
-  opponent?: TeamWeek | null; live?: boolean;
+  opponent?: TeamWeek | null; live?: boolean; myName?: string;
 }) {
   const [view, setView] = useState<View>("current");
   const [mine, setMine] = useState<(string | null)[]>(current);
@@ -67,7 +79,8 @@ export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots
   const currentSet = new Set(current.filter(Boolean) as string[]);
   const changed = (i: number) => !!lineup[i] && !currentSet.has(lineup[i]!);
   const [slotOpen, setSlotOpen] = useState<number | null>(null);
-  const box = useFlip([lineup]);
+  const armed = useRef(false);
+  const box = useFlip([lineup, view], armed);
 
   /** Put a player in slot i; whoever was there takes his old slot if eligible, otherwise goes to the bench. */
   const place = (i: number, pid: string | null) => {
@@ -76,6 +89,7 @@ export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots
     const occupant = base[i];
     base[i] = pid;
     if (from >= 0) base[from] = occupant && byId.get(occupant)?.eligible[from] ? occupant : null;
+    armed.current = view === "current";
     setMine(base);
     setView("current");
     setSlotOpen(null);
@@ -128,12 +142,12 @@ export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots
             {edited && view === "current" && <button type="button" onClick={() => setMine(current)} className="font-semibold text-muted underline">Reset</button>}
           </div>
           {opponent ? (
-            <Versus slots={slots} lineup={lineup} bench={bench} byId={byId} opponent={opponent} live={live} changed={changed} onSlot={setSlotOpen} boxRef={box} />
+            <div key={view} className="qa-fade-in"><Versus slots={slots} lineup={lineup} bench={bench} byId={byId} opponent={opponent} live={live} changed={changed} onSlot={setSlotOpen} boxRef={box} myName={myName} /></div>
           ) : (<>
           <div className={cx(GRID, "border-b border-line px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted sm:px-5")}>
             <span>Slot</span><span /><span>Player</span><span className="hidden sm:block">Range · low / exp / high</span><span className="text-right">Proj</span>
           </div>
-          <div ref={box}>
+          <div ref={box} key={view} className="qa-fade-in">
             {slots.map((slot, i) => {
               const p = lineup[i] ? byId.get(lineup[i]!) : undefined;
               const canEdit = !p?.locked;
@@ -271,8 +285,8 @@ function SlotSheet({ slot, index, lineup, players, byId, onPick, onClose }: {
 const shortName = (n: string) => { const [f, ...r] = n.split(" "); return r.length ? `${f[0]}. ${r.join(" ")}` : n; };
 
 /** Both rosters side by side, slot by slot (like Sleeper). Your side is editable: tap the slot badge. */
-function Versus({ slots, lineup, bench, byId, opponent, live, changed, onSlot, boxRef }: {
-  slots: string[]; lineup: (string | null)[]; bench: LabPlayer[]; byId: Map<string, LabPlayer>; opponent: TeamWeek; live: boolean;
+function Versus({ slots, lineup, bench, byId, opponent, live, changed, onSlot, boxRef, myName }: {
+  slots: string[]; lineup: (string | null)[]; bench: LabPlayer[]; byId: Map<string, LabPlayer>; opponent: TeamWeek; live: boolean; myName: string;
   changed: (i: number) => boolean; onSlot: (i: number) => void; boxRef: React.RefObject<HTMLDivElement | null>;
 }) {
   const [showBench, setShowBench] = useState(true);
@@ -319,7 +333,7 @@ function Versus({ slots, lineup, bench, byId, opponent, live, changed, onSlot, b
   return (
     <div ref={boxRef}>
       <div className="flex items-center justify-between border-b border-line px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted sm:px-5">
-        <span>You · tap a slot to swap</span><span className="truncate pl-2">{opponent.name}</span>
+        <span className="truncate pr-2">{myName}</span><span className="truncate pl-2">{opponent.name}</span>
       </div>
       <ul className="divide-y divide-line">
         {slots.map((slot, i) => {

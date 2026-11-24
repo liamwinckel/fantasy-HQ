@@ -129,6 +129,10 @@ export function evaluateTrade(ctx: LeagueContext, req: TradeRequest): TradeResul
       if (ex?.offense) drivers.push({ label: "Offense", value: `#${ex.offense.rank} (${ex.offense.trend >= 0 ? "+" : ""}${ex.offense.trend}% last 4)`, tone: ex.offense.rank <= 10 ? "pos" : ex.offense.rank >= 23 ? "neg" : "neutral" });
       if (ex) drivers.push({ label: "Schedule ahead", value: ex.outlookRos === 1 ? "Average" : `${ex.outlookRos > 1 ? "Easier" : "Harder"} (${pct(ex.outlookRos)})`, tone: ex.outlookRos >= 1.05 ? "pos" : ex.outlookRos <= 0.95 ? "neg" : "neutral" });
       drivers.push({ label: "Injury", value: p.injury ?? "Healthy", tone: p.injury ? "neg" : "pos" });
+      const ks = ctx.keeperSurplus?.get(p.id);
+      if (ctx.format === "keeper") drivers.push({ label: "Keeper value", value: ks ? `+${ks.toFixed(1)} pts/g over his keeper round` : "Not a keeper bargain", tone: ks ? "pos" : "neutral" });
+      const c = ctx.consensus?.[p.id];
+      if (c && (dynasty ? c.dp : c.rp)) drivers.push({ label: "Experts", value: `${p.pos}${Math.round((dynasty ? c.dp : c.rp)!)} ${dynasty ? "dynasty" : "rest of season"}`, tone: "neutral" });
       if (mode === "dynasty") {
         if (p.age) drivers.push({ label: "Age", value: `${Math.floor(p.age)}`, tone: (p.pos === "RB" && p.age >= 27) || p.age >= 30 ? "neg" : p.age <= 25 ? "pos" : "neutral" });
         if (ex) drivers.push({ label: "Contract", value: ex.yearsLeft === null ? "Unknown" : ex.yearsLeft <= 0 ? "Expiring" : `${ex.yearsLeft + 1} seasons left`, tone: ex.contractFactor > 1 ? "pos" : ex.contractFactor < 1 ? "neg" : "neutral" });
