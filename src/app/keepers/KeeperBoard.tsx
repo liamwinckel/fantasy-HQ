@@ -194,7 +194,7 @@ function DraftBoard({ board, order, rounds, teamName, myRosterId, season }: { bo
   const lastKeeperRound = Math.max(0, ...board.filter((c) => c.keeper).map((c) => c.round));
   const visible = Math.max(show, all ? rounds : lastKeeperRound);
   return (
-    <Card title={`${season} draft board`} pad={false} info={<>Order is estimated from projected final standings (worst record picks first){" "}and snakes each round; traded picks are shown under their new owner. Yellow-edged = your keepers; dashed = SHS&apos;s prediction for that team. Colours by position.</>}>
+    <Card title={`${season} draft board`} pad={false} info={<>Order is estimated from projected final standings (worst record picks first){" "}and snakes each round; traded picks are shown under their new owner. Yellow-ringed = your keepers; the rest are SHS&apos;s predictions for each team. Colours by position.</>}>
       <div className="overflow-x-auto overscroll-x-contain" data-no-swipe>
         <table className="border-separate border-spacing-1 px-2 py-2 text-[11px]">
           <thead>
@@ -217,7 +217,7 @@ function DraftBoard({ board, order, rounds, teamName, myRosterId, season }: { bo
                   return (
                     <td key={c.key} className="align-top">
                       <div className={cx("h-14 w-28 rounded-md border px-1.5 py-1",
-                        k ? cx(POS_TINT[k.pos] ?? "border-line bg-panel2", k.mine ? "ring-2 ring-acc" : "border-dashed") : c.ownerRosterId === myRosterId ? "border-acc/50 bg-acc-soft/40" : "border-line bg-panel2/50")}>
+                        k ? cx(POS_TINT[k.pos] ?? "border-line bg-panel2", k.mine ? "ring-2 ring-acc" : "opacity-80") : c.ownerRosterId === myRosterId ? "border-acc/50 bg-acc-soft/40" : "border-line bg-panel2/50")}>
                         <div className="flex justify-between text-[10px] opacity-75"><span className="num">{c.label}</span>{k && <span>{k.pos}</span>}</div>
                         {k ? <div className="truncate font-semibold">{k.name}</div> : <div className="truncate text-muted">{traded ? `→ ${teamName(c.ownerRosterId)}` : ""}</div>}
                         {k && <div className="truncate text-[10px] opacity-75">{k.mine ? "your keeper" : "predicted"}{traded ? ` · ${teamName(c.ownerRosterId)}` : ""}</div>}

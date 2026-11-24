@@ -365,6 +365,12 @@ describe.skipIf(!have)("league context on fixtures", () => {
     const md = await import("@/lib/services/mockDraft");
     const st = md.buildMock(ctx, "redraft", { slot: 3 });
     expect(st.picks.filter((p) => p.round === 1)[2].owner).toBe(st.me);
+    const r1 = st.picks.filter((p) => p.round === 1), r2 = st.picks.filter((p) => p.round === 2);
+    expect(r2[0].owner).toBe(r1[r1.length - 1].owner); // snake
+    const lin = md.buildMock(ctx, "redraft", { slot: 3, type: "linear", rounds: 4 });
+    expect(lin.rounds).toBe(4);
+    expect(lin.picks.filter((p) => p.round === 2)[0].owner).toBe(lin.picks[0].owner);
+    expect(new Set(lin.picks.map((p) => p.col)).size).toBe(lin.columns.length);
     let r = 0.3; const rand = () => (r = (r * 9301 + 49297) % 233280 / 233280);
     for (let i = 0; i < st.picks.length; i++) { const pk = md.nextPick(st)!; pk.playerId = pk.owner === st.me ? md.suggestions(st, 1)[0].p.id : md.botPick(st, rand); }
     expect(new Set(st.picks.map((p) => p.playerId)).size).toBe(st.picks.length);

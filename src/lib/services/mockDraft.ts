@@ -16,8 +16,25 @@ import { optimizeLineup, lineupTotal } from "../engine/lineup";
 
 export type MockMode = "redraft" | "keeper" | "rookie" | "startup";
 export interface MockPlayer { id: string; name: string; pos: string; team: string | null; adp: number; value: number; inApp: boolean }
-export interface MockPick { overall: number; round: number; slot: number; label: string; owner: number; playerId: string | null; keeper: boolean }
-export interface MockState { mode: MockMode; picks: MockPick[]; pool: Map<string, MockPlayer>; me: number; teams: { rosterId: number; name: string }[]; rounds: number; superflex: boolean; slots: string[] }
+/** col = board column (the original owner's draft slot); owner = who makes the pick (after trades). */
+export interface MockPick { overall: number; round: number; slot: number; col: number; label: string; owner: number; orig: number; playerId: string | null; keeper: boolean; manual?: boolean }
+export type DraftType = "snake" | "linear";
+export interface MockState { mode: MockMode; type: DraftType; picks: MockPick[]; pool: Map<string, MockPlayer>; me: number; teams: { rosterId: number; name: string }[]; columns: number[]; rounds: number; superflex: boolean; slots: string[] }
+export interface MockOptions { slot?: number; board?: BoardCell[]; rookies?: RookieProspect[]; type?: DraftType; rounds?: number }
+
+/** Put a board in draft order: columns are draft slots; snake reverses every other round. */
+function order(cells: { round: number; col: number; owner: number; orig: number; playerId: string | null; keeper: boolean }[], type: DraftType, n: number): MockPick[] {
+  const out: MockPick[] = [];
+  const rounds = Math.max(0, ...cells.map((c) => c.round));
+  let overall = 0;
+  for (let r = 1; r <= rounds; r++) {
+    const row = cells.filter((c) => c.round === r).sort((a, b) => a.col - b.col);
+    const seq = type === "snake" && r % 2 === 0 ? [...row].reverse() : row;
+    seq.forEach((c, i) => out.push({ ...c, overall: ++overall, slot: i + 1, label: lab(r, i + 1) }));
+  }
+  void n;
+  return out;
+}
 
 const r1 = (x: number) => Math.round(x * 10) / 10;
 const lab = (r: number, s: number) => `${r}.${String(s).padStart(2, "0")}`;
@@ -27,7 +44,10 @@ export function mockModes(ctx: LeagueContext): MockMode[] {
 }
 export const MODE_LABEL: Record<MockMode, string> = { redraft: "Redraft", keeper: "Keeper draft", rookie: "Rookie draft", startup: "Dynasty startup" };
 
-export function buildMock(ctx: LeagueContext, mode: MockMode, opts: { slot?: number; board?: BoardCell[]; rookies?: RookieProspect[] }): MockState {
+export const defaultType = (mode: MockMode): DraftType => (mode === "rookie" ? "linear" : "snake");
+
+export function buildMock(ctx: LeagueContext, mode: MockMode, opts: MockOptions): MockState {
+  const type = opts.type ?? defaultType(mode);
   const rp = ctx.league.roster_positions;
   const superflex = rp.includes("SUPER_FLEX") || rp.filter((x) => x === "QB").length > 1;
   const slots = rp.filter((x) => !["BN", "IR", "TAXI"].includes(x));
@@ -38,8 +58,7 @@ export function buildMock(ctx: LeagueContext, mode: MockMode, opts: { slot?: num
   const pool = new Map<string, MockPlayer>();
   const positions = new Set<string>();
   slots.forEach((s) => ["QB", "RB", "WR", "TE", "K", "DEF", "DL", "LB", "DB"].forEach((p) => { if (s === p || (s === "FLEX" && ["RB", "WR", "TE"].includes(p)) || (s === "SUPER_FLEX" && ["QB", "RB", "WR", "TE"].includes(p)) || (s === "REC_FLEX" && ["WR", "TE"].includes(p)) || (s === "WRRB_FLEX" && ["RB", "WR"].includes(p)) || (s === "IDP_FLEX" && ["DL", "LB", "DB"].includes(p))) positions.add(p); }));
-  let picks: MockPick[] = [];
-  let rounds = ctx.league.settings.draft_rounds || rp.length;
+  let rounds = opts.rounds || ctx.league.settings.draft_rounds || rp.length;
 
   if (mode === "rookie") {
     const list = opts.rookies ?? [];
@@ -48,16 +67,14 @@ export function buildMock(ctx: LeagueContext, mode: MockMode, opts: { slot?: num
       pool.set(id, { id, name: r.n, pos: r.p, team: r.t || null, adp: r.e, value: r1(100 * Math.exp(-(i) / 18)), inApp: id === r.s });
     });
     const seasons = [...new Set(ctx.picks.map((p) => p.season))].sort();
-    const season = seasons[0];
-    const ps = ctx.picks.filter((p) => p.season === season);
-    rounds = Math.max(1, ...ps.map((p) => p.round));
-    // Order within a round: projected finish (worst first), as the pick model estimates it.
-    const ord = (p: (typeof ps)[number]) => p.estimatedSlot ?? (ctx.sim.projectedWins[p.originalRosterId] ?? 0);
-    const byRound = new Map<number, typeof ps>();
-    for (const p of ps) (byRound.get(p.round) ?? byRound.set(p.round, []).get(p.round)!).push(p);
-    let overall = 0;
-    for (let r = 1; r <= rounds; r++) [...(byRound.get(r) ?? [])].sort((a, b) => ord(a) - ord(b)).forEach((p, i) => picks.push({ overall: ++overall, round: r, slot: i + 1, label: lab(r, i + 1), owner: p.ownerRosterId, playerId: null, keeper: false }));
-    return { mode, picks, pool, me, teams, rounds, superflex, slots };
+    const ps = ctx.picks.filter((p) => p.season === seasons[0]);
+    const have = Math.max(1, ...ps.map((p) => p.round));
+    rounds = Math.min(opts.rounds || have, have);
+    // Columns: projected finish, worst team picks first (the pick model's estimate).
+    const finish = (rid: number) => ps.find((p) => p.originalRosterId === rid && p.round === 1)?.estimatedSlot ?? (ctx.sim.projectedWins[rid] ?? 0);
+    const columns = [...new Set(ps.map((p) => p.originalRosterId))].sort((x, y) => finish(x) - finish(y));
+    const picks = order(ps.filter((p) => p.round <= rounds).map((p) => ({ round: p.round, col: columns.indexOf(p.originalRosterId), owner: p.ownerRosterId, orig: p.originalRosterId, playerId: null, keeper: false })), type, columns.length);
+    return { mode, type, picks, pool, me, teams, columns, rounds, superflex, slots };
   }
 
   // Redraft / keeper / startup pool.
@@ -74,24 +91,35 @@ export function buildMock(ctx: LeagueContext, mode: MockMode, opts: { slot?: num
     pool.set(p.id, { id: p.id, name: p.name, pos: p.pos, team: p.team, adp, value: r1(value), inApp: true });
   }
   if (mode === "keeper" && opts.board?.length) {
+    const cols: number[] = [];
+    for (const c of opts.board.filter((x) => x.round === 1).sort((x, y) => x.slot - y.slot)) cols.push(c.originalRosterId);
     rounds = Math.max(...opts.board.map((c) => c.round));
-    picks = opts.board.map((c) => ({ overall: c.overall, round: c.round, slot: c.slot, label: c.label, owner: c.ownerRosterId, playerId: c.keeper?.playerId ?? null, keeper: !!c.keeper }));
+    const picks = order(opts.board.map((c) => ({ round: c.round, col: cols.indexOf(c.originalRosterId), owner: c.ownerRosterId, orig: c.originalRosterId, playerId: c.keeper?.playerId ?? null, keeper: !!c.keeper })), type, cols.length);
     for (const p of picks) if (p.playerId && !pool.has(p.playerId)) { const pl = ctx.players.get(p.playerId); if (pl) pool.set(pl.id, { id: pl.id, name: pl.name, pos: pl.pos, team: pl.team, adp: 999, value: 0, inApp: true }); }
-    return { mode, picks, pool, me, teams, rounds, superflex, slots };
+    return { mode, type, picks, pool, me, teams, columns: cols, rounds, superflex, slots };
   }
-  if (dyn) rounds = rp.length;
-  // Snake order: you at your chosen slot, everyone else in roster order.
+  if (dyn && !opts.rounds) rounds = rp.length;
+  // You at your chosen slot, everyone else in roster order.
   const slot = Math.max(1, Math.min(N, opts.slot ?? 1));
   const others = teams.filter((t) => t.rosterId !== me).map((t) => t.rosterId);
-  const order = [...others.slice(0, slot - 1), me, ...others.slice(slot - 1)];
-  let overall = 0;
-  for (let r = 1; r <= rounds; r++) (r % 2 === 0 ? [...order].reverse() : order).forEach((rid, i) => picks.push({ overall: ++overall, round: r, slot: i + 1, label: lab(r, i + 1), owner: rid, playerId: null, keeper: false }));
-  return { mode, picks, pool, me, teams, rounds, superflex, slots };
+  const columns = [...others.slice(0, slot - 1), me, ...others.slice(slot - 1)];
+  const cells = [];
+  for (let r = 1; r <= rounds; r++) for (let c = 0; c < columns.length; c++) cells.push({ round: r, col: c, owner: columns[c], orig: columns[c], playerId: null, keeper: false });
+  const picks = order(cells, type, columns.length);
+  return { mode, type, picks, pool, me, teams, columns, rounds, superflex, slots };
 }
 
 export const taken = (s: MockState) => new Set(s.picks.filter((p) => p.playerId).map((p) => p.playerId!));
 export const available = (s: MockState) => { const t = taken(s); return [...s.pool.values()].filter((p) => !t.has(p.id)).sort((a, b) => a.adp - b.adp); };
 export const nextPick = (s: MockState) => s.picks.find((p) => !p.playerId) ?? null;
+/**
+ * The pick on the clock: the first empty pick after the last one made in order. Picks you cleared or filled by hand
+ * out of order don't move the clock; holes behind it wait for you (and are filled at the end).
+ */
+export function clockPick(s: MockState): MockPick | null {
+  const last = Math.max(0, ...s.picks.filter((p) => p.playerId && !p.keeper && !p.manual).map((p) => p.overall));
+  return s.picks.find((p) => !p.playerId && p.overall > last) ?? s.picks.find((p) => !p.playerId) ?? null;
+}
 export const rosterOf = (s: MockState, rid: number) => s.picks.filter((p) => p.owner === rid && p.playerId).map((p) => s.pool.get(p.playerId!)!).filter(Boolean);
 
 /** How many of a position a team wants: starters (flex spots spread over eligible positions) plus a sensible bench. */
@@ -106,8 +134,7 @@ function wants(s: MockState, pos: string) {
 }
 
 /** A computer team's pick: near ADP with randomness, filling needs, kickers/defences only at the end. */
-export function botPick(s: MockState, rand: () => number): string | null {
-  const pk = nextPick(s);
+export function botPick(s: MockState, rand: () => number, pk: MockPick | null = clockPick(s)): string | null {
   if (!pk) return null;
   const mine = rosterOf(s, pk.owner);
   const left = s.picks.filter((p) => p.owner === pk.owner && !p.playerId).length;
@@ -130,7 +157,7 @@ export function botPick(s: MockState, rand: () => number): string | null {
 
 /** Your board: best available by SHS value, nudged toward what your lineup still needs. */
 export function suggestions(s: MockState, n = 5) {
-  const pk = nextPick(s);
+  const pk = clockPick(s);
   const mine = rosterOf(s, s.me);
   const count = (pos: string) => mine.filter((p) => p.pos === pos).length;
   const left = s.picks.filter((p) => p.owner === s.me && !p.playerId).length;
