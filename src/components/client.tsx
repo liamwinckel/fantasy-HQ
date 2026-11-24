@@ -74,6 +74,20 @@ export const QUICK_ACTIONS = [
   { href: "/shs", label: "SHS AI Lab", sub: "Backtest and how it works", icon: FlaskConical },
 ];
 
+/** Football in the app's icon style (stroke-drawn, like the other icons). */
+export function FootballIcon({ size = 24, className, strokeWidth = 2 }: { size?: number; className?: string; strokeWidth?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+      <path d="M4 20Q2.5 5 20 4Q21.5 19 4 20Z" />
+      <path d="M5.6 15.4 8.6 18.4" />
+      <path d="M15.4 5.6 18.4 8.6" />
+      <path d="M9.6 14.4 14.4 9.6" />
+      <path d="M10.1 12.1 11.9 13.9" />
+      <path d="M12.1 10.1 13.9 11.9" />
+    </svg>
+  );
+}
+
 /** Bottom bar on phones: four tabs and the SHS quick-actions button in the middle. */
 export function MobileTabs({ keeper }: { keeper: boolean }) {
   const path = usePathname();
@@ -131,8 +145,7 @@ export function MobileTabs({ keeper }: { keeper: boolean }) {
             className={cx("qa-btn -mt-6 flex h-16 w-16 items-center justify-center rounded-full border-4 border-bg shadow-lg", open && !closing ? "rotate-90 bg-acc" : "bg-panel2")}>
             {open && !closing
               ? <X size={28} className="text-on-acc" strokeWidth={2.5} />
-              // eslint-disable-next-line @next/next/no-img-element
-              : <img src={`${BASE_PATH}/shs-mark.png?v=3`} alt="" width={40} height={40} className="h-10 w-10 object-contain" />}
+              : <FootballIcon size={32} strokeWidth={1.9} className="text-acc" />}
           </button>
         </div>
         {TABS.slice(2).map(tab)}

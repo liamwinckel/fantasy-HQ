@@ -63,7 +63,7 @@ function Frame({ children }: { children: ReactNode }) {
         <aside className="hidden h-full w-64 shrink-0 flex-col gap-5 overflow-y-auto border-r border-line bg-panel px-3 py-5 md:flex">
           <Link href="/" className="flex items-center gap-2.5 px-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`${BASE_PATH}/shs-mark.png?v=3`} alt="SHS" width={40} height={40} />
+            <img src={`${BASE_PATH}/shs-original.png`} alt="SHS" width={40} height={40} />
             <span className="h-display text-[22px] leading-none">Fantasy HQ</span>
           </Link>
           <div className="px-1">
@@ -87,7 +87,7 @@ function Frame({ children }: { children: ReactNode }) {
           <header className="z-30 flex shrink-0 items-center gap-2 border-b border-line bg-bg px-3 pb-2.5 pt-[max(env(safe-area-inset-top),0.625rem)] sm:gap-3 sm:px-6">
             <Link href="/" className="shrink-0 md:hidden" aria-label="Dashboard">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={`${BASE_PATH}/shs-mark.png?v=3`} alt="SHS" width={34} height={34} />
+              <img src={`${BASE_PATH}/shs-original.png`} alt="SHS" width={34} height={34} />
             </Link>
             <div className="min-w-0 flex-1 md:hidden">
               <LeagueSelect leagues={leagues} current={leagueId} compact />

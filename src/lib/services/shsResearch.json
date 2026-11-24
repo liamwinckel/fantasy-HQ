@@ -1,0 +1,367 @@
+{
+ "generatedAt": "2026-11-24T06:23:09.591Z",
+ "projSource": "fantasypros",
+ "seasons": [
+  2021,
+  2022,
+  2023,
+  2024,
+  2025,
+  2026
+ ],
+ "rows": 17959,
+ "weeks": 95,
+ "expert": 100,
+ "mult": {
+  "adv": 1,
+  "chart": 1,
+  "inj": 1,
+  "matchup": 1,
+  "ppg": 1,
+  "proj": 1,
+  "script": 1,
+  "snap": 1,
+  "track": 1,
+  "vegas": 1,
+  "xfp": 1
+ },
+ "blend": 0,
+ "summary": {
+  "experts": 67.3,
+  "projection": 67.3,
+  "shsDefault": 67.1,
+  "shsTuned": 67.4
+ },
+ "perSeason": [
+  {
+   "season": 2021,
+   "weeks": 17,
+   "players": 3191,
+   "experts": 66.3,
+   "expertsMae": 5.59,
+   "projection": 66.4,
+   "projectionMae": 5.59,
+   "shsDefault": 66.2,
+   "shsTuned": 66.4,
+   "shsTunedMae": 5.59,
+   "fitted": {
+    "expert": 100,
+    "mult": {
+     "adv": 1,
+     "chart": 1,
+     "inj": 1,
+     "matchup": 1,
+     "ppg": 1,
+     "proj": 1,
+     "script": 1,
+     "snap": 1,
+     "track": 1,
+     "vegas": 1,
+     "xfp": 1
+    },
+    "blend": 0
+   }
+  },
+  {
+   "season": 2022,
+   "weeks": 17,
+   "players": 3230,
+   "experts": 66.8,
+   "expertsMae": 5.45,
+   "projection": 66.8,
+   "projectionMae": 5.45,
+   "shsDefault": 66.5,
+   "shsTuned": 66.9,
+   "shsTunedMae": 5.45,
+   "fitted": {
+    "expert": 100,
+    "mult": {
+     "adv": 1,
+     "chart": 1,
+     "inj": 1,
+     "matchup": 1,
+     "ppg": 1,
+     "proj": 1,
+     "script": 1,
+     "snap": 1,
+     "track": 1,
+     "vegas": 1,
+     "xfp": 1
+    },
+    "blend": 0
+   }
+  },
+  {
+   "season": 2023,
+   "weeks": 17,
+   "players": 3232,
+   "experts": 68.1,
+   "expertsMae": 5.31,
+   "projection": 68,
+   "projectionMae": 5.31,
+   "shsDefault": 68.1,
+   "shsTuned": 68.2,
+   "shsTunedMae": 5.31,
+   "fitted": {
+    "expert": 100,
+    "mult": {
+     "adv": 1,
+     "chart": 1,
+     "inj": 1,
+     "matchup": 1,
+     "ppg": 1,
+     "proj": 1,
+     "script": 1,
+     "snap": 1,
+     "track": 1,
+     "vegas": 1,
+     "xfp": 1
+    },
+    "blend": 0
+   }
+  },
+  {
+   "season": 2024,
+   "weeks": 17,
+   "players": 3199,
+   "experts": 67.2,
+   "expertsMae": 5.48,
+   "projection": 67.2,
+   "projectionMae": 5.49,
+   "shsDefault": 67.1,
+   "shsTuned": 67.4,
+   "shsTunedMae": 5.48,
+   "fitted": {
+    "expert": 100,
+    "mult": {
+     "adv": 1,
+     "chart": 1,
+     "inj": 1,
+     "matchup": 1,
+     "ppg": 1,
+     "proj": 1,
+     "script": 1,
+     "snap": 1,
+     "track": 1,
+     "vegas": 1,
+     "xfp": 1
+    },
+    "blend": 0
+   }
+  },
+  {
+   "season": 2025,
+   "weeks": 17,
+   "players": 3218,
+   "experts": 67.4,
+   "expertsMae": 5.44,
+   "projection": 67.5,
+   "projectionMae": 5.43,
+   "shsDefault": 67.2,
+   "shsTuned": 67.6,
+   "shsTunedMae": 5.44,
+   "fitted": {
+    "expert": 100,
+    "mult": {
+     "adv": 1,
+     "chart": 1,
+     "inj": 1,
+     "matchup": 1,
+     "ppg": 1,
+     "proj": 1,
+     "script": 1,
+     "snap": 1,
+     "track": 1,
+     "vegas": 1,
+     "xfp": 1
+    },
+    "blend": 0
+   }
+  },
+  {
+   "season": 2026,
+   "weeks": 10,
+   "players": 1889,
+   "experts": 67.8,
+   "expertsMae": 5.41,
+   "projection": 67.7,
+   "projectionMae": 5.4,
+   "shsDefault": 67.5,
+   "shsTuned": 67.9,
+   "shsTunedMae": 5.41,
+   "fitted": {
+    "expert": 100,
+    "mult": {
+     "adv": 1,
+     "chart": 1,
+     "inj": 1,
+     "matchup": 1,
+     "ppg": 1,
+     "proj": 1,
+     "script": 1,
+     "snap": 1,
+     "track": 1,
+     "vegas": 1,
+     "xfp": 1
+    },
+    "blend": 0
+   }
+  }
+ ],
+ "factors": [
+  {
+   "key": "adv",
+   "n": 14921,
+   "corr": -0.231,
+   "bySeason": {
+    "2021": -0.229,
+    "2022": -0.23,
+    "2023": -0.238,
+    "2024": -0.172,
+    "2025": -0.263,
+    "2026": -0.296
+   },
+   "mult": 1
+  },
+  {
+   "key": "chart",
+   "n": 14849,
+   "corr": -0.129,
+   "bySeason": {
+    "2021": -0.13,
+    "2022": -0.143,
+    "2023": -0.115,
+    "2024": -0.111,
+    "2025": -0.125,
+    "2026": -0.172
+   },
+   "mult": 1
+  },
+  {
+   "key": "inj",
+   "n": 17959,
+   "corr": 0.044,
+   "bySeason": {
+    "2021": 0.08,
+    "2022": 0.038,
+    "2023": 0.025,
+    "2024": 0.055,
+    "2025": 0.019,
+    "2026": 0.036
+   },
+   "mult": 1
+  },
+  {
+   "key": "matchup",
+   "n": 17947,
+   "corr": -0.007,
+   "bySeason": {
+    "2021": -0.01,
+    "2022": 0.023,
+    "2023": -0.002,
+    "2024": -0.02,
+    "2025": -0.006,
+    "2026": -0.044
+   },
+   "mult": 1
+  },
+  {
+   "key": "ppg",
+   "n": 16396,
+   "corr": -0.062,
+   "bySeason": {
+    "2021": -0.092,
+    "2022": -0.082,
+    "2023": -0.052,
+    "2024": -0.051,
+    "2025": -0.047,
+    "2026": -0.04
+   },
+   "mult": 1
+  },
+  {
+   "key": "proj",
+   "n": 17899,
+   "corr": 0.014,
+   "bySeason": {
+    "2021": 0.009,
+    "2022": 0.002,
+    "2023": 0.031,
+    "2024": 0.004,
+    "2025": -0.007,
+    "2026": 0.05
+   },
+   "mult": 1
+  },
+  {
+   "key": "script",
+   "n": 17958,
+   "corr": 0.06,
+   "bySeason": {
+    "2021": 0.073,
+    "2022": 0.044,
+    "2023": 0.082,
+    "2024": 0.067,
+    "2025": 0.05,
+    "2026": 0.037
+   },
+   "mult": 1
+  },
+  {
+   "key": "snap",
+   "n": 16679,
+   "corr": 0.015,
+   "bySeason": {
+    "2021": 0.013,
+    "2022": 0.037,
+    "2023": 0.008,
+    "2024": 0.016,
+    "2025": 0.01,
+    "2026": -0.005
+   },
+   "mult": 1
+  },
+  {
+   "key": "track",
+   "n": 11537,
+   "corr": -0.085,
+   "bySeason": {
+    "2021": -0.045,
+    "2022": -0.124,
+    "2023": -0.065,
+    "2024": -0.112,
+    "2025": -0.083,
+    "2026": -0.08
+   },
+   "mult": 1
+  },
+  {
+   "key": "vegas",
+   "n": 17958,
+   "corr": -0.126,
+   "bySeason": {
+    "2021": -0.114,
+    "2022": -0.121,
+    "2023": -0.135,
+    "2024": -0.152,
+    "2025": -0.127,
+    "2026": -0.1
+   },
+   "mult": 1
+  },
+  {
+   "key": "xfp",
+   "n": 16367,
+   "corr": 0.007,
+   "bySeason": {
+    "2021": 0.004,
+    "2022": -0.024,
+    "2023": 0,
+    "2024": 0.024,
+    "2025": 0.026,
+    "2026": 0.014
+   },
+   "mult": 1
+  }
+ ]
+}

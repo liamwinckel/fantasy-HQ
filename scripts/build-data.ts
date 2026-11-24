@@ -303,6 +303,37 @@ async function main() {
     }
     console.log(`markets: ${Object.keys(players).length} players · kalshi ${counts.kalshi} · polymarket ${counts.polymarket} · unmatched ${counts.unmatched}`);
     write("markets.json", JSON.stringify({ builtAt: new Date().toISOString(), counts, players }));
+
+    // Archive: keep each player's last lines before his game kicks off, one file per week (history branch),
+    // so betting lines can be graded against what happened.
+    const HIST = path.join(process.cwd(), "history", "markets");
+    fs.mkdirSync(HIST, { recursive: true });
+    const et = (k: string) => { const m = Number(k.slice(5, 7)); return Date.parse(`${k.replace(" ", "T").slice(0, 16)}:00${m >= 4 && m <= 10 ? "-04:00" : "-05:00"}`); };
+    const now = Date.now();
+    const weekOf = [...new Set(scheduleNow.map((g) => g.week))].sort((a, b) => a - b)
+      .find((w) => scheduleNow.filter((g) => g.week === w && g.kickoff).some((g) => et(g.kickoff!) + 4 * 3600e3 > now));
+    if (weekOf && !FX) {
+      const kick = new Map<string, number>();
+      for (const g of scheduleNow) if (g.week === weekOf && g.kickoff) { kick.set(g.home, et(g.kickoff)); kick.set(g.away, et(g.kickoff)); }
+      const file = path.join(HIST, `${s}-w${String(weekOf).padStart(2, "0")}.json`);
+      const prev = fs.existsSync(file) ? (JSON.parse(fs.readFileSync(file, "utf8")) as { players: Record<string, MarketPlayer & { at: string }> }) : { players: {} };
+      let updated = 0;
+      for (const [id, pl] of Object.entries(players)) {
+        const k = pl.team ? kick.get(pl.team) : undefined;
+        if (k === undefined || k <= now) continue; // game started (or no game): keep the pre-kickoff snapshot
+        prev.players[id] = { ...pl, at: new Date(now).toISOString() };
+        updated++;
+      }
+      fs.writeFileSync(file, JSON.stringify({ season: s, week: weekOf, players: prev.players }));
+      console.log(`market history: week ${weekOf}, ${updated} players updated, ${Object.keys(prev.players).length} saved`);
+    }
+    // Everything saved this season, for grading in the app.
+    const weeks: Record<string, unknown> = {};
+    if (fs.existsSync(HIST)) for (const f of fs.readdirSync(HIST)) {
+      const m = f.match(/^(\d{4})-w(\d{2})\.json$/);
+      if (m && Number(m[1]) === s) weeks[String(Number(m[2]))] = JSON.parse(fs.readFileSync(path.join(HIST, f), "utf8")).players;
+    }
+    write(`markets-history-${s}.json`, JSON.stringify({ season: s, weeks }));
   }]);
 
   const failed: string[] = [];

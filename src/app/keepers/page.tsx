@@ -17,13 +17,13 @@ function KeepersPageBody({ setup, league, ctx, sp }: LeagueData) {
   if (ctx.myRosterId === null) return <Notice tone="warn">You don&apos;t own a team in {league.name}.</Notice>;
 
   if (!plan.data) return plan.error ? <Notice tone="warn">{plan.error}</Notice> : <Loading label="Loading the draft" />;
-  const { rules, rounds, sleeperMax, rows, note: draftNote } = plan.data;
+  const { rules, rounds, teams, draftType, sleeperMax, rows, note: draftNote } = plan.data;
 
   return (
     <div className="flex flex-col gap-5">
-      <PageHeader eyebrow={`${league.name} · ${formatLabel(league)} · ${rounds}-round draft`} title="Keeper Planner" />
+      <PageHeader eyebrow={`${league.name} · ${formatLabel(league)} · ${rounds} rounds × ${teams} teams`} title="Keeper Planner" />
       {draftNote && <Notice tone="warn">{draftNote}</Notice>}
-      <KeeperBoard leagueId={league.league_id} rows={rows.map((r) => ({ ...r, surplus: Number.isFinite(r.surplus) ? r.surplus : null }))} rules={rules} rounds={rounds} sleeperMax={sleeperMax || null} season={Number(league.season) + 1} />
+      <KeeperBoard leagueId={league.league_id} rows={rows.map((r) => ({ ...r, surplus: Number.isFinite(r.surplus) ? r.surplus : null }))} rules={rules} rounds={rounds} teams={teams} draftType={draftType} sleeperMax={sleeperMax || null} season={Number(league.season) + 1} />
     </div>
   );
 }

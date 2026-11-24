@@ -160,7 +160,7 @@ describe.skipIf(!have)("league context on fixtures", () => {
     const ctx = await mod.getLeagueContext("fx4", { userId: "389682598735060992" });
     expect(ctx.format).toBe("keeper");
     const picks = (await sleeper.draftPicks(ctx.league.draft_id!)).data;
-    const rules = { maxKeepers: 3, modifier: "+1" as const, undraftedRound: 16, direction: "earlier" as const, overrides: {} };
+    const rules = { maxKeepers: 3, modifier: "+1" as const, undraftedRound: 16, direction: "earlier" as const, overrides: {}, perYearKept: 0, maxYears: 0, protectedRounds: 0, horizon: 1 as const };
     const rows = keeperPlan(ctx, 1, picks, rules, 16);
     const drafted = rows.find((r) => r.draftedRound && r.draftedRound > 1)!;
     expect(drafted.costRound).toBe(drafted.draftedRound! - 1);

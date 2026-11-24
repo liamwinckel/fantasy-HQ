@@ -4,10 +4,14 @@ export type ClassOverride = "Contender" | "Pretender" | "Rebuilder" | "Tanking";
 
 export interface KeeperRule {
   maxKeepers?: number;
-  modifier?: "same" | "+1" | "+2" | "+3";
+  modifier?: "same" | "+1" | "+2" | "+3" | number;
   undraftedRound?: number;
   direction?: "earlier" | "later";
   overrides?: Record<string, number>;
+  perYearKept?: number;
+  maxYears?: number;
+  protectedRounds?: number;
+  horizon?: 1 | 2;
 }
 
 export interface AppSettings {

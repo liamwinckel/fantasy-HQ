@@ -13,5 +13,9 @@ export function keeperRulesFor(settings: AppSettings, league: League): KeeperRul
     undraftedRound: saved.undraftedRound ?? rounds,
     direction: saved.direction ?? "earlier",
     overrides: saved.overrides ?? {},
+    perYearKept: saved.perYearKept ?? 0,
+    maxYears: saved.maxYears ?? 0,
+    protectedRounds: saved.protectedRounds ?? 0,
+    horizon: saved.horizon ?? 1,
   };
 }

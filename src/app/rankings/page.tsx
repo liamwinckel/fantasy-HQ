@@ -6,7 +6,7 @@ import { LeaguePage, useQuery, type LeagueData } from "@/components/AppData";
 import { PlayerImg, Segmented } from "@/components/client";
 import { PlayerLink } from "@/components/PlayerCard";
 import { InfoButton, InjuryChip, NflLogo, PageHeader, cx } from "@/components/ui";
-import { ShsExplainer, useCollege, useShsWeights } from "@/components/ShsAiParts";
+import { ShsExplainer, shsVerdict, useCollege, useShsWeights } from "@/components/ShsAiParts";
 import { accuracy, snapshotWeek } from "@/lib/services/accuracy";
 import { BacktestCard } from "@/components/Backtest";
 import { playerDist } from "@/lib/engine/ranges";
@@ -37,9 +37,27 @@ function statLine(r: RankRow, scope: RankScope) {
   return parts.join(" · ");
 }
 
-function Shs({ v }: { v: number | null }) {
-  if (v === null) return <span className="text-[10px] text-muted">—</span>;
-  return <span className={cx("num rounded px-1.5 py-0.5 text-[11px] font-bold", v >= 5 ? "bg-pos/15 text-pos" : v <= -5 ? "bg-neg/15 text-neg" : "bg-panel2 text-muted")}>{v > 0 ? "+" : ""}{v}%</span>;
+function SortHead({ k, by, desc, onSort, children, className }: { k: "experts" | "ai" | "name" | "pts"; by: string; desc: boolean; onSort: (k: "experts" | "ai" | "name" | "pts") => void; children: React.ReactNode; className?: string }) {
+  const on = by === k;
+  return (
+    <button type="button" onClick={() => onSort(k)} aria-label={`Sort by ${String(children)}`}
+      className={cx("flex items-center justify-center gap-0.5 uppercase tracking-wider", on ? "text-fg" : "text-muted hover:text-fg", className)}>
+      {children}<span className={cx("text-[8px]", !on && "opacity-0")}>{desc ? "▲" : "▼"}</span>
+    </button>
+  );
+}
+
+/** SHS AI column: spots it moves him at his position (▲3) and the verdict word. */
+function Shs({ a, ecrPos }: { a: ShsAi | undefined; ecrPos: number | null }) {
+  const d = shsVerdict(a?.pct);
+  if (!a || !d || ecrPos === null) return <span className="text-[10px] text-muted">—</span>;
+  const move = ecrPos - a.rank;
+  return (
+    <span title={d.long} className={cx("flex flex-col items-center leading-tight", d.tone === "pos" ? "text-pos" : d.tone === "neg" ? "text-neg" : "text-muted")}>
+      <span className="num text-xs font-bold">{move > 0 ? `▲${move}` : move < 0 ? `▼${-move}` : "="}</span>
+      <span className="whitespace-nowrap text-[9px] font-semibold">{d.word}</span>
+    </span>
+  );
 }
 
 /** Why SHS AI agrees or disagrees: each factor from −1 (worse than his rank) to +1 (better). */
@@ -91,7 +109,10 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
   const [open, setOpen] = useState<string | null>(null);
   const [pos, setPos] = useState("ALL");
   const [own, setOwn] = useState<"all" | "fa" | "mine">("all");
-  const [by, setBy] = useState<"experts" | "ai">("experts");
+  // Tap a column title to sort by it; tap again to flip the order.
+  const [by, setBy] = useState<"experts" | "ai" | "name" | "pts">("experts");
+  const [desc, setDesc] = useState(false);
+  const sortBy = (k: typeof by) => { if (k === by) setDesc(!desc); else { setBy(k); setDesc(false); } };
   const [q, setQ] = useState("");
   const [limit, setLimit] = useState(75);
   const positions = ["ALL", ...["QB", "RB", "WR", "TE", "K", "DEF", "DL", "LB", "DB"].filter((p) => all.some((r) => r.pos === p))];
@@ -101,7 +122,9 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
     const byAi = [...all].sort((a, b) => (a.ecrPos === null ? 1 : 0) - (b.ecrPos === null ? 1 : 0) || ai.get(b.id)!.rating - ai.get(a.id)!.rating);
     return { ecr, ai: byAi, ecrN: new Map(ecr.map((r, i) => [r.id, i + 1])), aiN: new Map(byAi.map((r, i) => [r.id, i + 1])) };
   }, [all, ai]);
-  const rows = ranked[by === "ai" ? "ai" : "ecr"]
+  const base = by === "ai" ? ranked.ai : by === "name" ? [...all].sort((a, b) => a.name.localeCompare(b.name))
+    : by === "pts" ? [...all].sort((a, b) => (scope === "dynasty" ? b.value - a.value : b.pts - a.pts)) : ranked.ecr;
+  const rows = (desc ? [...base].reverse() : base)
     .filter((r) => (pos === "ALL" || r.pos === pos) && (own === "all" || (own === "fa" ? r.owner === "Free agent" : r.mine)) && (!q || r.name.toLowerCase().includes(q.toLowerCase())));
   const dates = ctx.consensusDates;
   const dyn = scope === "dynasty";
@@ -127,9 +150,6 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
           {positions.map((p) => <button key={p} type="button" onClick={() => setPos(p)} className={cx("rounded-full px-3 py-1 text-xs font-semibold", pos === p ? "bg-acc text-on-acc" : "bg-panel2 text-muted")}>{p === "ALL" ? "All" : p}</button>)}
         </div>
         <div className="flex flex-wrap items-center gap-1">
-          <span className="mr-1 text-[11px] font-semibold text-muted">Order</span>
-          {([["experts", "ECR"], ["ai", "SHS AI"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => setBy(k)} className={cx("rounded-full px-3 py-1 text-xs font-semibold", by === k ? "bg-fg text-bg" : "bg-panel2 text-muted")}>{l}</button>)}
-          <span className="mx-1 h-4 w-px bg-line" />
           {([["all", "Everyone"], ["fa", "Free agents"], ["mine", "My team"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => setOwn(k)} className={cx("rounded-full px-3 py-1 text-xs font-semibold", own === k ? "bg-fg text-bg" : "bg-panel2 text-muted")}>{l}</button>)}
         </div>
       </div>
@@ -138,29 +158,32 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
       {acc.data && <TrackRecord a={acc.data} />}
 
       <section className="overflow-hidden rounded-xl border border-line bg-panel">
-        <div className="grid grid-cols-[2.25rem_minmax(0,1fr)_3.25rem_3.5rem] items-center gap-2 border-b border-line px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted sm:grid-cols-[2.5rem_minmax(0,1fr)_minmax(0,14rem)_4rem_4.5rem] sm:px-4">
-          <span>{by === "experts" ? "ECR" : "AI"}</span><span>Player</span><span className="hidden sm:block">{dyn ? "Profile" : "Projected stats"}</span>
-          <span className="flex items-center justify-center gap-1">SHS<InfoButton open={aiInfo} onClick={() => setAiInfo(!aiInfo)} label="What is SHS AI?" /></span><span className="text-right">{numLabel}</span>
+        <div className="grid grid-cols-[2.5rem_minmax(0,1fr)_3.75rem_3.5rem] items-center gap-2 border-b border-line px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted sm:grid-cols-[2.5rem_minmax(0,1fr)_minmax(0,14rem)_4.5rem_4.5rem] sm:px-4">
+          <SortHead k="experts" by={by} desc={desc} onSort={sortBy}>ECR</SortHead>
+          <SortHead k="name" by={by} desc={desc} onSort={sortBy} className="justify-start">Player</SortHead>
+          <span className="hidden sm:block">{dyn ? "Profile" : "Projected stats"}</span>
+          <span className="flex items-center justify-center gap-0.5"><SortHead k="ai" by={by} desc={desc} onSort={sortBy}>SHS</SortHead><InfoButton open={aiInfo} onClick={() => setAiInfo(!aiInfo)} label="What is SHS AI?" /></span>
+          <SortHead k="pts" by={by} desc={desc} onSort={sortBy} className="justify-end">{numLabel}</SortHead>
         </div>
         {aiInfo && <div className="fhq-in border-b border-line bg-panel2/40 px-3 py-3 sm:px-4"><ShsExplainer scope={scope} /></div>}
         <ul className="divide-y divide-line">
           {rows.slice(0, limit).map((r) => (
             <Fragment key={r.id}>
-            <li onClick={() => setOpen(open === r.id ? null : r.id)} className={cx("cursor-pointer", "grid grid-cols-[2.25rem_minmax(0,1fr)_3.25rem_3.5rem] items-center gap-2 px-3 py-2 sm:grid-cols-[2.5rem_minmax(0,1fr)_minmax(0,14rem)_4rem_4.5rem] sm:px-4", r.mine && "bg-acc-soft")}>
+            <li onClick={() => setOpen(open === r.id ? null : r.id)} className={cx("cursor-pointer", "grid grid-cols-[2.5rem_minmax(0,1fr)_3.75rem_3.5rem] items-center gap-2 px-3 py-2 sm:grid-cols-[2.5rem_minmax(0,1fr)_minmax(0,14rem)_4.5rem_4.5rem] sm:px-4", r.mine && "bg-acc-soft")}>
               <div className="text-center">
-                <div className="num text-sm font-bold">{by === "experts" ? (r.ecrPos !== null ? ranked.ecrN.get(r.id) : "–") : ranked.aiN.get(r.id)}</div>
-                <div className="text-[9px] font-semibold text-muted">{r.pos}{by === "experts" ? r.ecrPos ?? "–" : ai.get(r.id)!.rank}</div>
+                <div className="num text-sm font-bold">{by === "ai" ? ranked.aiN.get(r.id) : r.ecrPos !== null ? ranked.ecrN.get(r.id) : "–"}</div>
+                <div className="text-[9px] font-semibold text-muted">{r.pos}{by === "ai" ? ai.get(r.id)!.rank : r.ecrPos ?? "–"}</div>
               </div>
               <div className="flex min-w-0 items-center gap-2.5">
                 <PlayerImg id={r.id} name={r.name} pos={r.pos} size={34} />
                 <div className="min-w-0">
-                  <div className="flex min-w-0 items-center gap-1.5 text-sm font-semibold"><PlayerLink id={r.id} name={r.name} /><InjuryChip status={r.injury} /></div>
-                  <div className="flex items-center gap-1 truncate text-[11px] text-muted"><NflLogo team={r.team} size={12} />{r.pos} · {r.team ?? "FA"}{r.opp ? ` vs ${r.opp}` : ""}<span className={cx("ml-1 truncate", r.mine ? "font-semibold text-acc-ink" : r.owner === "Free agent" ? "font-semibold text-pos" : "")}>· {r.owner}</span></div>
+                  <div className="flex min-w-0 items-center gap-1.5 text-sm font-semibold"><PlayerLink id={r.id} name={r.name} className="min-w-0" /><InjuryChip status={r.injury} /></div>
+                  <div className="flex min-w-0 items-center gap-1 overflow-hidden whitespace-nowrap text-[11px] text-muted"><NflLogo team={r.team} size={12} />{r.pos} · {r.team ?? "FA"}{r.opp ? ` vs ${r.opp}` : ""}<span className={cx("ml-1 truncate", r.mine ? "font-semibold text-acc-ink" : r.owner === "Free agent" ? "font-semibold text-pos" : "")}>· {r.owner}</span></div>
                   <div className="truncate text-[11px] text-muted sm:hidden">{statLine(r, scope)}</div>
                 </div>
               </div>
               <div className="hidden truncate text-xs text-muted sm:block">{statLine(r, scope)}</div>
-              <div className="text-center"><Shs v={ai.get(r.id)?.pct ?? null} /></div>
+              <div className="flex justify-center"><Shs a={ai.get(r.id)} ecrPos={r.ecrPos} /></div>
               <div className="text-right">
                 <div className="num font-[family-name:var(--font-display)] text-xl font-bold leading-none">{(dyn ? r.value : r.pts).toFixed(dyn ? 0 : 1)}</div>
                 {scope === "ros" && r.games > 0 && <div className="text-[10px] text-muted">{(r.pts / r.games).toFixed(1)}/g</div>}
@@ -170,7 +193,7 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
             {open === r.id && (
               <li className="fhq-in bg-panel2/40 px-3 py-3 sm:px-4">
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs">
-                  <span><b>SHS AI {ai.get(r.id)?.pct !== null ? `${ai.get(r.id)!.pct! > 0 ? "+" : ""}${ai.get(r.id)!.pct}%` : "—"}</b> <span className="text-muted">· ECR {r.pos}{r.ecrPos ?? "–"} → SHS AI {r.pos}{ai.get(r.id)!.rank}</span></span>
+                  <span><b>SHS AI: {shsVerdict(ai.get(r.id)?.pct)?.word ?? "no view"}</b> <span className="text-muted">· experts {r.pos}{r.ecrPos ?? "–"} → SHS AI {r.pos}{ai.get(r.id)!.rank}. {shsVerdict(ai.get(r.id)?.pct)?.long ?? ""}</span></span>
                   <span className="text-muted">bars: − worse than his rank · + better</span>
                 </div>
                 <Factors a={ai.get(r.id)!} />

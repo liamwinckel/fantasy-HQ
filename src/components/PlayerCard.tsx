@@ -65,7 +65,7 @@ export function PlayerCardProvider({ children }: { children: ReactNode }) {
 export function PlayerLink({ id, name, className }: { id: string; name: string; className?: string }) {
   const { open } = usePlayerCard();
   return (
-    <button type="button" onClick={(e) => { e.stopPropagation(); open(id); }} className={cx("truncate text-left underline-offset-2 hover:underline", className)}>{name}</button>
+    <button type="button" onClick={(e) => { e.stopPropagation(); open(id); }} className={cx("min-w-0 max-w-full truncate text-left underline-offset-2 hover:underline", className)}>{name}</button>
   );
 }
 

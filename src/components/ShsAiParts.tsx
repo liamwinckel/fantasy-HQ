@@ -38,7 +38,7 @@ export function ShsExplainer({ scope }: { scope: RankScope }) {
           : <>The score is <b className="text-fg">{w.expert}% experts · {100 - w.expert}% SHS factors</b>.</>}
         {" "}Each factor compares him with players ranked near him at his position, from −1 (points to worse) to +1 (better).
       </p>
-      <p className="mt-1.5"><b className="text-pos">+8%</b> means SHS AI rates him 8% higher than his expert rank implies; <b className="text-neg">−8%</b> means 8% lower; around 0 means the evidence backs the experts.</p>
+      <p className="mt-1.5">The verdict says how far it moves him: <b className="text-pos">▲▲ Strong buy</b> (12%+ more valuable than his expert rank), <b className="text-pos">▲ Buy</b> (4–11%), <b>= Agree</b>, <b className="text-neg">▼ Fade</b>, <b className="text-neg">▼▼ Strong fade</b>. In Rankings the arrow number is how many spots SHS AI moves him at his position (▲3 = three spots higher than the experts).</p>
       <p className="mt-2 font-semibold text-fg">What it looks at{scope === "week" ? " this week" : scope === "ros" ? " for the rest of the season" : " in dynasty"}:</p>
       <ul className="mt-1 list-disc space-y-0.5 pl-4">{list.map((m) => <li key={m}>{m}</li>)}</ul>
       <p className="mt-2">Weights can be changed in Settings → SHS AI. Results are graded each week, and factors that predict well gain weight.</p>
@@ -46,12 +46,26 @@ export function ShsExplainer({ scope }: { scope: RankScope }) {
   );
 }
 
-/** Compact ±% chip. */
+/**
+ * SHS AI's view in plain words. The % is how much higher (+) or lower (−) SHS AI values him than his expert rank:
+ *   ≥ +12 Strong buy · +4…+11 Buy · −3…+3 Agree · −4…−11 Fade · ≤ −12 Strong fade
+ */
+export function shsVerdict(pct: number | null | undefined): { word: string; arrow: string; tone: "pos" | "neg" | "flat"; long: string } | null {
+  if (pct === null || pct === undefined) return null;
+  if (pct >= 12) return { word: "Strong buy", arrow: "▲▲", tone: "pos", long: `SHS AI rates him well above his expert rank (worth about ${pct}% more).` };
+  if (pct >= 4) return { word: "Buy", arrow: "▲", tone: "pos", long: `SHS AI rates him a bit above his expert rank (worth about ${pct}% more).` };
+  if (pct <= -12) return { word: "Strong fade", arrow: "▼▼", tone: "neg", long: `SHS AI rates him well below his expert rank (worth about ${Math.abs(pct)}% less).` };
+  if (pct <= -4) return { word: "Fade", arrow: "▼", tone: "neg", long: `SHS AI rates him a bit below his expert rank (worth about ${Math.abs(pct)}% less).` };
+  return { word: "Agree", arrow: "=", tone: "flat", long: "SHS AI agrees with the experts on him." };
+}
+
+/** Compact verdict chip: ▲ Buy / = Agree / ▼ Fade. */
 export function AiChip({ v, className, label }: { v: number | null | undefined; className?: string; label?: boolean }) {
-  if (v === null || v === undefined) return null;
+  const d = shsVerdict(v);
+  if (!d) return null;
   return (
-    <span title="SHS AI vs expert rank" className={cx("num inline-flex shrink-0 items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-bold", v >= 5 ? "bg-pos/15 text-pos" : v <= -5 ? "bg-neg/15 text-neg" : "bg-panel2 text-muted", className)}>
-      {label && <span className="font-semibold opacity-80">SHS</span>}{v > 0 ? "+" : ""}{v}%
+    <span title={d.long} className={cx("inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded px-1.5 py-0.5 text-[10px] font-bold", d.tone === "pos" ? "bg-pos/15 text-pos" : d.tone === "neg" ? "bg-neg/15 text-neg" : "bg-panel2 text-muted", className)}>
+      {label && <span className="font-semibold opacity-75">SHS</span>}<span aria-hidden>{d.arrow}</span>{d.word}
     </span>
   );
 }

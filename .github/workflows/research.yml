@@ -1,0 +1,52 @@
+# SHS AI research: replays every week since 2021 and refits SHS AI's default weights.
+# Run by hand (Actions → SHS AI research → Run workflow); commits the results, which redeploys the site.
+name: SHS AI research
+
+on:
+  workflow_dispatch:
+    inputs:
+      seasons:
+        description: Seasons to replay
+        default: "2021,2022,2023,2024,2025,2026"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: research
+  cancel-in-progress: false
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/cache@v4
+        with:
+          path: .cache/research
+          key: research-${{ github.run_id }}
+          restore-keys: research-
+      - name: Replay seasons and fit
+        run: npx tsx scripts/research/shs-history.ts
+        env:
+          SEASONS: ${{ inputs.seasons }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Commit results
+        run: |
+          git add src/lib/services/shsResearch.json docs/shs-research.md
+          if ! git diff --cached --quiet; then
+            git -c user.name="fantasy-hq-bot" -c user.email="actions@users.noreply.github.com" commit -q -m "SHS AI research: refit defaults from replayed seasons"
+            git push -q
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: research
+          path: |
+            docs/shs-research.md
+            src/lib/services/shsResearch.json

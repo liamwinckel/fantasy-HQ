@@ -98,6 +98,16 @@ export function availabilityFor(injury: string | null, weeksAhead: number): numb
   }
 }
 
+/** Recent (last 3) vs season opportunity → usage multiplier 0.85–1.2. Logs must be in week order. */
+export function usageFromLogs(pos: string, sorted: GameLog[]): { usageFactor: number; ratio: number } {
+  const opp = sorted.map((g) => g.opportunity).filter((x): x is number => x !== null);
+  if (!["QB", "RB", "WR", "TE"].includes(pos) || opp.length < 4) return { usageFactor: 1, ratio: 0 };
+  const seasonOpp = mean(opp);
+  if (seasonOpp <= 0) return { usageFactor: 1, ratio: 0 };
+  const r = mean(opp.slice(-3)) / seasonOpp;
+  return { usageFactor: clamp(1 + 0.4 * (r - 1), 0.85, 1.2), ratio: r };
+}
+
 export function project(inp: ProjectionInputs): Projection {
   const { player, log, prior, currentWeek, lastWeek, opponents, defense } = inp;
   const env = inp.envFactor ?? 1;
@@ -113,18 +123,9 @@ export function project(inp: ProjectionInputs): Projection {
   if (games < 3) notes.push(games === 0 ? "No games this season; projection is the positional prior." : `Only ${games} game(s) played; blended with a prior.`);
 
   // Usage trend
-  let usageFactor = 1;
-  const opp = sorted.map((g) => g.opportunity).filter((x): x is number => x !== null);
-  if (["QB", "RB", "WR", "TE"].includes(player.pos) && opp.length >= 4) {
-    const seasonOpp = mean(opp);
-    const recentOpp = mean(opp.slice(-3));
-    if (seasonOpp > 0) {
-      const r = recentOpp / seasonOpp;
-      usageFactor = clamp(1 + 0.4 * (r - 1), 0.85, 1.2);
-      if (r > 1.2) notes.push(`Opportunity up ${Math.round((r - 1) * 100)}% over the last 3 games.`);
-      if (r < 0.8) notes.push(`Opportunity down ${Math.round((1 - r) * 100)}% over the last 3 games.`);
-    }
-  }
+  const { usageFactor, ratio: r } = usageFromLogs(player.pos, sorted);
+  if (r > 1.2) notes.push(`Opportunity up ${Math.round((r - 1) * 100)}% over the last 3 games.`);
+  if (r > 0 && r < 0.8) notes.push(`Opportunity down ${Math.round((1 - r) * 100)}% over the last 3 games.`);
 
   // Spread
   let sd: number;

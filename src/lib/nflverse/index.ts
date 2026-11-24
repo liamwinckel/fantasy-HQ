@@ -62,3 +62,7 @@ export const ecrWeekly = (season: string, force = false) =>
 /** Prediction-market lines; refreshed hourly on game days, so cache briefly. */
 export const markets = (force = false) =>
   cached("data:markets", "nflverse", 20 * 60_000, get("markets.json"), (b) => JSON.parse(b) as MarketsFile, { force });
+/** Betting lines saved before each game this season: week → sleeperId → lines. */
+export interface MarketsHistory { season: number; weeks: Record<string, Record<string, { lines: import("../markets").MarketLine[]; team: string | null; at: string }>> }
+export const marketsHistory = (season: string, force = false) =>
+  cached(`data:mkthist:${season}`, "nflverse", HOUR, get(`markets-history-${season}.json`), (b) => JSON.parse(b) as MarketsHistory, { force });

@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write   # to save weekly betting-line snapshots to the "history" branch
   pages: write
   id-token: write
 
@@ -36,10 +36,31 @@ jobs:
           path: .cache
           key: ecr-${{ github.run_id }}
           restore-keys: ecr-
+      - name: Check out saved history (betting-line snapshots)
+        run: |
+          if git ls-remote --exit-code --heads origin history >/dev/null 2>&1; then
+            git fetch --depth 1 origin history
+            git worktree add history origin/history
+          else
+            mkdir -p history
+          fi
       - name: Download and trim NFLverse + Sleeper player data
         run: npm run data
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Save betting-line snapshots to the history branch
+        if: always()
+        run: |
+          cd history
+          if [ ! -d .git ] && [ ! -f .git ]; then
+            git init -q -b history && git remote add origin "$(git -C .. remote get-url origin)"
+            git -C .. config --get http.https://github.com/.extraheader >/dev/null && git config http.https://github.com/.extraheader "$(git -C .. config --get http.https://github.com/.extraheader)"
+          fi
+          git add -A
+          if ! git diff --cached --quiet; then
+            git -c user.name="fantasy-hq-bot" -c user.email="actions@users.noreply.github.com" commit -q -m "Betting-line snapshots $(date -u +%Y-%m-%dT%H:%MZ)"
+            git push -q origin HEAD:history
+          fi
       - name: Build static site
         run: |
           export NEXT_PUBLIC_BASE_PATH="/${GITHUB_REPOSITORY#*/}"   # served at /<repo name>

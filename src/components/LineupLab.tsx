@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { AiChip } from "./ShsAiParts";
 import { createPortal } from "react-dom";
 import { Lock, X } from "lucide-react";
 import { PlayerImg, Segmented } from "@/components/client";
@@ -272,7 +271,7 @@ function SlotSheet({ slot, index, lineup, players, byId, onPick, onClose }: {
                 <button type="button" onClick={() => onPick(p.id)} className="flex w-full items-center gap-3 rounded-xl border border-line bg-panel px-3 py-2 text-left hover:border-acc">
                   <PlayerImg id={p.id} name={p.name} pos={p.pos} size={32} />
                   <span className="min-w-0 flex-1">
-                    <span className="flex items-center gap-1.5 text-sm font-semibold"><span className="truncate">{p.name}</span><InjuryChip status={p.injury} /><AiChip v={p.ai} label /></span>
+                    <span className="flex items-center gap-1.5 text-sm font-semibold"><span className="truncate">{p.name}</span><InjuryChip status={p.injury} /></span>
                     <span className="block truncate text-xs text-muted">{p.pos} · {p.onBye ? "BYE" : p.opp ? `vs ${p.opp}` : "no game"}{at >= 0 ? " · starting (they swap)" : " · bench"}</span>
                   </span>
                   <span className="text-right"><span className="num block text-sm font-bold">{p.median.toFixed(1)}</span><span className={cx("num block text-[11px] font-semibold", p.median - (cur?.median ?? 0) >= 0 ? "text-pos" : "text-neg")}>{signed(p.median - (cur?.median ?? 0))}</span></span>
@@ -308,7 +307,6 @@ function Versus({ slots, lineup, bench, byId, opponent, live, changed, onSlot, b
           <div className="flex min-w-0 items-center gap-1 text-xs font-semibold sm:text-sm">
             {p ? <><PlayerLink id={p.id} name={shortName(p.name)} className="sm:hidden" /><PlayerLink id={p.id} name={p.name} className="hidden sm:inline" /></> : <span className="text-muted">Empty</span>}
             {p && <InjuryChip status={p.injury} />}
-            {p && <AiChip v={p.ai} className="hidden sm:inline-flex" />}
           </div>
           <div className="flex items-center gap-1 truncate text-[10px] text-muted sm:text-[11px]">{p && <NflLogo team={p.team} size={11} />}<span className="truncate">{p ? `${p.team ?? p.pos} ${p.onBye ? "BYE" : p.opp ? `v ${p.opp}` : ""}` : ""}</span></div>
         </div>
