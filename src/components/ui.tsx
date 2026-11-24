@@ -117,12 +117,12 @@ export function Bar({ value, max = 100, className, color = "bg-acc" }: { value: 
   );
 }
 
-export function Stat({ label, value, sub, tag, tone, onClick }: { label: string; value: ReactNode; sub?: ReactNode; tag?: SourceTag; tone?: "pos" | "neg" | "warn"; onClick?: () => void }) {
+export function Stat({ label, value, sub, tone, onClick }: { label: string; value: ReactNode; sub?: ReactNode; tag?: SourceTag; tone?: "pos" | "neg" | "warn"; onClick?: () => void }) {
   const inner = (
     <>
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs font-medium text-muted">{label}</span>
-        <span className="flex items-center gap-1">{tag && <Tag kind={tag} />}{onClick && <ChevronRight size={14} className="text-muted" aria-hidden />}</span>
+        {onClick && <ChevronRight size={14} className="shrink-0 text-muted" aria-hidden />}
       </div>
       <div className="num font-[family-name:var(--font-display)] text-3xl font-bold leading-none sm:text-4xl">{value}</div>
       {sub && <div className={cx("text-xs", tone === "pos" ? "text-pos" : tone === "neg" ? "text-neg" : tone === "warn" ? "text-warn" : "text-muted")}>{sub}</div>}

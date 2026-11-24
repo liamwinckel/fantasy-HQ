@@ -11,6 +11,7 @@ import { useApp } from "@/components/AppData";
 import { rankings } from "@/lib/services/rankings";
 import { shsAi, type ShsAi } from "@/lib/services/shsai";
 import { useShsWeights } from "@/components/ShsAiParts";
+import { Sheet } from "@/components/Sheet";
 
 type Tier = "early" | "mid" | "late";
 export interface Asset {
@@ -259,8 +260,28 @@ function Positions({ title, rows }: { title: string; rows: PositionShift[] }) {
 function Result({ r, partner, busy, onApply, me, partnerId }: { r: TradeResult; partner: string; busy: boolean; onApply: (s: BalanceSuggestion) => void; me: number; partnerId: number }) {
   const meP = r.power.find((p) => p.rosterId === me);
   const themP = r.power.find((p) => p.rosterId === partnerId);
+  const [rosOpen, setRosOpen] = useState(false);
+  const maxW = Math.max(1, ...r.lineup.aWeeks.flatMap((w) => [w.before, w.after]));
   return (
     <div className={cx("flex flex-col gap-4 transition-opacity", busy && "opacity-60")}>
+      <Sheet open={rosOpen} onClose={() => setRosOpen(false)} title="Your lineup, rest of season" sub={`${r.lineup.aRosBefore} → ${r.lineup.aRosAfter} pts/g over ${r.lineup.weeks} week${r.lineup.weeks === 1 ? "" : "s"}`}>
+        <div className="flex flex-col gap-3 pb-4 text-sm">
+          <p>Points per game from your <b>best possible lineup each remaining week</b>, before and after the trade. It already counts: who you lose and who steps in from your bench (or a flex shuffle when the positions differ), bye weeks, each player&apos;s matchups ahead (tough defences lower his projection), and injuries. It&apos;s calibrated to what your team has actually scored{r.lineup.aActualPpg !== null ? ` (${r.lineup.aActualPpg} pts/g so far)` : ""}.</p>
+          <ul className="flex flex-col gap-1.5">
+            {r.lineup.aWeeks.map((w) => { const d = Math.round((w.after - w.before) * 10) / 10; return (
+              <li key={w.week} className="grid grid-cols-[3rem_minmax(0,1fr)_3.5rem] items-center gap-2 text-xs">
+                <span className="text-muted">Wk {w.week}</span>
+                <span className="flex flex-col gap-0.5">
+                  <span className="h-1.5 rounded-full bg-muted/40" style={{ width: `${(w.before / maxW) * 100}%` }} />
+                  <span className={cx("h-1.5 rounded-full", d >= 0 ? "bg-pos" : "bg-neg")} style={{ width: `${(w.after / maxW) * 100}%` }} />
+                  {w.byes.length > 0 && <span className="text-[10px] text-muted">Bye: {w.byes.join(", ")}</span>}
+                </span>
+                <span className={cx("num text-right font-bold", d > 0 ? "text-pos" : d < 0 ? "text-neg" : "text-muted")}>{d > 0 ? "+" : ""}{d}</span>
+              </li>); })}
+          </ul>
+          <p className="text-[11px] text-muted">Grey bar = before, coloured = after. Playoff weeks included.</p>
+        </div>
+      </Sheet>
       <Card>
         <div className="flex flex-col gap-5 lg:flex-row">
           <div className="flex flex-1 flex-col gap-4">
@@ -272,9 +293,11 @@ function Result({ r, partner, busy, onApply, me, partnerId }: { r: TradeResult; 
           </div>
           <div className="grid grid-cols-2 gap-2 lg:w-[400px]">
             <Mini label="Package value: you get" value={signed(r.market.netForA)} sub={`send ${r.market.aSends} · receive ${r.market.bSends}`} tone={r.market.netForA >= 0 ? "pos" : "neg"} />
-            <Mini label="Your lineup, rest of season" value={`${signed(r.lineup.aRosDelta)} pts`} tone={r.lineup.aRosDelta >= 0 ? "pos" : "neg"} />
+            <Mini label="Your lineup, rest of season" value={r.lineup.weeks ? `${signed(r.lineup.aRosDelta)}/g` : "—"} sub={r.lineup.weeks ? `${r.lineup.aRosBefore} → ${r.lineup.aRosAfter} pts/g · tap` : undefined} tone={r.lineup.aRosDelta >= 0 ? "pos" : "neg"} onClick={r.lineup.weeks ? () => setRosOpen(true) : undefined} />
             <Mini label="Your power rank" value={meP ? `#${meP.before.rank} → #${meP.after.rank}` : "—"} tone={meP && meP.after.rank <= meP.before.rank ? "pos" : "neg"} />
             <Mini label="Your title odds" value={r.odds ? `${r.odds.aTitleBefore.toFixed(0)}% → ${r.odds.aTitleAfter.toFixed(0)}%` : "—"} tone={r.odds && r.odds.aTitleAfter >= r.odds.aTitleBefore ? "pos" : "neg"} />
+            <Mini label={`Chance ${partner} accepts`} value={`${Math.round(r.accept * 100)}%`} sub={r.accept >= 0.6 ? "Likely" : r.accept >= 0.35 ? "Coin flip" : "Unlikely as is"} tone={r.accept >= 0.5 ? "pos" : r.accept < 0.3 ? "neg" : null} />
+            <Mini label="Your actual scoring" value={r.lineup.aActualPpg !== null ? `${r.lineup.aActualPpg}` : "—"} sub="pts/g so far" tone={null} />
           </div>
         </div>
       </Card>
@@ -386,13 +409,14 @@ function Result({ r, partner, busy, onApply, me, partnerId }: { r: TradeResult; 
   );
 }
 
-function Mini({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone: "pos" | "neg" | false | null | undefined }) {
+function Mini({ label, value, sub, tone, onClick }: { label: string; value: string; sub?: string; tone: "pos" | "neg" | false | null | undefined; onClick?: () => void }) {
+  const Tag2 = onClick ? "button" : "div";
   return (
-    <div className="rounded-lg bg-panel2 p-3">
+    <Tag2 type={onClick ? "button" : undefined} onClick={onClick} className={cx("rounded-lg bg-panel2 p-3 text-left", onClick && "transition-transform active:scale-[0.97]")}>
       <div className="text-[11px] text-muted">{label}</div>
       <div className={cx("num font-[family-name:var(--font-display)] text-2xl font-bold", tone === "pos" ? "text-pos" : tone === "neg" ? "text-neg" : "")}>{value}</div>
       {sub && <div className="text-[11px] text-muted">{sub}</div>}
-    </div>
+    </Tag2>
   );
 }
 
@@ -414,7 +438,7 @@ function AiTake({ ai, aSends, bSends, teams, me, partner, partnerName, mode }: {
   if (!all.length) return null;
   return (
     <Card title="SHS AI take" right={<span className={cx("num text-sm font-bold", shift > 0.5 ? "text-pos" : shift < -0.5 ? "text-neg" : "text-muted")}>{shift > 0 ? "+" : ""}{shift.toFixed(1)} for you</span>}
-      info={<>SHS AI = 75% expert consensus + 25% SHS factors ({mode === "dynasty" ? "dynasty: age cliff, team, coaching, usage, draft profile" : "rest of season: production, snaps, advanced metrics, projection, schedule, injuries"}). Each player&apos;s trade value is nudged by his SHS AI %; the number above is how much that moves the deal toward you (+) or {partnerName} (−). It doesn&apos;t change the main verdict.</>}>
+      info={<>SHS AI = each player&apos;s value vs his expert rank, from the SHS formula ({mode === "dynasty" ? "dynasty" : "rest of season"}). Each player&apos;s trade value is nudged by his SHS AI %; the number above is how much that moves the deal toward you (+) or {partnerName} (−). It doesn&apos;t change the main verdict.</>}>
       <ul className="grid gap-1.5 sm:grid-cols-2">
         {all.map((x) => (
           <li key={x.id} className="flex items-center justify-between gap-2 rounded-lg bg-panel2 px-3 py-2 text-sm">

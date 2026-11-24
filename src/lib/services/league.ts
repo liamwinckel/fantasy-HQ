@@ -639,7 +639,7 @@ function pts(r: Roster, k: "fpts" | "fpts_against") {
   return Math.round(((s[k] ?? 0) + (s[`${k}_decimal`] ?? 0) / 100) * 10) / 10;
 }
 
-function toLite(p: Player, pos: string, info: Map<string, { birthDate: string | null; draftRound: number | null }> | undefined, nowYear: number): PlayerLite {
+function toLite(p: Player, pos: string, info: Map<string, { birthDate: string | null; draftRound: number | null; draftPick?: number | null; rookieSeason?: number | null }> | undefined, nowYear: number): PlayerLite {
   const gsis = p.gsis_id?.trim() || null;
   const ni = gsis ? info?.get(gsis) : undefined;
   const birth = p.birth_date || ni?.birthDate || null;
@@ -653,7 +653,7 @@ function toLite(p: Player, pos: string, info: Map<string, { birthDate: string | 
   const injury = p.injury_status || (p.status === "Injured Reserve" ? "IR" : null);
   return {
     id: p.player_id, name, pos, positions: playerPositions(p), team: p.team ?? null, age: pos === "DEF" ? null : age,
-    yearsExp: p.years_exp ?? null, injury, injuryPart: p.injury_body_part ?? null, gsis, draftRound: ni?.draftRound ?? null,
+    yearsExp: p.years_exp ?? null, injury, injuryPart: p.injury_body_part ?? null, gsis, draftRound: ni?.draftRound ?? null, draftPick: ni?.draftPick ?? null, rookieSeason: ni?.rookieSeason ?? null,
     depth: p.depth_chart_order ?? null,
   };
 }

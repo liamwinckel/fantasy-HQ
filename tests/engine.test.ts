@@ -8,7 +8,7 @@ import { availabilityFor, project, type PlayerLite, type Projection } from "@/li
 import { simulateSeason, winProbability } from "@/lib/engine/simulate";
 import { classifyTeams, strategicPickValue, strategicPlayerValue, type TeamMetrics } from "@/lib/engine/classify";
 import type { WeekStat } from "@/lib/nflverse";
-import { packageValue } from "@/lib/engine/trade";
+import { packageValue, acceptChance } from "@/lib/engine/trade";
 
 const p = (id: string, pos: string, points: number) => ({ id, positions: [pos], points });
 
@@ -185,7 +185,10 @@ describe("four quarters for a dollar", () => {
   it("consolidates packages so depth can't add up to a star", () => {
     expect(packageValue([80])).toBeCloseTo(80, 0);
     expect(packageValue([20, 20, 20, 20])).toBeLessThan(55);
-    expect(packageValue([20, 20, 20, 20])).toBeGreaterThan(45);
+    expect(packageValue([20, 20, 20, 20])).toBeGreaterThan(38);
+    // The best player in a deal needs a premium to move.
+    expect(acceptChance([80], [50, 40])).toBeLessThan(0.2);
+    expect(acceptChance([50], [55])).toBeGreaterThan(0.5);
     expect(packageValue([50, 40])).toBeLessThan(90);
     expect(packageValue([50, 40])).toBeGreaterThan(50);
     expect(packageValue([])).toBe(0);

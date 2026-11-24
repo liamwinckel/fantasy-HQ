@@ -27,11 +27,26 @@ export interface AssetLine {
 }
 
 /**
- * "Four quarters don't make a dollar": package value = (Σ vᵢ^1.5)^(1/1.5).
- * One 80 stays 80; four 20s are worth ~50, not 80; 50 + 40 is worth ~72, not 90.
+ * "Four quarters don't make a dollar": package value = (Σ vᵢ^1.8)^(1/1.8).
+ * One 80 stays 80; four 20s are worth ~43, not 80; 50 + 40 is worth ~66, not 90 — which is how trades actually
+ * clear in real leagues: the side getting the best player wins unless the other side is clearly paid more.
  * Applies to players and draft picks alike. A single lineup slot can't hold four depth players.
  */
-export const CONSOLIDATION_POWER = 1.5;
+export const CONSOLIDATION_POWER = 1.8;
+
+/**
+ * How likely the other manager is to accept, judged the way real managers judge trades: by market value
+ * (package-adjusted), wanting to come out a little ahead, and asking for a clear premium to give up the best
+ * player in the deal ("stud tax"). Returns 0.03–0.95.
+ */
+export function acceptChance(theyGive: number[], theyGet: number[]): number {
+  const give = packageValue(theyGive), get = packageValue(theyGet);
+  if (give <= 0) return get > 0 ? 0.95 : 0.5;
+  const studTheirs = Math.max(0, ...theyGive) > Math.max(0, ...theyGet);
+  const premium = 0.03 + (studTheirs ? 0.07 : 0);
+  const x = (get / give - (1 + premium)) / 0.07;
+  return Math.max(0.03, Math.min(0.95, 1 / (1 + Math.exp(-x))));
+}
 export function packageValue(values: number[]): number {
   const s = values.reduce((t, v) => t + Math.pow(Math.max(0, v), CONSOLIDATION_POWER), 0);
   return Math.round(Math.pow(s, 1 / CONSOLIDATION_POWER) * 10) / 10;
@@ -84,8 +99,17 @@ export interface TradeResult {
   strategic: { aNet: number; bNet: number };
   lineup: {
     aWeekBefore: number; aWeekAfter: number; bWeekBefore: number; bWeekAfter: number;
+    /** Rest of season, points per game from your best lineup each week (byes, matchups and bench fill-ins included). */
     aRosDelta: number; bRosDelta: number;
+    aRosBefore: number; aRosAfter: number; bRosBefore: number; bRosAfter: number;
+    /** Your team's actual points per game so far. */
+    aActualPpg: number | null;
+    /** Week by week, your best lineup before → after. */
+    aWeeks: { week: number; before: number; after: number; byes: string[] }[];
+    weeks: number;
   };
+  /** Chance the other manager accepts, from how they'd see the market value. */
+  accept: number;
   odds: { aTitleBefore: number; aTitleAfter: number; bTitleBefore: number; bTitleAfter: number; aPlayoffBefore: number; aPlayoffAfter: number } | null;
   verdict: string;
   verdictTone: "good" | "bad" | "even";
@@ -217,16 +241,29 @@ export function evaluateTrade(ctx: LeagueContext, req: TradeRequest): TradeResul
     return { mean: lineupTotal(lu), sd: Math.max(8, sd) } as TeamWeek;
   };
   const w0 = Math.min(ctx.currentWeek, ctx.lastWeek);
-  const ros = (roster: string[]) => {
-    let t = 0;
-    for (let w = w0; w <= ctx.lastWeek; w++) t += weekly(roster, w).mean;
-    return t;
+  const rosWeeks = ctx.seasonOver ? [] : Array.from({ length: ctx.lastWeek - w0 + 1 }, (_, i) => w0 + i);
+  // Calibrate to what the team actually scores: model PPG vs real PPG so far, half-weighted, capped at ±10%.
+  const calib = (t: typeof teamA) => {
+    const gp = t.wins + t.losses + t.ties;
+    if (gp < 3 || !t.pointsFor) return 1;
+    const model = rosWeeks.length ? weekly(usable(t), w0).mean : 0;
+    if (model <= 0) return 1;
+    return Math.max(0.9, Math.min(1.1, 1 + 0.5 * (t.pointsFor / gp / model - 1)));
   };
+  const rosPpg = (roster: string[], k: number) => rosWeeks.length ? (rosWeeks.reduce((a, w) => a + weekly(roster, w).mean, 0) / rosWeeks.length) * k : 0;
+  const ka = calib(teamA), kb = calib(teamB);
+  const byesOn = (roster: string[], w: number) => roster.filter((pid) => { const pr = ctx.projections.get(pid); return pr && pr.base >= (ctx.replacement[ctx.players.get(pid)?.pos ?? ""] ?? 99) && (pr.byWeek[w] ?? 1) === 0 && !ctx.players.get(pid)?.injury; }).map((pid) => ctx.players.get(pid)?.name ?? pid);
+  const aRosBefore = r1(rosPpg(aBefore, ka)), aRosAfter = r1(rosPpg(aAfter, ka)), bRosBefore = r1(rosPpg(bBefore, kb)), bRosAfter = r1(rosPpg(bAfter, kb));
+  const gpA = teamA.wins + teamA.losses + teamA.ties;
   const lineup = {
     aWeekBefore: weekly(aBefore, w0).mean, aWeekAfter: weekly(aAfter, w0).mean,
     bWeekBefore: weekly(bBefore, w0).mean, bWeekAfter: weekly(bAfter, w0).mean,
-    aRosDelta: ctx.seasonOver ? 0 : r1(ros(aAfter) - ros(aBefore)),
-    bRosDelta: ctx.seasonOver ? 0 : r1(ros(bAfter) - ros(bBefore)),
+    aRosDelta: ctx.seasonOver ? 0 : r1(aRosAfter - aRosBefore),
+    bRosDelta: ctx.seasonOver ? 0 : r1(bRosAfter - bRosBefore),
+    aRosBefore, aRosAfter, bRosBefore, bRosAfter,
+    aActualPpg: gpA ? r1(teamA.pointsFor / gpA) : null,
+    aWeeks: rosWeeks.map((w) => ({ week: w, before: r1(weekly(aBefore, w).mean * ka), after: r1(weekly(aAfter, w).mean * ka), byes: byesOn(aAfter, w) })),
+    weeks: rosWeeks.length,
   };
 
   // Title odds before/after (re-simulated with the new rosters for both teams)
@@ -303,14 +340,15 @@ export function evaluateTrade(ctx: LeagueContext, req: TradeRequest): TradeResul
   if (!ctx.seasonOver) {
     // Team build: what each side can actually start afterwards. Losing a good RB2 and having to start
     // a weak backup costs real points even if the values look even. Redraft leans on it most.
-    const rosScale = Math.max(10, Math.abs(lineup.aRosDelta) + Math.abs(lineup.bRosDelta));
+    const rosScale = Math.max(2, Math.abs(lineup.aRosDelta) + Math.abs(lineup.bRosDelta));
     const w = dynasty ? 0.25 : 0.65;
     aRel = (1 - w) * aRel + w * (lineup.aRosDelta / rosScale);
     bRel = (1 - w) * bRel + w * (lineup.bRosDelta / rosScale);
   }
+  const accept = acceptChance(assets.filter((a) => a.from === req.teamB).map((a) => a.market), assets.filter((a) => a.from === req.teamA).map((a) => a.market));
   let verdict: string, verdictTone: TradeResult["verdictTone"];
   if (assets.length === 0) { verdict = "Add assets to both sides"; verdictTone = "even"; }
-  else if (aRel >= -0.05 && bRel >= -0.05) { verdict = "Fits both teams"; verdictTone = "good"; }
+  else if (aRel >= -0.05 && bRel >= -0.05 && accept >= 0.4) { verdict = "Fits both teams"; verdictTone = "good"; }
   else if (aRel > 0.15 && bRel < -0.15) { verdict = "Strongly favours you"; verdictTone = "good"; }
   else if (aRel > 0.05) { verdict = "Favours you"; verdictTone = "good"; }
   else if (aRel < -0.15) { verdict = "Favours them"; verdictTone = "bad"; }
@@ -326,7 +364,8 @@ export function evaluateTrade(ctx: LeagueContext, req: TradeRequest): TradeResul
   if (classA && classB)
     explanation.push(`As a ${classA}, the trade is worth ${aNet >= 0 ? "+" : ""}${aNet} to you strategically. As a ${classB}, it's worth ${bNet >= 0 ? "+" : ""}${bNet} to ${teamB.name}.`);
   const dA = r1(lineup.aWeekAfter - lineup.aWeekBefore);
-  if (!ctx.seasonOver) explanation.push(`Your best lineup this week: ${dA >= 0 ? "+" : ""}${dA} pts. Rest of season: ${lineup.aRosDelta >= 0 ? "+" : ""}${lineup.aRosDelta} pts.`);
+  if (!ctx.seasonOver) explanation.push(`Your best lineup this week: ${dA >= 0 ? "+" : ""}${dA} pts. Rest of season: ${lineup.aRosBefore} → ${lineup.aRosAfter} pts/g (${lineup.aRosDelta >= 0 ? "+" : ""}${lineup.aRosDelta}), counting byes, matchups and who steps in from your bench.`);
+  explanation.push(`Chance ${teamB.name} says yes: about ${Math.round(accept * 100)}%. Managers judge by market value, want to come out a little ahead, and want a clear premium to give up the best player in the deal.`);
   const worstA = build.a[0];
   if (worstA && worstA.delta <= -2) explanation.push(`Team build: your ${worstA.slot} would be ${worstA.after.name} (${worstA.after.ppg} pts/g) instead of ${worstA.before.name} (${worstA.before.ppg}).`);
   const worstB = build.b[0];
@@ -398,7 +437,7 @@ export function evaluateTrade(ctx: LeagueContext, req: TradeRequest): TradeResul
     mode, classA, classB, assets, balance, power, positionsA: posShift(req.teamA), positionsB: posShift(req.teamB), suggestions,
     market: { aSends: r1(aSendsMkt), bSends: r1(bSendsMkt), aSendsRaw: r1(aSendsRaw), bSendsRaw: r1(bSendsRaw), netForA, pctForA },
     rosterSpots,
-    strategic: { aNet, bNet }, lineup, odds, verdict, verdictTone, explanation, confidence, build,
+    strategic: { aNet, bNet }, lineup, accept, odds, verdict, verdictTone, explanation, confidence, build,
     limitations: [
       "Values come from SHS Fantasy HQ's own model, not a market consensus.",
       "Projections are internal estimates built from this season's production and usage.",

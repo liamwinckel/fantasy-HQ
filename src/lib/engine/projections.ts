@@ -21,6 +21,9 @@ export interface PlayerLite {
   injuryPart: string | null;
   gsis: string | null;
   draftRound: number | null;
+  /** NFL draft pick overall and first NFL season (nflverse). */
+  draftPick?: number | null;
+  rookieSeason?: number | null;
   /** Sleeper depth chart order (1 = starter). */
   depth?: number | null;
 }

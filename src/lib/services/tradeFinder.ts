@@ -9,12 +9,14 @@
  *      Redraft: your best lineups improve over the rest of the season, theirs don't get worse by more than a little,
  *               and package values stay within a fair band.
  *      Dynasty: both sides gain value for their strategy (contender/rebuilder weights) and the value gap stays fair.
- * 4. Rank by your gain, their gain and fairness.
+ * 4. Keep only deals the other manager would plausibly accept: judged by market value (package-adjusted), with
+ *    the small edge managers want and a premium for giving up the best player in the deal.
+ * 5. Rank by your gain, their gain and how likely they are to say yes.
  */
 import type { LeagueContext } from "./league";
 import { optimizeLineup, lineupTotal } from "../engine/lineup";
 import { powerRankings, type TeamPower } from "../engine/power";
-import { packageValue } from "../engine/trade";
+import { acceptChance, packageValue } from "../engine/trade";
 import { strategicPickValue, strategicPlayerValue, type TeamClass } from "../engine/classify";
 
 export interface TeamProfile {
@@ -31,8 +33,10 @@ export interface FoundTrade {
   partnerName: string;
   give: { id: string; name: string; pos: string; value: number }[];
   get: { id: string; name: string; pos: string; value: number }[];
-  myRos: number; // rest-of-season lineup change, points
+  myRos: number; // rest-of-season lineup change, points per game
   theirRos: number;
+  /** Chance they accept, judged by market value the way real managers do. */
+  accept: number;
   myValue: number; // package value change (dynasty: strategic)
   theirValue: number;
   fairness: number; // 0 = perfectly even, 1 = very lopsided
@@ -132,8 +136,8 @@ export function findTrades(ctx: LeagueContext, me: number, limit = 12, onlyPartn
     for (const [give, get] of combos) {
       const myAfter = [...myIds.filter((x) => !give.includes(x)), ...get];
       const theirAfter = [...theirIds.filter((x) => !get.includes(x)), ...give];
-      const myRos = weeks.length ? ros(myAfter) - myBase : 0;
-      const theirRos = weeks.length ? ros(theirAfter) - theirBase : 0;
+      const myRos = weeks.length ? (ros(myAfter) - myBase) / weeks.length : 0;
+      const theirRos = weeks.length ? (ros(theirAfter) - theirBase) / weeks.length : 0;
       const pkgGive = packageValue(give.map(val));
       const pkgGet = packageValue(get.map(val));
       let myValue = dynasty ? packageValue(get.map((x) => strat(mine.cls, x))) - packageValue(give.map((x) => strat(mine.cls, x))) : pkgGet - pkgGive;
@@ -153,18 +157,22 @@ export function findTrades(ctx: LeagueContext, me: number, limit = 12, onlyPartn
         }
       }
       const total = Math.max(1, pkgGive + pkgGet);
+      const pickVals = extraPick.map((x) => x.value);
+      const iGivePk = extraPick.length > 0 && pkgGet > pkgGive;
+      const accept = acceptChance([...get.map(val), ...(iGivePk ? [] : pickVals)], [...give.map(val), ...(iGivePk ? pickVals : [])]);
       const fairness = Math.min(1, Math.abs(myValue - theirValue) / 2 / Math.max(1, pkgGive, pkgGet));
       // Must make sense for both builds
       const ok = dynasty
         ? myValue > -0.05 * total && theirValue > -0.08 * total && fairness < 0.35 &&
           (myRos > -8 || mine.cls === "Rebuilder" || mine.cls === "Tanking") &&
           // A contender won't give up this season's points; a pretender only a little.
-          (partner.cls === "Contender" ? theirRos > -10 : partner.cls === "Pretender" ? theirRos > -25 : true)
-        : onlyPartner !== null ? myRos > 0.5 && theirRos > -12 && fairness < 0.5 : myRos > 2 && theirRos > -6 && fairness < 0.4;
+          (partner.cls === "Contender" ? theirRos > -1 : partner.cls === "Pretender" ? theirRos > -2.5 : true) && accept >= 0.35
+        : (onlyPartner !== null ? myRos > 0.1 && theirRos > -1.5 : myRos > 0.3 && theirRos > -0.8) && accept >= 0.35;
       if (!ok) continue;
-      const myGainNorm = dynasty ? myValue / total + myRos / 200 : myRos / 30 + myValue / total;
-      const theirGainNorm = dynasty ? theirValue / total : theirRos / 30 + theirValue / total;
-      const score = myGainNorm + 0.6 * theirGainNorm - 0.8 * fairness;
+      const myGainNorm = dynasty ? myValue / total + myRos / 20 : myRos / 3 + 0.5 * myValue / total;
+      const theirGainNorm = dynasty ? theirValue / total : theirRos / 3 + theirValue / total;
+      // Realistic first: a deal they'd actually take beats a slightly bigger win they'd never accept.
+      const score = myGainNorm + 0.4 * theirGainNorm + 0.8 * accept;
       const info = (id: string) => ({ id: `p:${id}`, name: ctx.players.get(id)!.name, pos: ctx.players.get(id)!.pos, value: Math.round(val(id) * 10) / 10 });
       const giveL = give.map(info);
       const getL = get.map(info);
@@ -180,7 +188,7 @@ export function findTrades(ctx: LeagueContext, me: number, limit = 12, onlyPartn
       out.push({
         partner: partner.rosterId, partnerName: partner.name,
         give: iGivePick ? [...giveL, ...extraPick] : giveL, get: !iGivePick && extraPick.length ? [...getL, ...extraPick] : getL,
-        myRos: r1(myRos), theirRos: r1(theirRos), myValue: r1(myValue), theirValue: r1(theirValue), fairness: Math.round(fairness * 100) / 100, score, why,
+        myRos: r1(myRos), theirRos: r1(theirRos), accept: Math.round(accept * 100) / 100, myValue: r1(myValue), theirValue: r1(theirValue), fairness: Math.round(fairness * 100) / 100, score, why,
         link: `/trade/?partner=${partner.rosterId}&a=${[...give.map((x) => `p:${x}`), ...(iGivePick ? extraPick.map((x) => x.id) : [])].join(",")}&b=${[...get.map((x) => `p:${x}`), ...(!iGivePick ? extraPick.map((x) => x.id) : [])].join(",")}`,
       });
     }

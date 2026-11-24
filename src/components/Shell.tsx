@@ -101,7 +101,7 @@ function Frame({ children }: { children: ReactNode }) {
               <Link href="/settings" aria-label="Settings" className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-panel md:hidden"><Settings size={18} /></Link>
             </div>
           </header>
-          <div ref={scroller} id="fhq-scroll" className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <div ref={scroller} id="fhq-scroll" className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-none">
             <main className="app-bottom-pad mx-auto w-full max-w-[1320px] px-3 pt-5 sm:px-6"><Boundary>{children}</Boundary></main>
           </div>
         </div>

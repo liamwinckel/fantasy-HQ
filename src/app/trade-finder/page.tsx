@@ -76,7 +76,7 @@ function TradeFinderPageBody({ league, ctx, sp }: LeagueData) {
       {shown.length === 0 && <Card><p className="text-sm text-muted">No trades found that clearly help both teams{partnerFilter ? " with this partner" : ""}. That usually means rosters don&apos;t complement each other right now.</p></Card>}
       <div className="grid gap-4 lg:grid-cols-2">
         {shown.map((t, i) => {
-          const fairPct = Math.round((1 - t.fairness) * 100);
+          
           return (
             <Card key={i} title={<span className="flex items-center gap-2"><Logo src={ctx.teams.find((x) => x.rosterId === t.partner)?.avatar} name={t.partnerName} size={28} />With {t.partnerName}</span>} right={<Tag kind="MODEL" />}>
               <div className="grid grid-cols-2 gap-3">
@@ -85,9 +85,9 @@ function TradeFinderPageBody({ league, ctx, sp }: LeagueData) {
               </div>
               <AiEdge give={t.give} get={t.get} ai={ai} />
               <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-                <Metric label={dyn ? "Value to you" : "Your lineups, rest of season"} value={dyn ? signed(t.myValue) : `${signed(t.myRos)} pts`} tone={(dyn ? t.myValue : t.myRos) >= 0 ? "pos" : "neg"} />
-                <Metric label={dyn ? "Value to them" : "Their lineups"} value={dyn ? signed(t.theirValue) : `${signed(t.theirRos)} pts`} tone={(dyn ? t.theirValue : t.theirRos) >= 0 ? "pos" : "neg"} />
-                <Metric label="Fairness" value={`${fairPct}%`} tone={fairPct >= 75 ? "pos" : fairPct >= 60 ? undefined : "neg"} />
+                <Metric label={dyn ? "Value to you" : "Your lineups, rest of season"} value={dyn ? signed(t.myValue) : `${signed(t.myRos)}/g`} tone={(dyn ? t.myValue : t.myRos) >= 0 ? "pos" : "neg"} />
+                <Metric label={dyn ? "Value to them" : "Their lineups"} value={dyn ? signed(t.theirValue) : `${signed(t.theirRos)}/g`} tone={(dyn ? t.theirValue : t.theirRos) >= 0 ? "pos" : "neg"} />
+                <Metric label="Chance they accept" value={`${Math.round(t.accept * 100)}%`} tone={t.accept >= 0.55 ? "pos" : t.accept >= 0.35 ? undefined : "neg"} />
               </div>
               <ul className="mt-3 flex flex-col gap-1 text-xs leading-relaxed text-muted">{t.why.map((w) => <li key={w}>› {w}</li>)}</ul>
               <Link href={t.link} className="mt-3 block rounded-lg bg-acc py-2.5 text-center text-sm font-bold text-on-acc">Open in Trade Analyzer</Link>

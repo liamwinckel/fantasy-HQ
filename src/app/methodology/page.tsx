@@ -98,7 +98,7 @@ export default function Methodology() {
             <li>Builds 1-for-1, 2-for-1 and 1-for-2 deals that move your surplus to their need and theirs to yours. In dynasty, a pick can even out the value.</li>
             <li><b>Redraft</b> keeps deals that raise your best lineups through the fantasy final, cost them under ~6 points, and stay within a fair value band.</li>
             <li><b>Dynasty</b> keeps deals where both sides gain strategy-adjusted value. Contenders won&apos;t give up more than ~10 points this season.</li>
-            <li>Ranked by your gain + 0.6 × their gain − unfairness, at most two deals per partner.</li>
+            <li>Only deals the other manager would plausibly accept (judged by market value with a premium for giving up the best player), ranked by your gain, their gain and acceptance chance; at most two per partner.</li>
           </ul>
         </Card>
 
@@ -110,7 +110,7 @@ export default function Methodology() {
         </Card>
 
         <Card title="Rookie Report">
-          <p className="text-sm leading-relaxed">This season&apos;s rookies (Sleeper years of experience = 0). Grade is the percentile within the class of 40% dynasty value, 25% snap share, 20% draft capital, 15% points per game. College prospects arrive once NFLverse publishes combine and draft data.</p>
+          <p className="text-sm leading-relaxed">This season&apos;s rookies (first NFL season this year). Draft-capital-first model, scored within each position: 35% draft capital (overall pick, steep at the top) · 25% role (snap share; QBs: share of team dropbacks) · 25% opportunity &amp; production (expected points from touches and targets, plus points per game) · 10% age · 5% landing spot. Grade A 70+, B 50+, C 30+. College prospects arrive once NFLverse publishes combine and draft data.</p>
         </Card>
 
         <Card title="Waiver impact">

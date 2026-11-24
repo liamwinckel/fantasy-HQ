@@ -14,7 +14,7 @@ import { HBars } from "@/components/charts";
 import { PlayerLink } from "@/components/PlayerCard";
 
 /** Which detail is open: a dashboard-style panel for one team, or one team's position group. */
-type Detail = { k: DashKey; rid: number } | { k: "pos"; rid: number; pos: string } | { k: "depth"; rid: number } | null;
+type Detail = { k: DashKey; rid: number } | { k: "sched"; rid: number } | { k: "pos"; rid: number; pos: string } | { k: "depth"; rid: number } | null;
 const CellBtn = ({ onClick, className, children, title }: { onClick: () => void; className?: string; children: ReactNode; title?: string }) => (
   <button type="button" title={title} onClick={onClick} className={cx("transition-transform active:scale-90", className)}>{children}</button>
 );
@@ -120,8 +120,8 @@ function LeagueBody({ league, ctx }: LeagueData) {
       )}
       {fmt === "dynasty" && <DynastyOutlook ctx={ctx} power={power} onOpen={open} />}
       <Sheet open={detail !== null} onClose={() => setDetail(null)} full={detail?.k === "record"}
-        title={detail ? (detail.k === "pos" ? `${detail.pos} group` : detail.k === "depth" ? "Bench depth" : TITLES[detail.k] ?? "") : ""} sub={detail ? team(detail.rid).name : ""}>
-        {detail && (detail.k === "pos" || detail.k === "depth" ? <GroupDetail ctx={ctx} power={power} rid={detail.rid} pos={detail.k === "pos" ? detail.pos : null} /> : <DashDetail k={detail.k} ctx={ctx} me={detail.rid} power={power} />)}
+        title={detail ? (detail.k === "pos" ? `${detail.pos} group` : detail.k === "depth" ? "Bench depth" : detail.k === "sched" ? "Schedule left" : TITLES[detail.k] ?? "") : ""} sub={detail ? team(detail.rid).name : ""}>
+        {detail && (detail.k === "sched" ? <SchedDetail ctx={ctx} power={power} rid={detail.rid} /> : detail.k === "pos" || detail.k === "depth" ? <GroupDetail ctx={ctx} power={power} rid={detail.rid} pos={detail.k === "pos" ? detail.pos : null} /> : <DashDetail k={detail.k} ctx={ctx} me={detail.rid} power={power} />)}
       </Sheet>
     </div>
   );
@@ -138,21 +138,56 @@ function PlayoffPicture({ ctx, power, onOpen }: { ctx: Ctx; power: Power; onOpen
     return opps.length ? opps.reduce((s, o) => s + (score.get(o) ?? 0), 0) / opps.length : null;
   };
   const rows = ctx.teams.map((t) => ({ t, seed: ctx.sim.avgSeed[t.rosterId] ?? 99, po: ctx.sim.playoffOdds[t.rosterId] ?? 0, s: sos(t.rosterId) })).sort((a, b) => a.seed - b.seed);
+  // Remaining schedule as a rank among the league (1 = hardest), shown as a word + 5-step difficulty meter.
+  const hard = [...rows].filter((r) => r.s !== null).sort((a, b) => b.s! - a.s!).map((r) => r.t.rosterId);
+  const n = hard.length;
+  const level = (rid: number) => { const i = hard.indexOf(rid); if (i < 0) return null; const q = n > 1 ? i / (n - 1) : 0.5; const step = q < 0.2 ? 5 : q < 0.4 ? 4 : q < 0.6 ? 3 : q < 0.8 ? 2 : 1; return { step, word: ["", "Easiest", "Easy", "Average", "Tough", "Toughest"][step], rank: i + 1 }; };
   const spots = ctx.league.settings.playoff_teams || 6;
   return (
-    <Card title="Playoff picture" info={<>Average finishing seed and playoff odds from 4,000 simulated seasons. Schedule = average power score of each team&apos;s remaining fantasy opponents (higher = harder).</>} pad={false}>
+    <Card title="Playoff picture" info={<>Playoff odds from 4,000 simulated seasons. <b>Schedule left</b> = how strong each team&apos;s remaining fantasy opponents are (by power score), ranked against the rest of the league: 5 bars = toughest run-in, 1 bar = easiest. Tap it for the opponents.</>} pad={false}>
+      <div className="grid grid-cols-[1.75rem_minmax(0,1fr)_3.5rem_5.5rem] gap-2 border-b border-line px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted sm:px-5"><span>#</span><span>Team</span><span className="text-right">Playoffs</span><span className="text-right">Schedule left</span></div>
       <ul className="divide-y divide-line">
         {rows.map((r, i) => (
-          <li key={r.t.rosterId} data-team={r.t.rosterId} className={cx("cursor-pointer active:bg-panel2", "grid grid-cols-[1.75rem_minmax(0,1fr)_3.5rem_4rem] items-center gap-2 px-3 py-2 sm:px-5", r.t.rosterId === ctx.myRosterId && "bg-acc-soft", i === spots - 1 && "border-b-2 border-b-acc")}>
+          <li key={r.t.rosterId} data-team={r.t.rosterId} className={cx("cursor-pointer active:bg-panel2", "grid grid-cols-[1.75rem_minmax(0,1fr)_3.5rem_5.5rem] items-center gap-2 px-3 py-2 sm:px-5", r.t.rosterId === ctx.myRosterId && "bg-acc-soft", i === spots - 1 && "border-b-2 border-b-acc")}>
             <span className="num text-xs font-bold text-muted">{i + 1}</span>
             <TeamLink rosterId={r.t.rosterId} name={r.t.name} avatar={r.t.avatar} size={22} className="max-w-full text-sm font-semibold" />
             <CellBtn onClick={() => onOpen({ k: "playoff", rid: r.t.rosterId })} className="num text-right text-sm font-bold underline decoration-line underline-offset-4">{r.po.toFixed(0)}%</CellBtn>
-            <CellBtn onClick={() => onOpen({ k: "power", rid: r.t.rosterId })} className={cx("num text-right text-xs", r.s === null ? "text-muted" : r.s > 85 ? "text-neg" : r.s < 75 ? "text-pos" : "text-muted")}>{r.s === null ? "—" : `sched ${r.s.toFixed(0)}`}</CellBtn>
+            {(() => { const lv = level(r.t.rosterId); return (
+              <CellBtn onClick={() => onOpen({ k: "sched", rid: r.t.rosterId })} className="flex flex-col items-end gap-0.5" aria-label={lv ? `${lv.word} remaining schedule, ${lv.rank} of ${n}` : "No games left"}>
+                {lv ? <>
+                  <span className={cx("text-[11px] font-semibold", lv.step >= 4 ? "text-neg" : lv.step <= 2 ? "text-pos" : "text-muted")}>{lv.word}</span>
+                  <span className="flex gap-0.5">{[1, 2, 3, 4, 5].map((k) => <span key={k} className={cx("h-1.5 w-2.5 rounded-sm", k <= lv.step ? (lv.step >= 4 ? "bg-neg" : lv.step <= 2 ? "bg-pos" : "bg-muted") : "bg-panel2")} />)}</span>
+                </> : <span className="text-xs text-muted">—</span>}
+              </CellBtn>); })()}
           </li>
         ))}
       </ul>
       <p className="px-5 py-2 text-[11px] text-muted">Yellow line = playoff cut ({spots} teams).</p>
     </Card>
+  );
+}
+
+/** One team's remaining fantasy opponents, week by week, with how strong each is. */
+function SchedDetail({ ctx, power, rid }: { ctx: Ctx; power: Power; rid: number }) {
+  const score = new Map(power.map((p) => [p.rosterId, p.score]));
+  const rank = new Map([...power].sort((a, b) => b.score - a.score).map((p, i) => [p.rosterId, i + 1]));
+  const games = Object.entries(ctx.remainingSchedule).flatMap(([w, gs]) => gs.filter(([a, b]) => a === rid || b === rid).map(([a, b]) => ({ week: Number(w), opp: a === rid ? b : a }))).sort((a, b) => a.week - b.week);
+  const avg = games.length ? games.reduce((x, g) => x + (score.get(g.opp) ?? 0), 0) / games.length : null;
+  const lg = power.reduce((x, p) => x + p.score, 0) / Math.max(1, power.length);
+  if (!games.length) return <p className="text-sm text-muted">No regular-season games left.</p>;
+  return (
+    <div className="flex flex-col gap-3 pb-4">
+      <p className="text-sm">Remaining opponents average a power score of <b>{avg!.toFixed(0)}</b>, vs <b>{lg.toFixed(0)}</b> for the league{avg! > lg + 3 ? " — a tougher run-in than most." : avg! < lg - 3 ? " — an easier run-in than most." : " — about average."}</p>
+      <ul className="divide-y divide-line rounded-xl border border-line">
+        {games.map((g) => { const t = ctx.teams.find((x) => x.rosterId === g.opp)!; const r = rank.get(g.opp) ?? 0; const n = power.length; return (
+          <li key={g.week} className="grid grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 text-sm">
+            <span className="text-xs text-muted">Wk {g.week}</span>
+            <span className="truncate font-semibold">{t?.name}</span>
+            <span className={cx("text-xs font-semibold", r <= n / 3 ? "text-neg" : r > (2 * n) / 3 ? "text-pos" : "text-muted")}>#{r} power · {(score.get(g.opp) ?? 0).toFixed(0)}</span>
+          </li>); })}
+      </ul>
+      <p className="text-[11px] text-muted">Power score /100 = team strength now and for the rest of the season. Red = a top-third team, green = bottom third.</p>
+    </div>
   );
 }
 

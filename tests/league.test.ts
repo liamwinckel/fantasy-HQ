@@ -269,7 +269,8 @@ describe.skipIf(!have)("league context on fixtures", () => {
     const ctx = await mod.getLeagueContext("fx1", { userId: "389682598735060992" });
     const rows = rookieReport(ctx);
     expect(rows.length).toBeGreaterThan(10);
-    expect(rows.every((r) => ctx.players.get(r.id)!.yearsExp === 0)).toBe(true);
+    expect(rows.every((r) => { const p = ctx.players.get(r.id)!; return p.rookieSeason === Number(ctx.league.season) || (p.rookieSeason == null && p.yearsExp === 0); })).toBe(true);
+    expect(rows.some((r) => r.pos === "QB")).toBe(true);
     expect(rows[0].grade).toBe("A");
     expect(rows[rows.length - 1].grade).toBe("D");
   });
