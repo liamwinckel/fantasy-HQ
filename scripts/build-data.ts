@@ -293,7 +293,7 @@ async function main() {
     try {
       const tr = await (await fetch("https://api.sleeper.app/v1/players/nfl/trending/add?lookback_hours=24&limit=15")).json() as { player_id: string; count: number }[];
       feed = feed.filter((x) => x.kind !== "trending");
-      for (const t of tr) { const p = sleeperAll[t.player_id]; if (p && OFF.has(String(p.position))) feed.push({ at: now, id: t.player_id, kind: "trending", text: `${p.full_name} added in ${t.count.toLocaleString()} Sleeper leagues in the last day`, pos: String(p.position), team: (p.team as string) || null }); }
+      for (const t of tr) { const p = sleeperAll[t.player_id]; if (p && OFF.has(String(p.position))) feed.push({ at: now, id: t.player_id, kind: "trending", text: `${p.full_name} added ${t.count.toLocaleString()} times on Sleeper in the last day`, pos: String(p.position), team: (p.team as string) || null }); }
     } catch { /* optional */ }
     const cut = Date.now() - 10 * 864e5;
     feed = feed.filter((x) => Date.parse(x.at) >= cut).slice(-800);
