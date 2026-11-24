@@ -8,6 +8,8 @@ import { Card, ClassBadge, InjuryChip, Logo, NflLogo, Tag, cx, signed, Info } fr
 import { evaluateTrade, type BalanceSuggestion, type PositionShift, type PowerShift, type TradeResult } from "@/lib/engine/trade";
 import { getLeagueContext } from "@/lib/services/league";
 import { useApp } from "@/components/AppData";
+import { rankings } from "@/lib/services/rankings";
+import { shsAi, type ShsAi } from "@/lib/services/shsai";
 
 type Tier = "early" | "mid" | "late";
 export interface Asset {
@@ -32,6 +34,12 @@ export function TradeAnalyzer({ leagueId, mode, me, teams, initialPartner, initi
   const [busy, setBusy] = useState(false);
   const mine = teams.find((t) => t.rosterId === me)!;
   const theirs = teams.find((t) => t.rosterId === partner);
+  // SHS AI on the same horizon as the league: dynasty for dynasty, rest of season for redraft/keeper.
+  const ai = useMemo(() => {
+    if (!ctx) return new Map<string, ShsAi>();
+    const scope = mode === "dynasty" ? "dynasty" : "ros";
+    return shsAi(ctx, rankings(ctx, scope), scope, null);
+  }, [ctx, mode]);
 
   useEffect(() => {
     if (!aSends.length && !bSends.length) { setResult(null); return; }
@@ -76,20 +84,21 @@ export function TradeAnalyzer({ leagueId, mode, me, teams, initialPartner, initi
       {result && <div className="lg:hidden"><Card><Spectrum balance={result.balance} partner={theirs?.name ?? "Partner"} /></Card></div>}
 
       <div className="grid min-w-0 grid-cols-2 gap-2 sm:gap-4">
-        <Side title="You send" team={mine} selected={aSends} onChange={setA} tiers={tiers} setTiers={setTiers} mode={mode} />
-        {theirs && <Side title="You receive" team={theirs} selected={bSends} onChange={setB} tiers={tiers} setTiers={setTiers} mode={mode} />}
+        <Side title="You send" team={mine} selected={aSends} onChange={setA} tiers={tiers} setTiers={setTiers} mode={mode} ai={ai} />
+        {theirs && <Side title="You receive" team={theirs} selected={bSends} onChange={setB} tiers={tiers} setTiers={setTiers} mode={mode} ai={ai} />}
       </div>
 
       {err && <div className="rounded-lg border border-neg px-3 py-2 text-sm text-neg">{err}</div>}
       {!result && !err && <Card><p className="text-sm text-muted">Add players or picks to either side to see who wins, how both teams change, and how to make it fair.</p></Card>}
+      {result && <AiTake ai={ai} aSends={aSends} bSends={bSends} teams={teams} me={me} partner={partner} partnerName={theirs?.name ?? "Partner"} mode={mode} />}
       {result && <Result r={result} partner={theirs?.name ?? "Partner"} busy={busy} onApply={apply} me={me} partnerId={partner} />}
     </div>
   );
 }
 
-function Side({ title, team, selected, onChange, tiers, setTiers, mode }: {
+function Side({ title, team, selected, onChange, tiers, setTiers, mode, ai }: {
   title: string; team: TeamOpt; selected: string[]; onChange: (v: string[]) => void;
-  tiers: Record<string, Tier>; setTiers: (t: Record<string, Tier>) => void; mode: "redraft" | "dynasty";
+  tiers: Record<string, Tier>; setTiers: (t: Record<string, Tier>) => void; mode: "redraft" | "dynasty"; ai: Map<string, ShsAi>;
 }) {
   const [q, setQ] = useState("");
   const [pos, setPos] = useState("ALL");
@@ -132,7 +141,7 @@ function Side({ title, team, selected, onChange, tiers, setTiers, mode }: {
                   </div>
                 )}
               </div>
-              <div className="text-right"><div className="num font-[family-name:var(--font-display)] text-lg font-bold leading-none sm:text-2xl">{valueOf(a).toFixed(1)}</div><div className="hidden text-[10px] text-muted sm:block">value</div></div>
+              <div className="text-right"><div className="num font-[family-name:var(--font-display)] text-lg font-bold leading-none sm:text-2xl">{valueOf(a).toFixed(1)}</div>{(() => { const p = a.kind === "player" ? ai.get(a.id.slice(2))?.pct ?? null : null; return p !== null ? <div className={cx("num text-[10px] font-bold", p >= 5 ? "text-pos" : p <= -5 ? "text-neg" : "text-muted")} title="SHS AI vs expert consensus">AI {p > 0 ? "+" : ""}{p}%</div> : <div className="hidden text-[10px] text-muted sm:block">value</div>; })()}</div>
               <button type="button" aria-label={`Take ${a.name} out of the trade`} onClick={() => onChange(selected.filter((x) => x !== id))}
                 className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-neg/60 text-neg transition-transform hover:bg-neg/10 active:scale-90 sm:h-9 sm:w-9"><Minus size={16} /></button>
             </div>
@@ -384,3 +393,33 @@ function Mini({ label, value, sub, tone }: { label: string; value: string; sub?:
   );
 }
 
+
+/** SHS AI's view of the deal: each player's value nudged by his SHS AI score (±25% max). */
+function AiTake({ ai, aSends, bSends, teams, me, partner, partnerName, mode }: {
+  ai: Map<string, ShsAi>; aSends: string[]; bSends: string[]; teams: TeamOpt[]; me: number; partner: number; partnerName: string; mode: "redraft" | "dynasty";
+}) {
+  const asset = (rid: number, id: string) => teams.find((t) => t.rosterId === rid)?.assets.find((a) => a.id === id);
+  const line = (rid: number, ids: string[]) => ids.map((id) => {
+    const a = asset(rid, id);
+    const pct = id.startsWith("p:") ? ai.get(id.slice(2))?.pct ?? null : null;
+    return { id, name: a?.name ?? id, base: a?.value ?? 0, pct, adj: (a?.value ?? 0) * (1 + (pct ?? 0) / 100) };
+  });
+  const give = line(me, aSends), get = line(partner, bSends);
+  const sum = (xs: typeof give, k: "base" | "adj") => xs.reduce((t, x) => t + x[k], 0);
+  const shift = (sum(get, "adj") - sum(get, "base")) - (sum(give, "adj") - sum(give, "base"));
+  const all = [...give.map((x) => ({ ...x, side: "send" })), ...get.map((x) => ({ ...x, side: "get" }))].filter((x) => x.pct !== null);
+  if (!all.length) return null;
+  return (
+    <Card title="SHS AI take" right={<span className={cx("num text-sm font-bold", shift > 0.5 ? "text-pos" : shift < -0.5 ? "text-neg" : "text-muted")}>{shift > 0 ? "+" : ""}{shift.toFixed(1)} for you</span>}
+      info={<>SHS AI = 75% expert consensus + 25% SHS factors ({mode === "dynasty" ? "dynasty: age cliff, team, coaching, usage, draft profile" : "rest of season: production, snaps, advanced metrics, projection, schedule, injuries"}). Each player&apos;s trade value is nudged by his SHS AI %; the number above is how much that moves the deal toward you (+) or {partnerName} (−). It doesn&apos;t change the main verdict.</>}>
+      <ul className="grid gap-1.5 sm:grid-cols-2">
+        {all.map((x) => (
+          <li key={x.id} className="flex items-center justify-between gap-2 rounded-lg bg-panel2 px-3 py-2 text-sm">
+            <span className="min-w-0 truncate"><span className="text-[10px] font-bold uppercase text-muted">{x.side === "send" ? "You send" : "You get"}</span> {x.name}</span>
+            <span className={cx("num shrink-0 text-xs font-bold", x.pct! >= 5 ? "text-pos" : x.pct! <= -5 ? "text-neg" : "text-muted")}>{x.pct! > 0 ? "+" : ""}{x.pct}%</span>
+          </li>
+        ))}
+      </ul>
+    </Card>
+  );
+}

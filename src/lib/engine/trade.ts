@@ -264,25 +264,31 @@ export function evaluateTrade(ctx: LeagueContext, req: TradeRequest): TradeResul
       id: pid, positions: ctx.players.get(pid)?.positions ?? [], points: ctx.projections.get(pid)?.base ?? 0,
     })));
     const b = lu(before), a = lu(after);
-    // Compare by position: sort each position's starters so RB1 vs RB1, RB2 vs RB2.
-    const byPos = (l: typeof b) => {
-      const m = new Map<string, { id: string; ppg: number }[]>();
-      for (const s of l) if (s.playerId) {
-        const pos = ctx.players.get(s.playerId)?.pos ?? "?";
-        (m.get(pos) ?? m.set(pos, []).get(pos)!).push({ id: s.playerId, ppg: ctx.projections.get(s.playerId)?.base ?? 0 });
-      }
-      for (const v of m.values()) v.sort((x, y) => y.ppg - x.ppg);
+    // Compare the two best lineups slot by slot (QB, RB1, RB2, …, FLEX). Players sliding into a flex spot
+    // count as filling it, so adding a receiver who takes the flex isn't read as losing a running back.
+    const count = new Map<string, number>();
+    const names = b.map((x) => { const n = (count.get(x.slot) ?? 0) + 1; count.set(x.slot, n); return x.slot; });
+    const totals = new Map<string, number>();
+    names.forEach((n) => totals.set(n, (totals.get(n) ?? 0) + 1));
+    const seen = new Map<string, number>();
+    const rows: BuildRow[] = [];
+    const nm = (id: string | null) => ({ id, name: id ? ctx.players.get(id)?.name ?? id : "Nobody", ppg: r1(id ? ctx.projections.get(id)?.base ?? 0 : 0) });
+    // Within each slot type, line up by strength so RB1 compares with RB1.
+    const bySlot = (l: typeof b) => {
+      const m = new Map<string, (string | null)[]>();
+      for (const x of l) (m.get(x.slot) ?? m.set(x.slot, []).get(x.slot)!).push(x.playerId);
+      for (const v of m.values()) v.sort((p, q) => (ctx.projections.get(q ?? "")?.base ?? 0) - (ctx.projections.get(p ?? "")?.base ?? 0));
       return m;
     };
-    const pb = byPos(b), pa = byPos(a);
-    const rows: BuildRow[] = [];
-    for (const pos of new Set([...pb.keys(), ...pa.keys()])) {
-      const xb = pb.get(pos) ?? [], xa = pa.get(pos) ?? [];
+    const sb = bySlot(b), sa = bySlot(a);
+    for (const slot of [...new Set(names)]) {
+      const xb = sb.get(slot) ?? [], xa = sa.get(slot) ?? [];
       for (let i = 0; i < Math.max(xb.length, xa.length); i++) {
-        const bb = xb[i], aa = xa[i];
-        if (bb?.id === aa?.id) continue;
-        const nm = (x?: { id: string; ppg: number }) => ({ id: x?.id ?? null, name: x ? ctx.players.get(x.id)?.name ?? x.id : "Nobody", ppg: r1(x?.ppg ?? 0) });
-        rows.push({ slot: `${pos}${Math.max(xb.length, xa.length) > 1 ? i + 1 : ""}`, before: nm(bb), after: nm(aa), delta: r1((aa?.ppg ?? 0) - (bb?.ppg ?? 0)) });
+        const k = (seen.get(slot) ?? 0) + 1; seen.set(slot, k);
+        if ((xb[i] ?? null) === (xa[i] ?? null)) continue;
+        const before = nm(xb[i] ?? null), after = nm(xa[i] ?? null);
+        const label = slot.replace("SUPER_FLEX", "SFLEX").replace("REC_FLEX", "W/T FLEX").replace("WRRB_FLEX", "W/R FLEX");
+        rows.push({ slot: (totals.get(slot) ?? 1) > 1 ? `${label}${k}` : label, before, after, delta: r1(after.ppg - before.ppg) });
       }
     }
     return rows.sort((x, y) => x.delta - y.delta);
