@@ -8,7 +8,8 @@ import { LeaguePage, useAsync, type LeagueData } from "@/components/AppData";
 import { cx } from "@/components/ui";
 import { PlayerImg } from "@/components/client";
 import { ArrowUp, RotateCcw, X } from "lucide-react";
-import { ask, EXAMPLES, type Answer, type Memory } from "@/lib/services/ask";
+import { ask, suggestionsFor, type Answer, type Memory } from "@/lib/services/ask";
+import { useMemo } from "react";
 import { loadNews } from "@/lib/news";
 
 export default function AskPage() {
@@ -34,7 +35,9 @@ function Body({ league, ctx }: LeagueData) {
     setQ("");
   };
   const reset = () => { setMsgs([]); setMem(null); setQ(""); };
-  const chips = mem?.players.length ? ["What about rest of season?", "What about this week?", "For the playoffs?", "Any news?", ...EXAMPLES.slice(2)] : EXAMPLES;
+  const base = useMemo(() => suggestionsFor(ctx), [ctx]);
+  const who = mem?.players.length === 1 ? "him" : "them";
+  const chips = mem?.players.length ? [...(mem.frame?.kind !== "ros" ? ["What about rest of season?"] : []), ...(mem.frame?.kind !== "week" ? ["What about this week?"] : []), "For the playoffs?", `Any news on ${who}?`, ...base] : base;
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 pb-40">
       <div className="flex items-center justify-between gap-2">

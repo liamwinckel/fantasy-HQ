@@ -389,5 +389,20 @@ describe.skipIf(!have)("league context on fixtures", () => {
     expect(ask(ctx, "what are my playoff odds").answer.text).toMatch(/playoffs/);
     expect(ask(ctx, "top 5 wrs rest of season").answer.bullets!.length).toBe(5);
     expect(ask(ctx, "hello").answer.bullets!.length).toBeGreaterThan(3);
+    // A suggestion-style question after a player question must not reuse the old player.
+    const one = ask(ctx, `tell me about ${a.name}`);
+    const pick = ask(ctx, "Best RB pickups", [], one.memory);
+    expect(pick.memory.players).toEqual([]);
+    expect(pick.answer.text).toMatch(/pickups|free agent/i);
+    expect(ask(ctx, "is he worth it rest of season", [], one.memory).memory.players).toEqual([a.id]);
+    // Trades: first names and one-sided trade questions.
+    const other = ctx.teams.find((t) => t.rosterId !== me.rosterId)!;
+    const theirs = other.players.find((id) => ["RB", "WR"].includes(ctx.players.get(id)?.pos ?? ""))!;
+    const tr = ask(ctx, `trade ${a.name} for ${ctx.players.get(theirs)!.name}, fair?`);
+    expect(tr.answer.text).toMatch(/favours|even|Fits|Add assets/i);
+    const solo = ask(ctx, `what would it take to trade for ${ctx.players.get(theirs)!.name}`);
+    expect(solo.memory.topic).toBe("trade");
+    const { suggestionsFor } = await import("@/lib/services/ask");
+    expect(suggestionsFor(ctx).length).toBeGreaterThan(5);
   });
 });

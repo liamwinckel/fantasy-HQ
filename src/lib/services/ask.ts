@@ -12,6 +12,7 @@ import { startSit } from "./startSit";
 import { waiverReport } from "./waivers";
 import { lineupSwaps } from "./views";
 import { evaluateTrade } from "../engine/trade";
+import { findTrades } from "./tradeFinder";
 import { rankings, type RankScope } from "./rankings";
 import { shsAi } from "./shsai";
 import type { NewsItem } from "../news";
@@ -24,33 +25,41 @@ export interface Memory { players: string[]; frame: Frame | null; topic: Topic |
 const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/['’]/g, "").replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
 const POS_WORDS: [string, string][] = [["quarterbacks", "QB"], ["quarterback", "QB"], ["qbs", "QB"], ["qb", "QB"], ["running backs", "RB"], ["running back", "RB"], ["rbs", "RB"], ["rb", "RB"], ["wide receivers", "WR"], ["wide receiver", "WR"], ["receivers", "WR"], ["receiver", "WR"], ["wrs", "WR"], ["wr", "WR"], ["tight ends", "TE"], ["tight end", "TE"], ["tes", "TE"], ["te", "TE"], ["kickers", "K"], ["kicker", "K"], ["defenses", "DEF"], ["defense", "DEF"], ["dst", "DEF"]];
 
-/** Players named in the question, in the order they appear. Prefers rostered and more valuable players on ties. */
+/** Common nicknames → full names. */
+const NICK: Record<string, string> = {
+  cmc: "christian mccaffrey", jsn: "jaxon smith njigba", btj: "brian thomas", arsb: "amon ra st brown", "amon ra": "amon ra st brown", "st brown": "amon ra st brown",
+  ajb: "aj brown", "a j brown": "aj brown", dk: "dk metcalf", jj: "justin jefferson", bijan: "bijan robinson", saquon: "saquon barkley",
+  puka: "puka nacua", jahmyr: "jahmyr gibbs", "kyren": "kyren williams", tee: "tee higgins", lamar: "lamar jackson", mahomes: "patrick mahomes", "hollywood": "marquise brown", kmet: "cole kmet",
+};
+/** Words that are also first names but almost never mean a player in a question. */
+const NOT_NAMES = new Set(["will", "mark", "drew", "grant", "rich", "miles", "austin", "jordan", "chase", "start", "best", "top", "trade", "odds", "news", "this", "week", "season", "rest", "what", "about", "over", "better"]);
+
+/** Players named in the question, in the order they appear: full names, last names, nicknames, then first names. */
 export function findPlayers(ctx: LeagueContext, q: string): string[] {
-  const text = ` ${norm(q)} `;
+  let text = ` ${norm(q)} `;
+  for (const [k, v] of Object.entries(NICK)) text = text.replace(` ${k} `, ` ${v} `);
   const rostered = new Set(ctx.teams.flatMap((t) => t.players));
-  const val = (id: string) => (ctx.values.get(id)?.redraft ?? 0) + (rostered.has(id) ? 50 : 0);
+  const mine = new Set(ctx.teams.find((t) => t.rosterId === ctx.myRosterId)?.players ?? []);
+  const val = (id: string) => (ctx.values.get(id)?.redraft ?? 0) + (rostered.has(id) ? 50 : 0) + (mine.has(id) ? 100 : 0);
   const hits: { id: string; at: number; score: number; len: number }[] = [];
+  const find = (needle: string) => { const i = text.indexOf(` ${needle} `); return i; };
   for (const p of ctx.players.values()) {
     if (p.pos === "DEF") continue;
     const n = norm(p.name);
     if (n.length < 4) continue;
-    let at = text.indexOf(` ${n} `);
-    let score = 3;
-    if (at < 0) {
-      const last = n.split(" ").filter((w) => !["jr", "sr", "ii", "iii", "iv"].includes(w)).slice(-1)[0] ?? "";
-      if (last.length < 4) continue;
-      at = text.indexOf(` ${last} `);
-      score = 1;
-      if (at < 0) continue;
-    }
-    hits.push({ id: p.id, at, score: score * 1000 + val(p.id), len: score === 3 ? n.length : 0 });
+    const words = n.split(" ").filter((w) => !["jr", "sr", "ii", "iii", "iv", "v"].includes(w));
+    let at = find(n), score = 3, len = n.length;
+    if (at < 0) { const last = words.slice(-1)[0] ?? ""; if (last.length >= 3) { at = find(last); score = 2; len = last.length; } }
+    if (at < 0) { const first = words[0] ?? ""; if (first.length >= 4 && !NOT_NAMES.has(first)) { at = find(first); score = 1; len = first.length; } }
+    if (at < 0) continue;
+    hits.push({ id: p.id, at, score: score * 1000 + val(p.id), len: score === 3 ? n.length : len });
   }
-  // A full-name match owns its words: drop last-name matches inside it (e.g. "Garrett" in "Garrett Wilson").
-  const spans = hits.filter((h) => h.len).map((h) => [h.at, h.at + h.len + 1]);
-  const kept = hits.filter((h) => h.len || !spans.some(([a, b]) => h.at >= a && h.at < b));
+  // A longer match owns its words: a full name beats a last-name or first-name hit inside it.
+  const full = hits.filter((h) => h.score >= 3000).map((h) => [h.at, h.at + h.len + 1]);
+  const kept = hits.filter((h) => h.score >= 3000 || !full.some(([x, y]) => h.at >= x && h.at < y));
   const byAt = new Map<number, { id: string; score: number }>();
   for (const h of kept) { const cur = byAt.get(h.at); if (!cur || h.score > cur.score) byAt.set(h.at, h); }
-  return [...byAt.entries()].sort((a, b) => a[0] - b[0]).map(([, h]) => h.id).filter((id, i, a) => a.indexOf(id) === i);
+  return [...byAt.entries()].sort((x, y) => x[0] - y[0]).map(([, h]) => h.id).filter((id, i, arr) => arr.indexOf(id) === i);
 }
 
 /** Time frame from keywords anywhere in the question. */
@@ -69,9 +78,9 @@ export function frameOf(ctx: LeagueContext, question: string): Frame | null {
 
 const TOPICS: Record<Topic, [string, number][]> = {
   compare: [["or", 2], ["vs", 3], ["versus", 3], ["better", 2], ["start", 2], ["sit", 2], ["who", 1], ["which", 1], ["compare", 3], ["rather", 2], ["over", 1], ["flex", 2], ["choose", 2]],
-  trade: [["trade", 4], ["deal", 3], ["offer", 3], ["swap", 3], ["give up", 2], ["package", 2], ["accept", 2], ["fair", 2]],
-  player: [["about", 2], ["outlook", 3], ["how is", 2], ["hows", 2], ["value", 1], ["thoughts", 2], ["think of", 2], ["tell me", 2], ["info", 2], ["doing", 1], ["buy", 2], ["sell", 2], ["hold", 2]],
-  waivers: [["waiver", 4], ["pick up", 3], ["pickup", 3], ["add", 2], ["free agent", 4], ["stream", 3], ["available", 2], ["grab", 2], ["claim", 3]],
+  trade: [["trade", 4], ["deal", 3], ["offer", 3], ["swap", 3], ["give up", 2], ["package", 2], ["accept", 2], ["fair", 3], ["worth it", 2], ["overpay", 3], ["win the trade", 4]],
+  player: [["tell me about", 3], ["outlook", 3], ["how is", 2], ["hows", 2], ["value", 1], ["thoughts", 2], ["think of", 2], ["tell me", 2], ["info", 2], ["doing", 1], ["buy", 2], ["sell", 2], ["hold", 2]],
+  waivers: [["waiver", 4], ["pick up", 3], ["pickups", 4], ["pickup", 3], ["add", 2], ["free agent", 4], ["stream", 3], ["available", 2], ["grab", 2], ["claim", 3]],
   drop: [["drop", 4], ["cut", 3], ["release", 3], ["get rid", 3]],
   lineup: [["lineup", 4], ["line up", 4], ["starters", 2], ["set my", 3], ["bench", 2], ["optimal", 2]],
   odds: [["odds", 3], ["chance", 2], ["make the playoffs", 4], ["win the league", 4], ["title", 2], ["projected wins", 3], ["seed", 2], ["standings", 2]],
@@ -84,11 +93,11 @@ const TOPICS: Record<Topic, [string, number][]> = {
   help: [["help", 3], ["what can you", 4]],
 };
 
-function scoreTopics(q: string, players: number, pos: string | null): [Topic, number][] {
+function scoreTopics(q: string, players: number, pos: string | null, bumps = true): [Topic, number][] {
   const t = ` ${q} `;
   const out = (Object.keys(TOPICS) as Topic[]).map((k) => [k, TOPICS[k].reduce((a, [w, s]) => a + (t.includes(` ${w}`) ? s : 0), 0)] as [Topic, number]);
-  const bump = (k: Topic, v: number) => { const e = out.find((x) => x[0] === k)!; e[1] += v; };
-  if (players >= 2) { bump("compare", 3); bump("trade", 1); bump("player", -2); }
+  const bump = (k: Topic, v: number) => { if (!bumps) return; const e = out.find((x) => x[0] === k)!; e[1] += v; };
+  if (players >= 2) { bump("compare", 3); bump("trade", 1); bump("player", -2); if (/ for /.test(t) && !/ for (the )?(rest|this|next|week|playoff|season|dynasty)/.test(t)) bump("trade", 3); }
   if (players === 1) { bump("player", 3); bump("compare", -3); }
   if (players === 0) { bump("compare", -10); bump("player", -10); bump("trade", -3); }
   if (pos && players === 0) { bump("rank", 1); }
@@ -109,24 +118,57 @@ export const EXAMPLES = [
 
 export const frameLabel = (f: Frame, ctx: LeagueContext) => f.kind === "week" ? (f.week === Math.min(ctx.currentWeek, ctx.lastWeek) ? `this week (week ${f.week})` : `week ${f.week}`) : f.kind === "ros" ? "rest of season" : f.kind === "playoffs" ? `the fantasy playoffs (weeks ${ctx.playoffStart}–${ctx.lastWeek})` : "dynasty";
 
+const STANDALONE: Topic[] = ["waivers", "drop", "lineup", "odds", "playoffOpp", "matchup", "keepers", "rank", "help"];
+const FOLLOW = /^(and|what about|how about|same|but|ok|okay|now|instead|what if|then|also) |\b(he|him|his|them|they|those|these|either|both|that trade|that deal|the trade|that one)\b/;
+
 export function ask(ctx: LeagueContext, question: string, news: NewsItem[] = [], mem: Memory | null = null): { answer: Answer; memory: Memory } {
   const q = norm(question);
   let ids = findPlayers(ctx, question);
   const posAsked = POS_WORDS.find(([w]) => ` ${q} `.includes(` ${w} `))?.[1] ?? null;
   let frame = frameOf(ctx, question);
-  const followUp = !ids.length && !!mem?.players.length && (/^(and|what about|how about|same|but|ok|okay|now|for|instead|what if|over|in) /.test(q) || q.split(" ").length <= 6);
   let ranked = scoreTopics(q, ids.length, posAsked);
   let topic: Topic = ranked[0][1] > 0 ? ranked[0][0] : ids.length >= 2 ? "compare" : ids.length === 1 ? "player" : "help";
-  // Follow-up: reuse the last players (and topic) when the new message only changes the time frame or adds a word.
+  // A follow-up reuses the last players: only when this message names nobody, isn't a question in its own right
+  // (pickups, drops, odds, rankings…), and either refers back ("him", "what about…") or only changes the time frame.
+  const ownTopic = ranked[0][1] >= 3 && STANDALONE.includes(ranked[0][0]);
+  const refersBack = FOLLOW.test(q) || (!!frame && ranked[0][1] < 3);
+  const followUp = !ids.length && !!mem?.players.length && !ownTopic && refersBack;
   if (followUp && mem) {
     ids = mem.players;
-    ranked = scoreTopics(q, ids.length, posAsked);
-    topic = ranked[0][1] >= 4 ? ranked[0][0] : mem.topic ?? (ids.length >= 2 ? "compare" : "player");
+    // The words of this message decide the topic if they say something (news, trade…); otherwise keep the last one.
+    const raw = scoreTopics(q, ids.length, posAsked, false);
+    topic = raw[0][1] >= 2 && !STANDALONE.includes(raw[0][0]) && raw[0][0] !== "compare" && !(raw[0][0] === "player" && ids.length > 1) ? raw[0][0] : mem.topic ?? (ids.length >= 2 ? "compare" : "player");
   }
   const w0 = Math.min(ctx.currentWeek, ctx.lastWeek);
-  if (!frame) frame = followUp && mem?.frame ? mem.frame : ctx.valuationMode === "dynasty" && (topic === "player" || topic === "rank") ? { kind: "dynasty" } : topic === "rank" || topic === "player" ? { kind: "ros" } : { kind: "week", week: w0 };
+  if (!frame) frame = followUp && mem?.frame ? mem.frame : ctx.valuationMode === "dynasty" && (topic === "player" || topic === "rank") ? { kind: "dynasty" } : topic === "rank" || topic === "player" || topic === "trade" ? { kind: "ros" } : { kind: "week", week: w0 };
   const pos = posAsked ?? (followUp ? mem?.pos ?? null : null);
   return { answer: { ...run(ctx, topic, ids, frame, pos, q, news), scope: frameLabel(frame, ctx) }, memory: { players: ids, frame, topic, pos } };
+}
+
+/** Suggested questions built from your own roster and league, so they always make sense here. */
+export function suggestionsFor(ctx: LeagueContext): string[] {
+  const me = ctx.teams.find((t) => t.rosterId === ctx.myRosterId);
+  if (!me) return EXAMPLES;
+  const last = (id: string) => ctx.players.get(id)?.name.split(" ").slice(-1)[0] ?? "";
+  const proj = (id: string) => ctx.projections.get(id)?.median ?? 0;
+  const out: string[] = [];
+  const st = me.starters.filter((id) => ["RB", "WR", "TE"].includes(ctx.players.get(id)?.pos ?? "")).sort((a, b) => proj(a) - proj(b));
+  const bn = me.players.filter((id) => !me.starters.includes(id) && ["RB", "WR", "TE"].includes(ctx.players.get(id)?.pos ?? "")).sort((a, b) => proj(b) - proj(a));
+  if (st[0] && bn[0]) out.push(`${ctx.players.get(st[0])!.name} or ${ctx.players.get(bn[0])!.name} this week?`, `${last(st[0])} or ${last(bn[0])} rest of season?`);
+  out.push("Is my lineup set?");
+  const weakest = waiverReport(ctx, me.rosterId).needs[0]?.pos ?? "RB";
+  out.push(`Best ${weakest} pickups`);
+  // A realistic trade idea: your best bench player for a similar-value starter elsewhere.
+  const key = ctx.valuationMode === "dynasty" ? "dynasty" : "redraft";
+  const mine = [...me.players].filter((id) => ctx.players.has(id)).sort((a, b) => (ctx.values.get(b)?.[key] ?? 0) - (ctx.values.get(a)?.[key] ?? 0));
+  const give = mine[2] ?? mine[0];
+  if (give) {
+    const v = ctx.values.get(give)?.[key] ?? 0;
+    const target = ctx.teams.filter((t) => t.rosterId !== me.rosterId).flatMap((t) => t.players).filter((id) => ctx.players.get(id)?.pos !== ctx.players.get(give)?.pos && Math.abs((ctx.values.get(id)?.[key] ?? 0) - v) < 6).sort((a, b) => (ctx.values.get(b)?.[key] ?? 0) - (ctx.values.get(a)?.[key] ?? 0))[0];
+    if (target) out.push(`Trade ${ctx.players.get(give)!.name} for ${ctx.players.get(target)!.name}, fair?`);
+  }
+  out.push("My playoff odds", "Who will I play in the playoffs?", "Top 10 WRs rest of season", "News on my players", "Who should I drop?");
+  return out;
 }
 
 function run(ctx: LeagueContext, topic: Topic, ids: string[], frame: Frame, pos: string | null, q: string, news: NewsItem[]): Answer {
@@ -138,11 +180,22 @@ function run(ctx: LeagueContext, topic: Topic, ids: string[], frame: Frame, pos:
 
   switch (topic) {
     case "trade": {
-      if (!me || ids.length < 2) break;
+      if (!me || !ids.length) break;
       const mine = ids.filter((id) => me.players.includes(id));
       const theirs = ids.filter((id) => !me.players.includes(id));
       const partner = theirs.length ? ownerOf(theirs[0]) : null;
-      if (!mine.length) return { text: `None of ${ids.map(nm).join(", ")} are on your team. Name one of your players and one of theirs.`, players: ids };
+      if (ids.length === 1 || !mine.length || !theirs.length) {
+        // One side only: find realistic packages (Trade Finder) that include him ("X for Y": Y is the one you want).
+        const id = !mine.length ? ids[ids.length - 1] : ids[0];
+        const note = ids.length > 1 && !mine.length ? `${ids.map((x) => `${nm(x)} (${ownerOf(x)?.name ?? "free agent"})`).join(" and ")} — neither is on your team. ` : "";
+        const own = ownerOf(id);
+        if (!own) return { text: `${nm(id)} isn't on a team in this league, so you can add him off waivers instead of trading.`, players: [id], links: [{ label: "Waiver Assistant", href: "/waivers/" }] };
+        const deals = findTrades(ctx, me.rosterId, 12, own.rosterId === me.rosterId ? null : own.rosterId).trades
+          .filter((t) => (own.rosterId === me.rosterId ? t.give : t.get).some((x) => x.id === `p:${id}`)).slice(0, 3);
+        const fmt = (t: (typeof deals)[number]) => `You give ${t.give.map((x) => x.name).join(" + ")}, get ${t.get.map((x) => x.name).join(" + ")} from ${t.partnerName} · ${Math.round(t.accept * 100)}% chance they accept`;
+        if (!deals.length) return { text: note + (own.rosterId === me.rosterId ? `I couldn't find a deal for ${nm(id)} that helps you and that another team would accept. Try naming who you'd want back.` : `I couldn't find a package for ${nm(id)} that ${own.name} would likely accept and that still helps you. Try naming who you'd give.`), players: [id], links: [{ label: own.rosterId === me.rosterId ? "Trade Finder" : `Build a trade with ${own.name}`, href: own.rosterId === me.rosterId ? "/trade-finder/" : `/trade/?partner=${own.rosterId}&b=p:${id}` }] };
+        return { text: note + (own.rosterId === me.rosterId ? `Deals for ${nm(id)} that help you and that the other team would plausibly take:` : `Packages for ${nm(id)} that ${own.name} would plausibly accept:`), bullets: deals.map(fmt), players: [id], links: [{ label: "Open the best one", href: deals[0].link }] };
+      }
       if (!partner) return { text: `${theirs.map(nm).join(", ")} ${theirs.length > 1 ? "aren't" : "isn't"} on a team in this league, so it's a waiver add, not a trade.`, players: theirs, links: [{ label: "Waiver Assistant", href: "/waivers/" }] };
       const get = theirs.filter((x) => partner.players.includes(x));
       const r = evaluateTrade(ctx, { teamA: me.rosterId, teamB: partner.rosterId, aSends: mine.map((x) => `p:${x}`), bSends: get.map((x) => `p:${x}`), mode: ctx.valuationMode });
@@ -190,9 +243,9 @@ function run(ctx: LeagueContext, topic: Topic, ids: string[], frame: Frame, pos:
       });
       const sorted = [...info].sort((a, b) => b.tot - a.tot);
       const [b1, b2] = sorted;
-      const gap = b2 && b2.tot > 0 ? Math.round((b1.tot / b2.tot - 1) * 100) : 0;
+      const gap = b2 && b2.tot > 0 ? Math.round((b1.tot / b2.tot - 1) * 100) : 100;
       return {
-        text: `${frame.kind === "playoffs" ? "For the playoffs" : "Rest of season"}: ${b1.p.name}${gap >= 3 ? `, by about ${gap}%` : ", but it's close"}. He projects ${b1.tot.toFixed(0)} pts over the ${weeks.length} week${weeks.length === 1 ? "" : "s"} left vs ${sorted.slice(1).map((x) => `${x.tot.toFixed(0)} for ${x.p.name}`).join(", ")}.`,
+        text: `${frame.kind === "playoffs" ? "For the playoffs" : "Rest of season"}: ${b1.p.name}${gap >= 100 ? ` (${sorted.slice(1).filter((x) => x.tot === 0).map((x) => x.p.name).join(", ")} isn't projected to play)` : gap >= 3 ? `, by about ${gap}%` : ", but it's close"}. He projects ${b1.tot.toFixed(0)} pts over the ${weeks.length} week${weeks.length === 1 ? "" : "s"} left vs ${sorted.slice(1).map((x) => `${x.tot.toFixed(0)} for ${x.p.name}`).join(", ")}.`,
         bullets: info.map((x) => `${x.p.name}: ${x.ppg.toFixed(1)} pts/g${x.byes ? ` (${x.byes} bye/out week${x.byes > 1 ? "s" : ""})` : ""}${x.sched ? ` · schedule ${x.sched >= 1.03 ? "easier" : x.sched <= 0.97 ? "harder" : "average"}` : ""}${x.r?.ecrPos ? ` · experts ${x.p.pos}${x.r.ecrPos}` : ""}${x.a?.rank ? ` · SHS AI ${x.p.pos}${x.a.rank}` : ""}${x.p.injury ? ` · ${x.p.injury}` : ""}`),
         players: list, links: [{ label: frame.kind === "playoffs" ? "Rest of season" : "Playoff weeks", href: frame.kind === "playoffs" ? "#ask:what about rest of season" : "#ask:what about the playoffs" }, { label: "This week", href: "#ask:what about this week" }],
       };
