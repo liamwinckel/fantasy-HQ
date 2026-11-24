@@ -6,3 +6,4 @@ tests/fixtures/generated
 next-env.d.ts
 tsconfig.tsbuildinfo
 *.log
+.cache/

@@ -108,15 +108,11 @@ export async function accuracy(ctx: LeagueContext): Promise<AccuracyReport | nul
     factors[k] = { corr: Math.round(c * 1000) / 1000, n: o.x.length, mult: Math.round(mult * 100) / 100 };
   }
   const report: AccuracyReport = { weeks: byWeek.map((w) => w.week), pairs: tot.e.all, experts: pc(tot.e), shs: pc(tot.s), sleeper: pc(tot.p), byWeek, factors };
-  saveTuning(ctx.league.league_id, Object.fromEntries(Object.entries(factors).map(([k, v]) => [k, v.mult])));
   return report;
 }
 
-// Tuned multipliers are read synchronously by SHS AI.
+// Tuned multipliers (written by the backtest) are read synchronously by SHS AI.
 const TKEY = (id: string) => `fhq-tune-${id}`;
-function saveTuning(leagueId: string, m: Record<string, number>) {
-  try { localStorage.setItem(TKEY(leagueId), JSON.stringify(m)); } catch { /* ignore */ }
-}
 export function getTuning(leagueId: string): Record<string, number> {
   try { return JSON.parse(localStorage.getItem(TKEY(leagueId)) ?? "{}") as Record<string, number>; } catch { return {}; }
 }

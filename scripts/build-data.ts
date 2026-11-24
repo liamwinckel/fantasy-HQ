@@ -79,8 +79,10 @@ async function main() {
     jobs.push([`injuries ${yr}`, async () => write(`injuries-${yr}.json`, columns(parseInjuries(await text(`${REL}/injuries/injuries_${yr}.csv`, `injuries_${yr}.csv`))))]);
   }
   jobs.push([`snaps`, async () => write(`snaps-${s}.json`, columns(parseSnaps(await text(`${REL}/snap_counts/snap_counts_${s}.csv`, `snaps_${s}.csv`))))]);
+  let scheduleNow: ReturnType<typeof parseSchedule> = [];
   jobs.push(["schedule", async () => {
     const body = await text("https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv", "games.csv");
+    scheduleNow = parseSchedule(body, String(s));
     write(`schedule-${s}.json`, JSON.stringify(parseSchedule(body, String(s))));
     write(`schedule-${s - 1}.json`, JSON.stringify(parseSchedule(body, String(s - 1))));
   }]);
@@ -151,6 +153,63 @@ async function main() {
     delete out._;
     for (const r of parseCsv(values)) { const id = toSleeper.get(r.fp_id); put(id, "v1", r.value_1qb); put(id, "v2", r.value_2qb); }
     write("consensus.json", JSON.stringify({ ecrDate, weeklyDate, source: "FantasyPros ECR via DynastyProcess", players: out }));
+  }]);
+
+  // Weekly expert rankings as they stood before each week's Sunday games, rebuilt from the public git history of
+  // DynastyProcess's fp_latest_weekly.csv. This is what lets SHS AI be graded against past weeks (backtest).
+  jobs.push(["ecr history", async () => {
+    if (FX) { write(`ecr-weekly-${s}.json`, JSON.stringify({ weeks: {} })); return; }
+    const CACHE = path.join(process.cwd(), ".cache", "ecr");
+    fs.mkdirSync(CACHE, { recursive: true });
+    const gh = { accept: "application/vnd.github+json", ...(process.env.GITHUB_TOKEN ? { authorization: `Bearer ${process.env.GITHUB_TOKEN}` } : {}) };
+    const commits: { sha: string; at: number }[] = [];
+    for (let page = 1; page <= 10; page++) {
+      const r = await fetch(`https://api.github.com/repos/dynastyprocess/data/commits?path=files/fp_latest_weekly.csv&since=${s}-08-15T00:00:00Z&per_page=100&page=${page}`, { headers: gh });
+      if (!r.ok) throw new Error(`GitHub commits ${r.status}`);
+      const list = (await r.json()) as { sha: string; commit: { committer: { date: string } } }[];
+      for (const c of list) commits.push({ sha: c.sha, at: Date.parse(c.commit.committer.date) });
+      if (list.length < 100) break;
+    }
+    commits.sort((a, b) => a.at - b.at);
+    const ids = parseCsv(await text("https://github.com/dynastyprocess/data/raw/master/files/db_playerids.csv", "db_playerids.csv"));
+    const toSleeper = new Map<string, string>();
+    for (const r of ids) if (r.fantasypros_id && r.fantasypros_id !== "NA" && r.sleeper_id && r.sleeper_id !== "NA") toSleeper.set(r.fantasypros_id, r.sleeper_id);
+    const teamFix = (t: string) => (t === "JAC" ? "JAX" : t === "LA" ? "LAR" : t);
+    // Eastern kickoff "YYYY-MM-DD HH:MM" → epoch (DST approximated by month).
+    const et = (k: string) => { const m = Number(k.slice(5, 7)); return Date.parse(`${k.replace(" ", "T").slice(0, 16)}:00${m >= 4 && m <= 10 ? "-04:00" : "-05:00"}`); };
+    const weeks: Record<number, { at: string; sha: string; rows: [string, number, number | null][] }> = {};
+    const maxWeek = Math.max(0, ...scheduleNow.map((g) => g.week));
+    for (let w = 1; w <= maxWeek; w++) {
+      const games = scheduleNow.filter((g) => g.week === w && g.kickoff);
+      if (!games.length) continue;
+      // Cut-off: the first Sunday kickoff of the week (or the first game if none on Sunday).
+      const times = games.map((g) => et(g.kickoff!)).filter(Number.isFinite).sort((a, b) => a - b);
+      const sunday = games.filter((g) => new Date(et(g.kickoff!)).getUTCDay() === 0).map((g) => et(g.kickoff!)).sort((a, b) => a - b)[0];
+      const cut = sunday ?? times[0];
+      if (!cut || cut > Date.now()) continue;
+      const pick = [...commits].reverse().find((c) => c.at < cut && c.at > cut - 7 * 86_400_000);
+      if (!pick) continue;
+      const file = path.join(CACHE, `${pick.sha}.csv`);
+      let body = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "";
+      if (!body) {
+        const r = await fetch(`https://raw.githubusercontent.com/dynastyprocess/data/${pick.sha}/files/fp_latest_weekly.csv`);
+        if (!r.ok) continue;
+        body = await r.text();
+        fs.writeFileSync(file, body);
+      }
+      const rows: [string, number, number | null][] = [];
+      for (const r of parseCsv(body)) {
+        if (!["QB", "RB", "WR", "TE", "K", "DST"].includes(r.page_pos)) continue;
+        const id = r.page_pos === "DST" ? teamFix(r.team) : toSleeper.get(r.fantasypros_id);
+        const ecr = Number(r.ecr);
+        if (!id || !Number.isFinite(ecr)) continue;
+        const proj = Number(r.r2p_pts);
+        rows.push([id, ecr, Number.isFinite(proj) && r.r2p_pts !== "NA" ? proj : null]);
+      }
+      if (rows.length) weeks[w] = { at: new Date(pick.at).toISOString(), sha: pick.sha.slice(0, 10), rows };
+    }
+    console.log(`ecr history: weeks ${Object.keys(weeks).join(",")}`);
+    write(`ecr-weekly-${s}.json`, JSON.stringify({ season: s, source: "FantasyPros weekly ECR (PPR position pages) via DynastyProcess git history", weeks }));
   }]);
 
   // ---- SHS AI signals ----

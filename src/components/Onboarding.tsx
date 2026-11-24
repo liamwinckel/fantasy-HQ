@@ -24,7 +24,7 @@ export function Onboarding({ suggested = "" }: { suggested?: string }) {
   return (
     <div className="mx-auto mt-10 max-w-md rounded-2xl border border-line bg-panel p-6">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={`${BASE_PATH}/shs-mark.png`} alt="SHS" width={64} height={64} />
+      <img src={`${BASE_PATH}/shs-mark.png?v=2`} alt="SHS" width={64} height={64} />
       <h1 className="h-display mt-3 text-4xl">Connect Sleeper</h1>
       <p className="mt-2 text-sm text-muted">Enter your Sleeper username. Fantasy HQ reads your leagues through Sleeper&apos;s public API. Nothing is posted back to Sleeper. Your settings are saved on this device.</p>
       <form onSubmit={submit} className="mt-5 flex flex-col gap-3">

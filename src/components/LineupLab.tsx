@@ -17,6 +17,8 @@ export interface LabPlayer {
   snapL3: number[] | null; recent: { week: number; pts: number }[]; actual?: number | null;
   /** SHS AI ±% vs expert rank this week. */
   ai?: number | null;
+  /** Chance of a big week / a dud (position thresholds). */
+  boom?: number; bust?: number;
 }
 
 type View = "current" | "optimal";
@@ -63,9 +65,11 @@ function useFlip(deps: unknown[], armed: React.MutableRefObject<boolean>) {
   return box;
 }
 
-export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots, week, onTotal, opponent, live = false, myName = "You" }: {
+export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots, week, onTotal, opponent, live = false, myName = "You", sim }: {
   slots: string[]; players: LabPlayer[]; current: (string | null)[]; optimal: (string | null)[]; swaps: Swap[]; rosterSlots: string; week: number; onTotal?: (t: number) => void;
   opponent?: TeamWeek | null; live?: boolean; myName?: string;
+  /** Matchup simulator for the lineup on screen; `apply` puts a lineup on screen. */
+  sim?: (lineup: (string | null)[], apply: (l: (string | null)[]) => void) => React.ReactNode;
 }) {
   const [view, setView] = useState<View>("current");
   const [mine, setMine] = useState<(string | null)[]>(current);
@@ -137,7 +141,7 @@ export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
         <Card pad={false} className="min-w-0 overflow-hidden lg:flex-[3]" title={opponent ? `Lineups · Week ${week}` : `Your lineup · Week ${week}`}
           right={<Segmented label="Lineup view" value={view} onChange={(v) => setView(v)} options={[{ value: "current", label: edited ? "Yours" : "Current" }, { value: "optimal", label: "Optimal" }]} />}
-          info={<>Tap a position (QB, RB…) to choose who plays there; the player you replace moves to the bench, or swaps slots if he can play the other one. <b>Proj</b> = Sleeper&apos;s projection in your scoring. <b>Range</b> = a bad week (1 in 5 is worse) · expected · a good week. Matchup % = how many more (+) or fewer (−) points this opponent allows to the position. Slots: {rosterSlots}. Nothing here changes Sleeper.</>}>
+          info={<>Tap a position (QB, RB…) to choose who plays there; the player you replace moves to the bench, or swaps slots if he can play the other one. <b>Proj</b> = Sleeper&apos;s projection in your scoring. <b>Range</b> = floor (1 week in 10 is worse) · projection · ceiling (1 in 10 is better), from his own week-to-week swings and, when he has them, betting-market lines. Matchup % = how many more (+) or fewer (−) points this opponent allows to the position. Slots: {rosterSlots}. Nothing here changes Sleeper.</>}>
           <div className="flex items-center justify-between gap-2 border-b border-line px-3 py-2 text-xs sm:px-5">
             <span className="text-muted">{view === "optimal" ? "Optimal lineup" : edited ? "Your changes" : "Set in Sleeper"}: <b className="num text-fg">{shownTotal.toFixed(1)}</b> pts</span>
             {view === "current" && optTotal - shownTotal > 0.05 && <span className="font-semibold text-acc-ink">Optimal is {signed(optTotal - shownTotal)}</span>}
@@ -148,7 +152,7 @@ export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots
             <div key={view} className="qa-fade-in"><Versus slots={slots} lineup={lineup} bench={bench} byId={byId} opponent={opponent} live={live} changed={changed} onSlot={setSlotOpen} boxRef={box} myName={myName} /></div>
           ) : (<>
           <div className={cx(GRID, "border-b border-line px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted sm:px-5")}>
-            <span>Slot</span><span /><span>Player</span><span className="hidden sm:block">Range · low / exp / high</span><span className="text-right">Proj</span>
+            <span>Slot</span><span /><span>Player</span><span className="hidden sm:block">Floor · proj · ceiling</span><span className="text-right">Proj</span>
           </div>
           <div ref={box} key={view} className="qa-fade-in">
             {slots.map((slot, i) => {
@@ -166,6 +170,7 @@ export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots
         </Card>
 
         <div className="flex min-w-0 flex-col gap-4 lg:flex-[2]">
+          {sim?.(lineup, (l) => { armed.current = true; setMine(l); setView("current"); })}
           <Card title="Start / sit">
             <div className="grid grid-cols-2 gap-2">
               <label className="flex flex-col gap-1 text-[11px] text-muted">Starter
@@ -217,7 +222,8 @@ function RangeBar({ low, med, high }: { low: number; med: number; high: number }
 function Compare({ a, b }: { a?: LabPlayer; b?: LabPlayer }) {
   const rows: [string, (p: LabPlayer) => string][] = [
     ["Projected pts", (p) => p.median.toFixed(1)],
-    ["Bad / good week", (p) => `${p.low.toFixed(1)} / ${p.high.toFixed(1)}`],
+    ["Floor / ceiling", (p) => `${p.low.toFixed(1)} / ${p.high.toFixed(1)}`],
+    ["Boom / bust", (p) => (p.boom !== undefined ? `${p.boom}% / ${p.bust}%` : "—")],
     ["Avg pts, last 4 games", (p) => p.last4.toFixed(1)],
     ["Avg pts, season", (p) => `${p.seasonAvg.toFixed(1)} (${p.games} games)`],
     ["Snap %, last 3 games", (p) => (p.snapL3 ? p.snapL3.join(" · ") : "—")],

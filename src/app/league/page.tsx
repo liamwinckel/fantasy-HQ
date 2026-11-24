@@ -47,7 +47,7 @@ function LeagueBody({ league, ctx }: LeagueData) {
             const t = team(p.rosterId);
             const c = ctx.showClasses ? ctx.classifications.get(p.rosterId) : undefined;
             return (
-              <li key={p.rosterId} className={cx("grid grid-cols-[1.75rem_minmax(0,1fr)_3rem_4.5rem] items-center gap-2 px-3 py-2.5 sm:grid-cols-[2rem_minmax(0,1fr)_3.5rem_8rem_4rem_4rem] sm:px-5", p.rosterId === ctx.myRosterId && "bg-acc-soft")}>
+              <li key={p.rosterId} data-team={p.rosterId} className={cx("cursor-pointer active:bg-panel2", "grid grid-cols-[1.75rem_minmax(0,1fr)_3rem_4.5rem] items-center gap-2 px-3 py-2.5 sm:grid-cols-[2rem_minmax(0,1fr)_3.5rem_8rem_4rem_4rem] sm:px-5", p.rosterId === ctx.myRosterId && "bg-acc-soft")}>
                 <span className="num font-bold">{p.rank}</span>
                 <div className="min-w-0">
                   <TeamLink rosterId={t.rosterId} name={t.name} avatar={t.avatar} size={28} className="max-w-full text-sm font-semibold" />
@@ -74,7 +74,7 @@ function LeagueBody({ league, ctx }: LeagueData) {
         </div>
         <ul className="divide-y divide-line">
           {power.map((p) => (
-            <li key={p.rosterId} className={cx("grid items-center gap-1 px-3 py-1.5 sm:px-5", p.rosterId === ctx.myRosterId && "bg-acc-soft")} style={{ gridTemplateColumns: `minmax(0,1fr) repeat(${mainPos.length + 1}, 2.4rem)` }}>
+            <li key={p.rosterId} data-team={p.rosterId} className={cx("cursor-pointer active:bg-panel2", "grid items-center gap-1 px-3 py-1.5 sm:px-5", p.rosterId === ctx.myRosterId && "bg-acc-soft")} style={{ gridTemplateColumns: `minmax(0,1fr) repeat(${mainPos.length + 1}, 2.4rem)` }}>
               <TeamLink rosterId={p.rosterId} name={team(p.rosterId).name} avatar={team(p.rosterId).avatar} size={22} className="max-w-full text-xs font-semibold sm:text-sm" />
               {mainPos.map((pos) => { const r = p.positions[pos]?.rank ?? 0; return <span key={pos} title={`${p.positions[pos]?.pts.toFixed(1) ?? 0} projected pts`} className={cx("num rounded py-1 text-center text-xs font-bold", tone(r))}>{r || "—"}</span>; })}
               <span className={cx("num rounded py-1 text-center text-xs font-bold", tone(p.depthRank))}>{p.depthRank}</span>
@@ -114,7 +114,7 @@ function PlayoffPicture({ ctx, power }: { ctx: Ctx; power: Power }) {
     <Card title="Playoff picture" info={<>Average finishing seed and playoff odds from 4,000 simulated seasons. Schedule = average power score of each team&apos;s remaining fantasy opponents (higher = harder).</>} pad={false}>
       <ul className="divide-y divide-line">
         {rows.map((r, i) => (
-          <li key={r.t.rosterId} className={cx("grid grid-cols-[1.75rem_minmax(0,1fr)_3.5rem_4rem] items-center gap-2 px-3 py-2 sm:px-5", r.t.rosterId === ctx.myRosterId && "bg-acc-soft", i === spots - 1 && "border-b-2 border-b-acc")}>
+          <li key={r.t.rosterId} data-team={r.t.rosterId} className={cx("cursor-pointer active:bg-panel2", "grid grid-cols-[1.75rem_minmax(0,1fr)_3.5rem_4rem] items-center gap-2 px-3 py-2 sm:px-5", r.t.rosterId === ctx.myRosterId && "bg-acc-soft", i === spots - 1 && "border-b-2 border-b-acc")}>
             <span className="num text-xs font-bold text-muted">{i + 1}</span>
             <TeamLink rosterId={r.t.rosterId} name={r.t.name} avatar={r.t.avatar} size={22} className="max-w-full text-sm font-semibold" />
             <span className="num text-right text-sm font-bold">{r.po.toFixed(0)}%</span>
@@ -141,7 +141,7 @@ function DynastyOutlook({ ctx, power }: { ctx: Ctx; power: Power }) {
           const ages = t.players.map((id) => ctx.players.get(id)).filter((x) => x && x.age && ["QB", "RB", "WR", "TE"].includes(x.pos)).map((x) => x!.age!);
           const age = ages.length ? ages.reduce((a, b) => a + b, 0) / ages.length : null;
           return (
-            <li key={p.rosterId} className={cx("grid grid-cols-[1.75rem_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 sm:px-5", p.rosterId === ctx.myRosterId && "bg-acc-soft")}>
+            <li key={p.rosterId} data-team={p.rosterId} className={cx("cursor-pointer active:bg-panel2", "grid grid-cols-[1.75rem_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 sm:px-5", p.rosterId === ctx.myRosterId && "bg-acc-soft")}>
               <span className="num text-sm font-bold">{p.dynastyRank}</span>
               <div className="min-w-0">
                 <TeamLink rosterId={t.rosterId} name={t.name} avatar={t.avatar} size={22} className="max-w-full text-sm font-semibold" />

@@ -6,6 +6,7 @@ import { ownershipAcross, playerCard, type PlayerCardData } from "@/lib/services
 import { useSwipeDown } from "./swipe";
 import { cx, NflLogo, Info } from "./ui";
 import { useApp } from "./AppData";
+import { playerDist } from "@/lib/engine/ranges";
 
 const Ctx = createContext<{ open: (id: string) => void }>({ open: () => {} });
 export const usePlayerCard = () => useContext(Ctx);
@@ -102,6 +103,7 @@ function CardBody({ d }: { d: PlayerCardData }) {
           <Tile label={d.leagueMode === "dynasty" ? "Dynasty trade value" : "Trade value"} value={d.values ? (d.leagueMode === "dynasty" ? d.values.dynasty : d.values.redraft).toFixed(0) : "—"} sub={d.values ? `${d.pos}${d.leagueMode === "dynasty" ? d.values.posRankDynasty : d.values.posRankRedraft} · out of 100` : ""} accent />
         </div>
       )}
+      <WeekRange id={d.id} />
       {d.values && (
         <Info className="-mt-1 px-5">
           <b className="text-fg">Trade value</b> is the SHS model&apos;s score for how much this player is worth in a trade in {d.leagueName}, from 0 to 100 (100 = the league&apos;s most valuable player).{" "}
@@ -226,5 +228,28 @@ export function WeeklyChart({ weeks }: { weeks: PlayerCardData["weeks"] }) {
         );
       })}
     </svg>
+  );
+}
+
+/** This week's floor, ceiling and boom/bust odds. */
+function WeekRange({ id }: { id: string }) {
+  const { ctx } = useApp();
+  if (!ctx || ctx.seasonOver) return null;
+  const d = playerDist(ctx, id, Math.min(ctx.currentWeek, ctx.lastWeek));
+  if (d.mean < 0.5) return null;
+  const pct = (x: number) => `${Math.max(0, Math.min(100, ((x - 0) / Math.max(1, d.ceiling * 1.15)) * 100))}%`;
+  return (
+    <div className="mx-5 mb-4 rounded-xl border border-line p-3">
+      <div className="mb-2 flex items-baseline justify-between text-xs"><b>This week&apos;s range</b><span className="text-muted">{d.market ? "his history + betting lines" : "his week-to-week history"}</span></div>
+      <div className="relative h-3 rounded-full bg-panel2">
+        <div className="absolute top-0 h-3 rounded-full bg-acc/40" style={{ left: pct(d.floor), width: `calc(${pct(d.ceiling)} - ${pct(d.floor)})` }} />
+        <div className="absolute -top-0.5 h-4 w-1 rounded bg-acc" style={{ left: pct(d.mean) }} />
+      </div>
+      <div className="num mt-1.5 flex justify-between text-xs"><span>Floor <b>{d.floor.toFixed(1)}</b></span><span>Proj <b>{d.mean.toFixed(1)}</b></span><span>Ceiling <b>{d.ceiling.toFixed(1)}</b></span></div>
+      <div className="mt-2 grid grid-cols-2 gap-2 text-center text-xs">
+        <div className="rounded-lg bg-pos/10 py-1.5"><b className="num text-pos">{d.boom}%</b> <span className="text-muted">boom ({d.boomLine}+ pts)</span></div>
+        <div className="rounded-lg bg-neg/10 py-1.5"><b className="num text-neg">{d.bust}%</b> <span className="text-muted">bust (under {d.bustLine})</span></div>
+      </div>
+    </div>
   );
 }

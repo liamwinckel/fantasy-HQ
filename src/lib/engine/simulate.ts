@@ -28,6 +28,10 @@ export interface SimResult {
   avgSeed: Record<number, number>;
   projectedWins: Record<number, number>;
   runs: number;
+  /** % of simulations finishing at each seed (index 0 = 1st). */
+  seedDist: Record<number, number[]>;
+  /** % of simulations reaching each playoff round (index 0 = made playoffs … last = won title). */
+  roundOdds: Record<number, number[]>;
 }
 
 function rng(seed: number) {
@@ -55,7 +59,9 @@ export function simulateSeason(inp: SimInput): SimResult {
   const title: Record<number, number> = {};
   const seedSum: Record<number, number> = {};
   const winSum: Record<number, number> = {};
-  for (const id of ids) { playoff[id] = 0; title[id] = 0; seedSum[id] = 0; winSum[id] = 0; }
+  const seedCount: Record<number, number[]> = {};
+  const roundCount: Record<number, number[]> = {};
+  for (const id of ids) { playoff[id] = 0; title[id] = 0; seedSum[id] = 0; winSum[id] = 0; seedCount[id] = ids.map(() => 0); roundCount[id] = []; }
   const draw = (id: number, week: number) => {
     const s = inp.strength(id, week);
     return s.mean + s.sd * normal(r);
@@ -74,7 +80,7 @@ export function simulateSeason(inp: SimInput): SimResult {
       }
     }
     const standings = [...ids].sort((x, y) => w[y] - w[x] || pf[y] - pf[x]);
-    standings.forEach((id, i) => { seedSum[id] += i + 1; winSum[id] += w[id]; });
+    standings.forEach((id, i) => { seedSum[id] += i + 1; winSum[id] += w[id]; seedCount[id][i]++; });
     const seeds = standings.slice(0, inp.playoffTeams);
     seeds.forEach((id) => playoff[id]++);
     // Bracket
@@ -83,6 +89,8 @@ export function simulateSeason(inp: SimInput): SimResult {
     while (size < alive.length) size *= 2;
     let byes = size - alive.length;
     let round = 0;
+    const reach = (list: { id: number }[], r: number) => { for (const t of list) roundCount[t.id][r] = (roundCount[t.id][r] ?? 0) + 1; };
+    reach(alive, 0);
     while (alive.length > 1) {
       const week = inp.playoffWeeks[Math.min(round, inp.playoffWeeks.length - 1)] ?? 0;
       const sorted = [...alive].sort((a, b) => a.seed - b.seed);
@@ -97,16 +105,19 @@ export function simulateSeason(inp: SimInput): SimResult {
       alive = next;
       byes = 0;
       round++;
+      reach(alive, round);
     }
     if (alive[0]) title[alive[0].id]++;
   }
   const pct = (x: number) => Math.round((1000 * x) / runs) / 10;
-  const o = { playoffOdds: {} as Record<number, number>, titleOdds: {} as Record<number, number>, avgSeed: {} as Record<number, number>, projectedWins: {} as Record<number, number>, runs };
+  const o: SimResult = { playoffOdds: {}, titleOdds: {}, avgSeed: {}, projectedWins: {}, runs, seedDist: {}, roundOdds: {} };
   for (const id of ids) {
     o.playoffOdds[id] = pct(playoff[id]);
     o.titleOdds[id] = pct(title[id]);
     o.avgSeed[id] = Math.round((10 * seedSum[id]) / runs) / 10;
     o.projectedWins[id] = Math.round((10 * winSum[id]) / runs) / 10;
+    o.seedDist[id] = seedCount[id].map(pct);
+    o.roundOdds[id] = Array.from({ length: Math.max(1, ...ids.map((x) => roundCount[x].length)) }, (_, i) => pct(roundCount[id][i] ?? 0));
   }
   return o;
 }

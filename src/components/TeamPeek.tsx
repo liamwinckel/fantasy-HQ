@@ -22,6 +22,17 @@ export function TeamPeekProvider({ children }: { children: ReactNode }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+  // Any element with data-team="<rosterId>" opens that team when tapped (whole rows, not just the name).
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      const t = e.target as HTMLElement;
+      if (t.closest("a,button,input,select,textarea,[role=dialog]")) return;
+      const row = t.closest<HTMLElement>("[data-team]");
+      if (row?.dataset.team) setRid(Number(row.dataset.team));
+    };
+    document.addEventListener("click", onClick);
+    return () => document.removeEventListener("click", onClick);
+  }, []);
   const swipe = useSwipeDown(() => setRid(null));
   return (
     <Ctx.Provider value={{ open }}>

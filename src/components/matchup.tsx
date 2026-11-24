@@ -46,7 +46,7 @@ function Head({ t, kind, align }: { t: TeamWeek | null; kind: GameView["kind"]; 
   const notStarted = kind === "current" && !t.actual;
   const total = kind === "future" || notStarted ? t.projected : t.actual;
   return (
-    <div className={cx("flex min-w-0 flex-1 flex-col gap-1 px-3 py-3", align === "right" ? "items-end text-right" : "items-start")}>
+    <div data-team={t.rosterId} className={cx("flex min-w-0 flex-1 cursor-pointer flex-col gap-1 px-3 py-3", align === "right" ? "items-end text-right" : "items-start")}>
       <TeamLink rosterId={t.rosterId} name={t.name} avatar={t.avatar} size={24} className="max-w-full text-sm font-semibold" />
       <div className="num font-[family-name:var(--font-display)] text-3xl font-bold leading-none sm:text-4xl">{total !== null ? total.toFixed(1) : "—"}</div>
       <div className="text-[10px] text-muted">{kind === "past" ? "Final" : kind === "future" ? "Projected · best lineup" : notStarted ? "Projected" : `Live · proj ${t.projected?.toFixed(1) ?? "—"}`}</div>

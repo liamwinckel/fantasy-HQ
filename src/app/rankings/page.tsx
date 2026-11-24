@@ -8,6 +8,8 @@ import { PlayerLink } from "@/components/PlayerCard";
 import { InfoButton, InjuryChip, NflLogo, PageHeader, cx } from "@/components/ui";
 import { ShsExplainer, useCollege, useShsWeights } from "@/components/ShsAiParts";
 import { accuracy, snapshotWeek } from "@/lib/services/accuracy";
+import { BacktestCard } from "@/components/Backtest";
+import { playerDist } from "@/lib/engine/ranges";
 import { useEffect } from "react";
 import { formatLabel } from "@/lib/services/portfolio";
 import { rankings, type RankRow, type RankScope } from "@/lib/services/rankings";
@@ -84,6 +86,7 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
   // Save this week's rankings (before kickoff) so SHS AI can be graded against what actually happens.
   useEffect(() => { if (scope === "week" && !wx.loading) snapshotWeek(ctx, all, ai).catch(() => {}); }, [ctx, all, ai, scope, wx.loading]);
   const acc = useAsync(() => accuracy(ctx), [ctx]);
+  const dists = useMemo(() => (scope === "week" ? new Map(all.filter((r) => r.pts > 0.5).map((r) => [r.id, playerDist(ctx, r.id, Math.min(ctx.currentWeek, ctx.lastWeek))])) : new Map<string, ReturnType<typeof playerDist>>()), [ctx, all, scope]);
   const [aiInfo, setAiInfo] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
   const [pos, setPos] = useState("ALL");
@@ -131,6 +134,7 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
         </div>
       </div>
 
+      {scope === "week" && <BacktestCard ctx={ctx} />}
       {acc.data && <TrackRecord a={acc.data} />}
 
       <section className="overflow-hidden rounded-xl border border-line bg-panel">
@@ -160,6 +164,7 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
               <div className="text-right">
                 <div className="num font-[family-name:var(--font-display)] text-xl font-bold leading-none">{(dyn ? r.value : r.pts).toFixed(dyn ? 0 : 1)}</div>
                 {scope === "ros" && r.games > 0 && <div className="text-[10px] text-muted">{(r.pts / r.games).toFixed(1)}/g</div>}
+                {scope === "week" && r.pts > 0.5 && (() => { const d = dists.get(r.id); return d ? <div className="num text-[10px] text-muted" title="Floor (1 week in 10 worse) – ceiling (1 in 10 better)">{d.floor.toFixed(0)}–{d.ceiling.toFixed(0)}</div> : null; })()}
               </div>
             </li>
             {open === r.id && (
@@ -191,7 +196,7 @@ function TrackRecord({ a }: { a: NonNullable<Awaited<ReturnType<typeof accuracy>
   return (
     <section className="rounded-xl border border-line bg-panel p-3">
       <div className="mb-2 flex items-baseline justify-between gap-2">
-        <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted">Weekly track record</h2>
+        <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted">Live track record (incl. betting lines & weather)</h2>
         <span className="text-[11px] text-muted">{a.weeks.length} week{a.weeks.length === 1 ? "" : "s"} · {a.pairs.toLocaleString()} matchups</span>
       </div>
       <div className="grid grid-cols-3 gap-2">{cell("Experts", a.experts)}{cell("SHS AI", a.shs)}{cell("Projection", a.sleeper)}</div>

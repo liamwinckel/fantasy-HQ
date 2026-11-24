@@ -51,3 +51,87 @@ export function SeasonChart({ ctx, rosterId, selectedWeek }: { ctx: LeagueContex
     </div>
   );
 }
+
+// ---- small generic charts (SVG, theme colours) ----
+export type Series = { name: string; color: string; values: (number | null)[]; dash?: boolean; area?: boolean };
+const niceMax = (v: number) => { const m = Math.pow(10, Math.floor(Math.log10(Math.max(1, v)))); return Math.ceil(v / m) * m; };
+
+export function LineChart({ labels, series, height = 200, yMin, yMax, invert = false, fmt = (v: number) => String(Math.round(v)) }: { labels: string[]; series: Series[]; height?: number; yMin?: number; yMax?: number; invert?: boolean; fmt?: (v: number) => string }) {
+  const W = 900, H = height, padL = 36, padB = 22, padT = 10;
+  const all = series.flatMap((s) => s.values.filter((v): v is number => v !== null));
+  const lo = yMin ?? Math.min(0, ...all), hi = yMax ?? niceMax(Math.max(1, ...all) * 1.05);
+  const x = (i: number) => padL + (labels.length <= 1 ? (W - padL) / 2 : (i * (W - padL - 10)) / (labels.length - 1));
+  const y = (v: number) => { const f = (v - lo) / (hi - lo || 1); return padT + (invert ? f : 1 - f) * (H - padB - padT); };
+  const ticks = [lo, lo + (hi - lo) / 2, hi];
+  return (
+    <div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img">
+        {ticks.map((t) => <g key={t}><line x1={padL} x2={W} y1={y(t)} y2={y(t)} stroke="var(--border)" strokeDasharray="3 4" /><text x={0} y={y(t) + 3} fontSize="10" fill="var(--muted)">{fmt(t)}</text></g>)}
+        {labels.map((l, i) => (labels.length <= 18 || i % 2 === 0) && <text key={i} x={x(i)} y={H - 5} fontSize="10" textAnchor="middle" fill="var(--muted)">{l}</text>)}
+        {series.map((s) => {
+          const pts = s.values.map((v, i) => (v === null ? null : `${x(i)},${y(v)}`));
+          const segs: string[][] = []; let cur: string[] = [];
+          for (const p of pts) { if (p) cur.push(p); else if (cur.length) { segs.push(cur); cur = []; } }
+          if (cur.length) segs.push(cur);
+          return (
+            <g key={s.name}>
+              {s.area && segs.map((g, k) => <polygon key={k} points={`${g[0].split(",")[0]},${y(lo)} ${g.join(" ")} ${g[g.length - 1].split(",")[0]},${y(lo)}`} fill={s.color} opacity="0.12" />)}
+              {segs.map((g, k) => <polyline key={k} points={g.join(" ")} fill="none" stroke={s.color} strokeWidth="2.2" strokeDasharray={s.dash ? "5 4" : undefined} strokeLinejoin="round" />)}
+              {s.values.map((v, i) => v !== null && <circle key={i} cx={x(i)} cy={y(v)} r="3" fill={s.color}><title>{`${s.name} · ${labels[i]}: ${fmt(v)}`}</title></circle>)}
+            </g>
+          );
+        })}
+      </svg>
+      <Legend series={series} />
+    </div>
+  );
+}
+
+export function Legend({ series }: { series: { name: string; color: string; dash?: boolean }[] }) {
+  return (
+    <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted">
+      {series.map((s) => <span key={s.name} className="flex items-center gap-1.5"><span className="inline-block w-4 border-t-2" style={{ borderColor: s.color, borderStyle: s.dash ? "dashed" : "solid" }} />{s.name}</span>)}
+    </div>
+  );
+}
+
+export function StackedBars({ labels, stacks, height = 200 }: { labels: string[]; stacks: { name: string; color: string; values: number[] }[]; height?: number }) {
+  const W = 900, H = height, padL = 36, padB = 22;
+  const totals = labels.map((_, i) => stacks.reduce((a, s) => a + Math.max(0, s.values[i] ?? 0), 0));
+  const max = niceMax(Math.max(1, ...totals) * 1.05);
+  const bw = (W - padL) / Math.max(1, labels.length);
+  const y = (v: number) => H - padB - (v / max) * (H - padB - 8);
+  return (
+    <div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img">
+        {[0.5, 1].map((f) => <g key={f}><line x1={padL} x2={W} y1={y(max * f)} y2={y(max * f)} stroke="var(--border)" strokeDasharray="3 4" /><text x={0} y={y(max * f) + 3} fontSize="10" fill="var(--muted)">{Math.round(max * f)}</text></g>)}
+        {labels.map((l, i) => {
+          let acc = 0;
+          return (
+            <g key={i}>
+              {stacks.map((s) => { const v = Math.max(0, s.values[i] ?? 0); const top = acc + v; const el = v > 0 ? <rect key={s.name} x={padL + i * bw + bw * 0.18} y={y(top)} width={bw * 0.64} height={y(acc) - y(top)} fill={s.color}><title>{`${l} · ${s.name}: ${v.toFixed(1)}`}</title></rect> : null; acc = top; return el; })}
+              <text x={padL + i * bw + bw / 2} y={H - 5} fontSize="10" textAnchor="middle" fill="var(--muted)">{l}</text>
+            </g>
+          );
+        })}
+      </svg>
+      <Legend series={stacks} />
+    </div>
+  );
+}
+
+/** Horizontal bars, one per row (e.g. odds by team). */
+export function HBars({ rows, max, fmt = (v: number) => `${v.toFixed(0)}%`, highlight }: { rows: { key: string | number; label: React.ReactNode; value: number }[]; max?: number; fmt?: (v: number) => string; highlight?: string | number }) {
+  const m = max ?? Math.max(1, ...rows.map((r) => r.value));
+  return (
+    <ul className="flex flex-col gap-1.5">
+      {rows.map((r) => (
+        <li key={r.key} className="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)_3.25rem] items-center gap-2 text-xs">
+          <span className={r.key === highlight ? "truncate font-bold text-fg" : "truncate text-muted"}>{r.label}</span>
+          <span className="h-2.5 overflow-hidden rounded-full bg-panel2"><span className="block h-full rounded-full transition-[width] duration-500" style={{ width: `${Math.max(1.5, (r.value / m) * 100)}%`, background: r.key === highlight ? "var(--acc)" : "var(--muted)" }} /></span>
+          <span className="num text-right font-semibold">{fmt(r.value)}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}

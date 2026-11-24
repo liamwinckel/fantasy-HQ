@@ -3,7 +3,6 @@
 import { LeaguePage, useAsync, type LeagueData } from "@/components/AppData";
 import { TeamLink } from "@/components/TeamPeek";
 import type { LeagueContext } from "@/lib/services/league";
-import Link from "next/link";
 import { formatLabel } from "@/lib/services/portfolio";
 import { gameView, lineupSwaps, opponentOf } from "@/lib/services/views";
 import { waiverReport } from "@/lib/services/waivers";
@@ -16,6 +15,11 @@ import { Logo, Bar, Card, ClassBadge, InjuryChip, Notice, PageHeader, Stat, Tag,
 import { PlayerImg } from "@/components/client";
 import { PlayerLink } from "@/components/PlayerCard";
 import { SeasonChart } from "@/components/charts";
+import { Sheet } from "@/components/Sheet";
+import { DashDetail, type DashKey } from "./DashDetails";
+import { seasonSummary, leaguePpg } from "@/lib/services/teamSeason";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 const FORMAT_NOTE: Record<string, string> = {
   redraft: "Redraft league: built around this season: playoff odds, schedule and weekly lineup gains.",
@@ -23,12 +27,16 @@ const FORMAT_NOTE: Record<string, string> = {
   dynasty: "Dynasty league: this season plus long-term roster value, age, picks and team strategy.",
 };
 
+const TITLES: Record<DashKey, string> = { record: "Record", power: "Power rank", pf: "Points for", pa: "Points against", playoff: "Playoff odds", title: "Title odds", finish: "Projected finish", ppg: "Points per week", value: "Roster value", strategy: "Strategy", keepers: "Keepers", season: "Season at a glance" };
+
 export default function Dashboard() {
   return <LeaguePage>{(d) => <DashboardBody {...d} />}</LeaguePage>;
 }
 
 function DashboardBody({ setup, league, ctx, sp }: LeagueData) {
   const me = ctx.teams.find((t) => t.rosterId === ctx.myRosterId);
+  const [open, setOpen] = useState<DashKey | null>(null);
+  const router = useRouter();
   const keeperQ = useAsync(() => (ctx.format === "keeper" ? loadKeeperPlan(setup.settings, league, ctx) : Promise.resolve(null)), [ctx, league, setup]);
   if (!me) return <Notice tone="warn">You don&apos;t own a team in {league.name}.</Notice>;
 
@@ -47,6 +55,26 @@ function DashboardBody({ setup, league, ctx, sp }: LeagueData) {
   const injured = me.players.map((id) => ctx.players.get(id)).filter((p) => p?.injury) as NonNullable<ReturnType<typeof ctx.players.get>>[];
   const keeper = keeperQ.data;
   const myPicks = ctx.picks.filter((p) => p.ownerRosterId === me.rosterId);
+  const summ = seasonSummary(ctx, me.rosterId);
+  const ppgRank = 1 + leaguePpg(ctx).findIndex((t) => t.rosterId === me.rosterId);
+  type S = { k: DashKey; props: Parameters<typeof Stat>[0] };
+  const ppgStat: S = { k: "ppg", props: { label: "Points / week", value: summ.avg.toFixed(1), sub: `${ord(ppgRank)} in league · last 3: ${summ.last3.toFixed(1)}`, tone: summ.last3 >= summ.avg ? "pos" : "neg", tag: "ACTUAL" } };
+  const stats: S[] = [
+    { k: "record", props: { label: "Record", value: `${me.wins}–${me.losses}${me.ties ? `–${me.ties}` : ""}`, sub: `${ord(me.rank)} in standings`, tag: "ACTUAL" } },
+    { k: "power", props: { label: "Power rank", value: `#${myPower.rank}`, sub: `of ${ctx.teamsCount} · score ${myPower.score.toFixed(0)}`, tag: "MODEL" } },
+    { k: "pf", props: { label: "Points for", value: me.pointsFor.toFixed(0), sub: `${signed(me.pointsFor - avgPf)} vs avg`, tone: me.pointsFor >= avgPf ? "pos" : "neg", tag: "ACTUAL" } },
+    { k: "pa", props: { label: "Points against", value: me.pointsAgainst.toFixed(0), sub: `${signed(me.pointsAgainst - avgPa)} vs avg`, tone: me.pointsAgainst <= avgPa ? "pos" : "neg", tag: "ACTUAL" } },
+    { k: "playoff", props: { label: "Playoff odds", value: `${(ctx.sim.playoffOdds[me.rosterId] ?? 0).toFixed(0)}%`, sub: `Projected ${ctx.sim.projectedWins[me.rosterId] ?? "—"} wins`, tag: "MODEL" } },
+    { k: "title", props: { label: "Title odds", value: `${(ctx.sim.titleOdds[me.rosterId] ?? 0).toFixed(0)}%`, sub: "Simulated", tag: "MODEL" } },
+  ];
+  if (fmt === "dynasty") {
+    stats.push({ k: "value", props: { label: "Roster value", value: `#${myPower.dynastyRank}`, sub: `of ${ctx.teamsCount} · players + picks`, tag: "MODEL" } });
+    if (cls) stats.push({ k: "strategy", props: { label: "Strategy", value: <ClassBadge cls={cls.override ?? cls.primary} className="text-sm" />, sub: `${cls.confidence}% confidence`, tag: "MODEL" } });
+  } else {
+    stats.push({ k: "finish", props: { label: "Projected finish", value: ord(Math.round(ctx.sim.avgSeed[me.rosterId] ?? 0)), sub: "Average simulated seed", tag: "MODEL" } });
+    if (fmt === "keeper" && keeper) stats.push({ k: "keepers", props: { label: "Keepers lined up", value: `${keeper.rows.filter((r) => r.recommended).length} / ${keeper.rules.maxKeepers}`, sub: "Positive-surplus keepers", tag: "MODEL" } });
+  }
+  if (stats.length < 8) stats.push(ppgStat);
 
   return (
     <div className="flex flex-col gap-5">
@@ -54,23 +82,21 @@ function DashboardBody({ setup, league, ctx, sp }: LeagueData) {
         <span className={cx("rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider", fmt === "dynasty" ? "bg-fg text-bg" : fmt === "keeper" ? "border border-acc text-acc-ink" : "bg-acc text-on-acc")}>{formatLabel(league)} league</span>
       </PageHeader>
       <Info className="-mt-2 self-center" label="About this tool">{FORMAT_NOTE[fmt]}</Info>
+      {!ctx.seasonOver && ctx.currentWeek > 1 && (
+        <Card title="Weekly brief" href="/brief/"><p className="text-sm text-muted">Week {ctx.currentWeek - 1} recap, how SHS AI and the experts did, and your week {Math.min(ctx.currentWeek, ctx.lastWeek)} preview.</p></Card>
+      )}
       {ctx.warnings.map((w) => <Notice key={w} tone="warn">{w}</Notice>)}
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Stat label="Record" value={`${me.wins}–${me.losses}${me.ties ? `–${me.ties}` : ""}`} sub={`${ord(me.rank)} in standings`} tag="ACTUAL" />
-        <Stat label="Power rank" value={`#${myPower.rank}`} sub={`of ${ctx.teamsCount} · score ${myPower.score.toFixed(0)}`} tag="MODEL" />
-        <Stat label="Points for" value={me.pointsFor.toFixed(0)} sub={`${signed(me.pointsFor - avgPf)} vs avg`} tone={me.pointsFor >= avgPf ? "pos" : "neg"} tag="ACTUAL" />
-        <Stat label="Points against" value={me.pointsAgainst.toFixed(0)} sub={`${signed(me.pointsAgainst - avgPa)} vs avg`} tone={me.pointsAgainst <= avgPa ? "pos" : "neg"} tag="ACTUAL" />
-        <Stat label="Playoff odds" value={`${(ctx.sim.playoffOdds[me.rosterId] ?? 0).toFixed(0)}%`} sub={`Projected ${ctx.sim.projectedWins[me.rosterId] ?? "—"} wins`} tag="MODEL" />
-        <Stat label="Title odds" value={`${(ctx.sim.titleOdds[me.rosterId] ?? 0).toFixed(0)}%`} sub="Simulated" tag="MODEL" />
-        {fmt === "redraft" && <Stat label="Projected finish" value={ord(Math.round(ctx.sim.avgSeed[me.rosterId] ?? 0))} sub="Average simulated seed" tag="MODEL" />}
-        {fmt === "dynasty" && <Stat label="Roster value" value={`#${myPower.dynastyRank}`} sub={`of ${ctx.teamsCount} · players + picks`} tag="MODEL" />}
-        {fmt === "dynasty" && cls && <Stat label="Strategy" value={<ClassBadge cls={cls.override ?? cls.primary} className="text-sm" />} sub={`${cls.confidence}% confidence`} tag="MODEL" />}
-        {fmt === "keeper" && keeper && <Stat label="Keepers lined up" value={`${keeper.rows.filter((r) => r.recommended).length} / ${keeper.rules.maxKeepers}`} sub="Positive-surplus keepers" tag="MODEL" />}
+        {stats.slice(0, 8).map((x) => <Stat key={x.k} {...x.props} onClick={() => (x.k === "keepers" ? router.push("/keepers") : setOpen(x.k))} />)}
       </div>
+      <Sheet open={open !== null} onClose={() => setOpen(null)} full={open === "season" || open === "pf" || open === "pa" || open === "ppg"}
+        title={open ? TITLES[open] : ""} sub={me.name}>
+        {open && <DashDetail k={open} ctx={ctx} me={me.rosterId} power={power} />}
+      </Sheet>
 
       <div className="grid gap-4 xl:grid-cols-[3fr_2fr]">
-        <Card title={`Week ${week} · this week`} right={<Link href="/matchup" className="text-xs font-semibold text-acc-ink">Full matchup →</Link>}>
+        <Card title={`Week ${week} · this week`} href="/matchup/">
           {g.b ? (
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between gap-3">
@@ -82,7 +108,7 @@ function DashboardBody({ setup, league, ctx, sp }: LeagueData) {
             </div>
           ) : <p className="text-sm text-muted">No opponent this week.</p>}
         </Card>
-        <Card title="Action queue" right={<Link href="/matchup" className="text-xs font-semibold text-acc-ink">Set lineup →</Link>} pad={false}>
+        <Card title="Action queue" href="/matchup/" pad={false}>
           {swaps.length === 0 && <p className="px-5 py-4 text-sm text-muted">Your lineup matches the best projected lineup.</p>}
           {swaps.slice(0, 4).map((s, i) => (
             <div key={i} className="flex items-start justify-between gap-3 border-t border-line px-5 py-3 first:border-t-0">
@@ -93,12 +119,12 @@ function DashboardBody({ setup, league, ctx, sp }: LeagueData) {
         </Card>
       </div>
 
-      <Card title="Season at a glance" right={<Tag kind="ACTUAL" />}><SeasonChart ctx={ctx} rosterId={me.rosterId} selectedWeek={week} /></Card>
+      <Card title="Season at a glance" onOpen={() => setOpen("season")}><SeasonChart ctx={ctx} rosterId={me.rosterId} selectedWeek={week} /></Card>
 
       {/* Format-specific section */}
       {fmt === "redraft" && <PlayoffPath ctx={ctx} me={me.rosterId} power={power} />}
       {fmt === "keeper" && keeper && (
-        <Card title="Keeper preview" right={<Link href="/keepers" className="text-xs font-semibold text-acc-ink">Keeper Planner →</Link>}>
+        <Card title="Keeper preview" href="/keepers/">
           {keeper.note && <p className="mb-2 text-xs text-warn">{keeper.note}</p>}
           <div className="grid gap-2 md:grid-cols-3">
             {keeper.rows.filter((r) => r.recommended).map((r) => (
@@ -134,7 +160,7 @@ function DashboardBody({ setup, league, ctx, sp }: LeagueData) {
       )}
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card title="Waiver targets" right={<Link href="/waivers" className="text-xs font-semibold text-acc-ink">Waivers →</Link>}>
+        <Card title="Waiver targets" href="/waivers/">
           <ul className="flex flex-col gap-3">
             {waivers.map((w) => (
               <li key={w.player.id} className="flex items-center gap-3">
@@ -146,7 +172,7 @@ function DashboardBody({ setup, league, ctx, sp }: LeagueData) {
             {waivers.length === 0 && <li className="text-sm text-muted">Nothing stands out.</li>}
           </ul>
         </Card>
-        <Card title={fmt === "dynasty" ? "Future stars to watch" : "Breakout watch"} right={<Link href="/breakouts" className="text-xs font-semibold text-acc-ink">Breakouts →</Link>}>
+        <Card title={fmt === "dynasty" ? "Future stars to watch" : "Breakout watch"} href="/breakouts/">
           <ul className="flex flex-col gap-3">
             {breaks.map((b) => (
               <li key={b.id} className="flex items-center gap-3">

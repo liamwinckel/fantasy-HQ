@@ -278,4 +278,43 @@ describe.skipIf(!have)("league context on fixtures", () => {
     expect(Math.abs(a.market!.value)).toBeLessThanOrEqual(1);
     expect(Math.abs(a.pct!)).toBeLessThanOrEqual(50);
   });
+
+  it("backtest replays past weeks without future data and grades SHS AI vs experts", async () => {
+    const { runBacktest } = await import("@/lib/services/backtest");
+    const ctx = await mod.getLeagueContext("fx3", { userId: "389682598735060992" });
+    const S = path.join(dir, "sleeper");
+    const made: string[] = [];
+    for (let w = 1; w < ctx.currentWeek; w++) {
+      const f = path.join(S, `projections__2026__${w}.json`);
+      if (!fs.existsSync(f)) { fs.copyFileSync(path.join(S, "projections__2026__12.json"), f); made.push(f); }
+    }
+    // Expert ranks for each past week: players ordered by what they actually scored, scrambled a little.
+    const weeks: Record<number, { at: string; rows: [string, number, number | null][] }> = {};
+    for (let w = 1; w < ctx.currentWeek; w++) {
+      const rows: [string, number, number | null][] = [];
+      for (const pos of ["QB", "RB", "WR", "TE"]) {
+        const list = [...ctx.players.values()].filter((p) => p.pos === pos).map((p) => ({ id: p.id, pts: ctx.logs.get(p.id)?.find((g) => g.week === w)?.pts ?? -1 }))
+          .filter((x) => x.pts >= 0).sort((a, b) => b.pts - a.pts);
+        list.forEach((x, i) => rows.push([x.id, i + 1 + ((i * 7) % 5) - 2, null]));
+      }
+      weeks[w] = { at: `2026-09-${10 + w}T12:00:00Z`, rows };
+    }
+    const file = path.join(__dirname, "..", "public", "data", "ecr-weekly-2026.json");
+    const had = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : null;
+    fs.writeFileSync(file, JSON.stringify({ season: 2026, weeks }));
+    try {
+      const r = (await runBacktest(ctx))!;
+      expect(r.weeks.length).toBeGreaterThanOrEqual(4);
+      for (const g of r.weeks) {
+        for (const k of ["shs", "ecr", "sleeper"] as const) { expect(g[k].pairAcc).toBeGreaterThanOrEqual(0); expect(g[k].pairAcc).toBeLessThanOrEqual(100); }
+      }
+      // Experts here were built from the results, so they should beat a coin flip comfortably.
+      expect(r.total.ecr.pairAcc).toBeGreaterThan(60);
+      expect(r.tuned).not.toBeNull();
+      for (const m of Object.values(r.tuned!.mult)) { expect(m).toBeGreaterThanOrEqual(0.5); expect(m).toBeLessThanOrEqual(1.5); }
+    } finally {
+      if (had !== null) fs.writeFileSync(file, had); else fs.rmSync(file);
+      for (const f of made) fs.rmSync(f);
+    }
+  }, 60_000);
 });

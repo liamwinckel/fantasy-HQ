@@ -3,36 +3,41 @@
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeftRight, BarChart3, Check, ChevronDown, ChevronLeft, ChevronRight, Home, ListOrdered, Moon, RefreshCw, Scale, Sparkles, Sun, Swords, TrendingUp, Trophy, UserPlus, X } from "lucide-react";
+import { ArrowLeftRight, BarChart3, FlaskConical, Newspaper, Check, ChevronDown, ChevronLeft, ChevronRight, Home, ListOrdered, Moon, RefreshCw, Scale, Sparkles, Sun, Swords, TrendingUp, Trophy, UserPlus, X } from "lucide-react";
 import { BASE_PATH } from "@/lib/net";
 import { cx, Logo } from "./ui";
 import { usePlayerCard } from "./PlayerCard";
 import { useApp } from "./AppData";
 
+/** Appearance setting (Settings page): dark or light. */
 export function ThemeToggle() {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   useEffect(() => setTheme(document.documentElement.classList.contains("dark") ? "dark" : "light"), []);
-  const flip = () => {
-    const next = theme === "dark" ? "light" : "dark";
+  const pick = (next: "dark" | "light") => {
     setTheme(next);
     document.documentElement.classList.toggle("dark", next === "dark");
     try { localStorage.setItem("fhq-theme", next); } catch { /* ignore */ }
   };
   return (
-    <button type="button" onClick={flip} aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-      className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-panel text-fg hover:bg-panel2">
-      {theme === "dark" ? <Sun size={18} aria-hidden /> : <Moon size={18} aria-hidden />}
-    </button>
+    <div className="flex items-center justify-between gap-3 text-sm">
+      <span className="flex items-center gap-2 font-semibold">{theme === "dark" ? <Moon size={16} aria-hidden /> : <Sun size={16} aria-hidden />}Appearance</span>
+      <div className="w-44"><Segmented label="Appearance" value={theme} onChange={pick} options={[{ value: "dark", label: "Dark" }, { value: "light", label: "Light" }]} /></div>
+    </div>
   );
 }
 
 export function Segmented<T extends string>({ options, value, onChange, label, size = "md" }: { options: { value: T; label: string }[]; value: T; onChange: (v: T) => void; label: string; size?: "md" | "lg" }) {
+  const i = Math.max(0, options.findIndex((o) => o.value === value));
+  const n = options.length;
   return (
-    <div role="group" aria-label={label} className="flex rounded-lg border border-line bg-panel2 p-0.5">
+    <div role="group" aria-label={label} className="relative isolate flex rounded-lg border border-line bg-panel2 p-0.5">
+      {/* sliding highlight */}
+      <span aria-hidden className="absolute inset-y-0.5 left-0.5 -z-10 rounded-md bg-acc transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+        style={{ width: `calc((100% - 4px) / ${n})`, transform: `translateX(${i * 100}%)` }} />
       {options.map((o) => (
         <button key={o.value} type="button" onClick={() => onChange(o.value)} aria-pressed={value === o.value}
-          className={cx("flex-1 rounded-md font-semibold transition-colors", size === "lg" ? "px-4 py-2.5 text-sm" : "px-3 py-1.5 text-[13px]",
-            value === o.value ? "bg-acc text-on-acc" : "text-muted hover:text-fg")}>
+          className={cx("flex-1 whitespace-nowrap rounded-md font-semibold transition-colors duration-200", size === "lg" ? "px-4 py-2.5 text-sm" : "px-3 py-1.5 text-[13px]",
+            value === o.value ? "text-on-acc" : "text-muted hover:text-fg")}>
           {o.label}
         </button>
       ))}
@@ -65,6 +70,8 @@ export const QUICK_ACTIONS = [
   { href: "/breakouts", label: "Breakout Finder", sub: "Emerging young players", icon: TrendingUp },
   { href: "/rookies", label: "Rookie Report", sub: "Evaluate this year's rookies", icon: Sparkles },
   { href: "/stats", label: "Stats & Schedule", sub: "Stats, schedules, matchups", icon: BarChart3 },
+  { href: "/brief", label: "Weekly Brief", sub: "Recap, model scorecard, preview", icon: Newspaper },
+  { href: "/shs", label: "SHS AI Lab", sub: "Backtest and how it works", icon: FlaskConical },
 ];
 
 /** Bottom bar on phones: four tabs and the SHS quick-actions button in the middle. */
@@ -125,7 +132,7 @@ export function MobileTabs({ keeper }: { keeper: boolean }) {
             {open && !closing
               ? <X size={28} className="text-on-acc" strokeWidth={2.5} />
               // eslint-disable-next-line @next/next/no-img-element
-              : <img src={`${BASE_PATH}/shs-mark.png`} alt="" width={40} height={40} className="h-10 w-10 object-contain" />}
+              : <img src={`${BASE_PATH}/shs-mark.png?v=2`} alt="" width={40} height={40} className="h-10 w-10 object-contain" />}
           </button>
         </div>
         {TABS.slice(2).map(tab)}

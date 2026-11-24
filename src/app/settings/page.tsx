@@ -7,6 +7,8 @@ import { PageHeader } from "@/components/ui";
 import { Loading } from "@/components/AppData";
 import { SettingsForm, type LeagueRow } from "./SettingsForm";
 import { ShsSettings } from "./ShsSettings";
+import { ThemeToggle } from "@/components/client";
+import { Card } from "@/components/ui";
 import { sleeper } from "@/lib/sleeper/client";
 import { useEffect, useState } from "react";
 import type { League } from "@/lib/sleeper/types";
@@ -41,6 +43,7 @@ export default function SettingsPage() {
     <div className="flex flex-col gap-5">
       <PageHeader eyebrow="System" title="Settings" />
       <SettingsForm username={s.username} userId={s.userId} season={setup.season} seasonPinned={!!s.season} leagues={rows} error={error ?? (setup.errors.join(" ") || null)} synced={ago(synced)} />
+      <Card title="Display"><ThemeToggle /></Card>
       <ShsSettings />
     </div>
   );

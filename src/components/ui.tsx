@@ -1,19 +1,32 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import { ChevronRight } from "lucide-react";
 
 export function cx(...c: (string | false | null | undefined)[]) {
   return c.filter(Boolean).join(" ");
 }
 
-export function Card({ children, className, title, right, pad = true, info }: { children: ReactNode; className?: string; title?: ReactNode; right?: ReactNode; pad?: boolean; info?: ReactNode }) {
+/**
+ * Card. With `href` or `onOpen`, the whole card is tappable (taps on links/buttons inside still do their own thing),
+ * and a chevron shows next to the title.
+ */
+export function Card({ children, className, title, right, pad = true, info, href, onOpen }: { children: ReactNode; className?: string; title?: ReactNode; right?: ReactNode; pad?: boolean; info?: ReactNode; href?: string; onOpen?: () => void }) {
   const [open, setOpen] = useState(false);
+  const router = useRouter();
+  const tappable = !!(href || onOpen);
+  const go = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest("a,button,input,select,textarea,[role=button],[data-no-open]")) return;
+    if (onOpen) onOpen(); else if (href) router.push(href);
+  };
   return (
-    <section className={cx("min-w-0 rounded-xl border border-line bg-panel", className)}>
+    <section onClick={tappable ? go : undefined}
+      className={cx("min-w-0 rounded-xl border border-line bg-panel", tappable && "cursor-pointer transition-[transform,border-color] duration-150 hover:border-acc/50 active:scale-[0.99]", className)}>
       {title && (
         <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3 sm:px-5">
           <h2 className="h-display flex min-w-0 items-center gap-2 text-xl">{title}{info && <InfoButton open={open} onClick={() => setOpen(!open)} />}</h2>
-          {right}
+          <div className="flex shrink-0 items-center gap-2">{right}{tappable && <ChevronRight size={18} className="text-muted" aria-hidden />}</div>
         </div>
       )}
       {info && open && <div className="fhq-in border-b border-line bg-panel2/60 px-4 py-3 text-xs leading-relaxed text-muted sm:px-5">{info}</div>}
@@ -104,17 +117,21 @@ export function Bar({ value, max = 100, className, color = "bg-acc" }: { value: 
   );
 }
 
-export function Stat({ label, value, sub, tag, tone }: { label: string; value: ReactNode; sub?: ReactNode; tag?: SourceTag; tone?: "pos" | "neg" | "warn" }) {
-  return (
-    <div className="flex flex-col gap-1 rounded-xl border border-line bg-panel p-4">
+export function Stat({ label, value, sub, tag, tone, onClick }: { label: string; value: ReactNode; sub?: ReactNode; tag?: SourceTag; tone?: "pos" | "neg" | "warn"; onClick?: () => void }) {
+  const inner = (
+    <>
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs font-medium text-muted">{label}</span>
-        {tag && <Tag kind={tag} />}
+        <span className="flex items-center gap-1">{tag && <Tag kind={tag} />}{onClick && <ChevronRight size={14} className="text-muted" aria-hidden />}</span>
       </div>
       <div className="num font-[family-name:var(--font-display)] text-3xl font-bold leading-none sm:text-4xl">{value}</div>
       {sub && <div className={cx("text-xs", tone === "pos" ? "text-pos" : tone === "neg" ? "text-neg" : tone === "warn" ? "text-warn" : "text-muted")}>{sub}</div>}
-    </div>
+    </>
   );
+  const cls = "flex flex-col gap-1 rounded-xl border border-line bg-panel p-4 text-left";
+  return onClick
+    ? <button type="button" onClick={onClick} className={cx(cls, "transition-[transform,border-color] duration-150 hover:border-acc/50 active:scale-[0.97]")}>{inner}</button>
+    : <div className={cls}>{inner}</div>;
 }
 
 export function PageHeader({ eyebrow, title, children, info }: { eyebrow?: string; title: string; children?: ReactNode; info?: ReactNode }) {

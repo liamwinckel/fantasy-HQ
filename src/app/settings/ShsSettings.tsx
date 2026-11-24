@@ -14,11 +14,28 @@ const FACTORS: [string, string][] = [
   ["sched", "Schedule ahead"], ["age", "Age cliff"], ["team", "Team situation"], ["coach", "Coaching"], ["usage", "Usage (dynasty)"], ["draft", "Draft & combine"], ["college", "College production"],
 ];
 
+/** While a finger is on a slider, the page can't scroll; released on lift. */
+function lockScroll() {
+  const el = document.getElementById("fhq-scroll");
+  if (!el || el.dataset.locked) return;
+  el.dataset.locked = "1";
+  const prev = el.style.overflowY;
+  el.style.overflowY = "hidden";
+  const release = () => {
+    el.style.overflowY = prev; delete el.dataset.locked;
+    window.removeEventListener("pointerup", release); window.removeEventListener("pointercancel", release);
+    window.removeEventListener("touchend", release); window.removeEventListener("touchcancel", release);
+  };
+  window.addEventListener("pointerup", release); window.addEventListener("pointercancel", release);
+  window.addEventListener("touchend", release); window.addEventListener("touchcancel", release);
+}
+
 function Slider({ label, value, min, max, step = 1, suffix = "%", onChange }: { label: string; value: number; min: number; max: number; step?: number; suffix?: string; onChange: (v: number) => void }) {
   return (
     <label className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_3rem] items-center gap-3 text-sm">
       <span className="truncate">{label}</span>
-      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} className="w-full accent-[var(--acc)]" />
+      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))}
+        onPointerDown={lockScroll} onTouchStart={lockScroll} style={{ touchAction: "none" }} className="h-8 w-full accent-[var(--acc)]" />
       <span className="num text-right font-semibold">{suffix === "×" ? `${value.toFixed(2)}×` : `${value}${suffix}`}</span>
     </label>
   );

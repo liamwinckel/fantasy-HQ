@@ -30,7 +30,11 @@ export interface ShsAi {
   /** The blend used: share of experts / markets / factors (sums to 1). */
   blend: { expert: number; market: number; factors: number };
 }
-export interface ShsOptions { college?: Map<string, CollegeProfile> | null }
+export interface ShsOptions {
+  college?: Map<string, CollegeProfile> | null;
+  /** Ignore your Settings weights and auto-tuning (backtest records raw factor values and base weights). */
+  neutral?: boolean;
+}
 
 /** Plain-language list of what SHS AI looks at, by scope (no data sources). */
 export const SHS_METRICS: Record<RankScope | "all", string[]> = {
@@ -49,8 +53,8 @@ const OUT = ["Out", "IR", "PUP", "NFI", "Sus", "Doubtful"];
 
 export function shsAi(ctx: LeagueContext, rows: RankRow[], scope: RankScope, weather: Map<string, GameWeather> | null, opts: ShsOptions = {}): Map<string, ShsAi> {
   const w0 = Math.min(ctx.currentWeek, ctx.lastWeek);
-  const cfg = { ...DEFAULT_SHS, ...(getSettings().shs ?? {}) };
-  const tune = cfg.autoTune ? getTuning(ctx.league.league_id) : {};
+  const cfg = opts.neutral ? DEFAULT_SHS : { ...DEFAULT_SHS, ...(getSettings().shs ?? {}) };
+  const tune = cfg.autoTune && !opts.neutral ? getTuning(ctx.league.league_id) : {};
   const sig = ctx.signals;
   // ---- season inputs ----
   const byGsis = new Map<string, typeof ctx.stats>();

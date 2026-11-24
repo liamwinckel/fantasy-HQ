@@ -1,6 +1,7 @@
 "use client";
 
-import { LeaguePage, type LeagueData } from "@/components/AppData";
+import { LeaguePage, useQuery, type LeagueData } from "@/components/AppData";
+import { WeekSwipe } from "@/components/WeekSwipe";
 import { useState } from "react";
 import { MyLineup } from "@/components/MyLineup";
 import { TeamLink } from "@/components/TeamPeek";
@@ -37,6 +38,7 @@ function MatchupPageBody({ setup, league, ctx, sp }: LeagueData) {
   const me = ctx.teams.find((t) => t.rosterId === ctx.myRosterId);
   const myGame = !!me && g.a.rosterId === me.rosterId && kind !== "past";
   const [myTotal, setMyTotal] = useState<number | null>(null);
+  const { set } = useQuery();
   const oppStrength = g.b ? (kind === "current" ? ctx.liveScore.get(g.b.rosterId)?.projected : ctx.weekStrength.get(g.b.rosterId)?.get(week)) ?? null : null;
   const myStrength = kind === "current" ? ctx.liveScore.get(g.a.rosterId)?.projected ?? null : ctx.weekStrength.get(g.a.rosterId)?.get(week) ?? null;
 
@@ -78,6 +80,8 @@ function MatchupPageBody({ setup, league, ctx, sp }: LeagueData) {
         })}
       </div>
 
+      <WeekSwipe week={week} min={1} max={ctx.lastWeek} onWeek={(w) => set({ week: String(w) }, true)}>
+      <p className="-mb-2 text-center text-[11px] text-muted md:hidden">Swipe left or right to change week</p>
       <Preview g={g} kind={kind} started={started} myTotal={myGame ? myTotal : null} oppStrength={oppStrength} myStrength={myStrength} rank={rankOf} />
 
       {myGame && me && <MyLineup ctx={ctx} me={me} week={week} onTotal={setMyTotal} opponent={g.b} />}
@@ -145,6 +149,7 @@ function MatchupPageBody({ setup, league, ctx, sp }: LeagueData) {
           {games.length === 0 && <li className="px-5 py-4 text-sm text-muted">Playoff matchups are set by the bracket. Check back once seeds are final.</li>}
         </ul>
       </Card>
+      </WeekSwipe>
     </div>
   );
 }
@@ -161,7 +166,7 @@ function Preview({ g, kind, started, myTotal, oppStrength, myStrength, rank }: {
     ? winProbability({ mean: myTotal, sd: myStrength.sd }, oppStrength)
     : g.winProbA;
   const head = (t: typeof g.a | null, score: number | null, right: boolean) => t ? (
-    <div className={cx("flex min-w-0 flex-1 flex-col gap-1", right ? "items-end text-right" : "items-start")}>
+    <div data-team={t.rosterId} className={cx("flex min-w-0 flex-1 cursor-pointer flex-col gap-1", right ? "items-end text-right" : "items-start")}>
       <TeamLink rosterId={t.rosterId} name={t.name} avatar={t.avatar} size={28} className="max-w-full text-sm font-semibold" />
       <div className="num font-[family-name:var(--font-display)] text-4xl font-bold leading-none">{score !== null ? score.toFixed(1) : "—"}</div>
       <div className="text-[11px] text-muted">{live ? (kind === "past" ? "Final" : "Live") : "Projected"} · power #{rank(t.rosterId)}</div>

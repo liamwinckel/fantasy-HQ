@@ -30,8 +30,16 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Restore weekly-ranking snapshots already downloaded
+        uses: actions/cache@v4
+        with:
+          path: .cache
+          key: ecr-${{ github.run_id }}
+          restore-keys: ecr-
       - name: Download and trim NFLverse + Sleeper player data
         run: npm run data
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Build static site
         run: |
           export NEXT_PUBLIC_BASE_PATH="/${GITHUB_REPOSITORY#*/}"   # served at /<repo name>
