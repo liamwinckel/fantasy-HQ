@@ -132,7 +132,7 @@ export function MobileTabs({ keeper }: { keeper: boolean }) {
             {open && !closing
               ? <X size={28} className="text-on-acc" strokeWidth={2.5} />
               // eslint-disable-next-line @next/next/no-img-element
-              : <img src={`${BASE_PATH}/shs-mark.png?v=2`} alt="" width={40} height={40} className="h-10 w-10 object-contain" />}
+              : <img src={`${BASE_PATH}/shs-mark.png?v=3`} alt="" width={40} height={40} className="h-10 w-10 object-contain" />}
           </button>
         </div>
         {TABS.slice(2).map(tab)}
