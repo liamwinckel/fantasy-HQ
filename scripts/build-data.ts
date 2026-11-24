@@ -10,7 +10,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { gunzipSync } from "node:zlib";
-import { parseCsv, parseContracts, parseInjuries, parsePlayers, parseSchedule, parseSnaps, parseWeekly } from "../src/lib/nflverse/parse";
+import { parseCombine, parseCsv, parseContracts, parseInjuries, parsePlayers, parseSchedule, parseSnaps, parseWeekly } from "../src/lib/nflverse/parse";
 
 const OUT = path.join(process.cwd(), "public", "data");
 const fxIdx = process.argv.indexOf("--fixtures");
@@ -77,6 +77,13 @@ async function main() {
   jobs.push(["schedule", async () => {
     const body = await text("https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv", "games.csv");
     write(`schedule-${s}.json`, JSON.stringify(parseSchedule(body, String(s))));
+    write(`schedule-${s - 1}.json`, JSON.stringify(parseSchedule(body, String(s - 1))));
+  }]);
+  jobs.push(["combine", async () => {
+    const players = parsePlayers(await text(`${REL}/players/players.csv`, "players.csv"));
+    const pfrToGsis = new Map(players.filter((p) => p.pfr).map((p) => [p.pfr!, p.gsis]));
+    const body = FX && !fs.existsSync(path.join(FX, "combine.csv")) ? "pfr_id\n" : await text(`${REL}/combine/combine.csv`, "combine.csv");
+    write("combine.json", columns(parseCombine(body, pfrToGsis).filter((c) => (c.draftYear ?? 0) >= s - 15)));
   }]);
   jobs.push(["players", async () => write("players.json", columns(parsePlayers(await text(`${REL}/players/players.csv`, "players.csv")).filter((p) => recent.has(p.gsis) || (p.rookieSeason ?? 0) >= s - 1)))]);
   jobs.push(["contracts", async () => {

@@ -25,6 +25,12 @@ export interface Game {
   kickoff: string | null; // ISO-ish local Eastern time "2026-11-25T20:00"
   homeScore: number | null;
   awayScore: number | null;
+  roof?: string | null; // dome | closed | open | outdoors
+  neutral?: boolean;
+  homeCoach?: string | null;
+  awayCoach?: string | null;
+  spread?: number | null; // home team favoured by this many points (negative = away favoured)
+  total?: number | null; // Vegas over/under
 }
 
 export interface NflPlayerInfo {

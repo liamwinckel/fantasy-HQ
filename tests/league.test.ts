@@ -246,4 +246,18 @@ describe.skipIf(!have)("league context on fixtures", () => {
     expect(rows[0].grade).toBe("A");
     expect(rows[rows.length - 1].grade).toBe("D");
   });
+  it("SHS AI stays within ±25% of ECR and explains itself", async () => {
+    const { rankings } = await import("@/lib/services/rankings");
+    const { shsAi } = await import("@/lib/services/shsai");
+    for (const scope of ["week", "ros", "dynasty"] as const) {
+      const ctx = await mod.getLeagueContext(scope === "dynasty" ? "fx1" : "fx3", { userId: "389682598735060992" });
+      const rows = rankings(ctx, scope);
+      const ai = shsAi(ctx, rows, scope, null);
+      for (const r of rows) {
+        const a = ai.get(r.id)!;
+        if (a.pct !== null) { expect(Math.abs(a.pct)).toBeLessThanOrEqual(25); expect(a.factors.length).toBeGreaterThan(0); }
+        for (const f of a.factors) expect(Math.abs(f.value)).toBeLessThanOrEqual(1);
+      }
+    }
+  });
 });

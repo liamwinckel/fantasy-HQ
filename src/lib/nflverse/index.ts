@@ -40,3 +40,7 @@ export const injuryReports = (season: string, force = false) =>
 export interface ConsensusFile { ecrDate: string; weeklyDate: string; source: string; players: Record<string, import("../engine/values").Consensus> }
 export const consensus = (force = false) =>
   cached("data:consensus", "nflverse", 6 * HOUR, get("consensus.json"), (b) => JSON.parse(b) as ConsensusFile, { force });
+
+export type { CombineRow } from "./parse";
+export const combine = (force = false) =>
+  cached("nflverse:combine", "nflverse", 24 * HOUR, get("combine.json"), (b) => new Map(fromColumns<import("./parse").CombineRow>(b).map((c) => [c.gsis, c])), { force });

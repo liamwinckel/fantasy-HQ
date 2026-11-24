@@ -143,6 +143,19 @@ export default function Methodology() {
           </table>
         </Card>
 
+        <Card title="Rankings & SHS AI">
+          <ul className="list-disc space-y-1.5 pl-5 text-sm leading-relaxed">
+            <li><b>ECR</b>: FantasyPros expert consensus rankings (weekly, rest of season, dynasty), published openly by DynastyProcess and refreshed by the site every 6 hours. This is the default order.</li>
+            <li><b>Pts</b>: Sleeper&apos;s projected stat lines scored with your league&apos;s settings.</li>
+            <li><b>SHS AI</b> = 75% ECR + 25% SHS factors. Each factor scores the player from −1 to +1 against players ranked near him at his position; the weighted average F moves his rating by 25% × F (so ±25% at most). Shown as that %; tap a player to see every factor.</li>
+            <li><b>All league types:</b> points per game, snap share (last 3), advanced metrics (opportunity share percentile, points per opportunity percentile, usage trend), and the projection vs the projection at his expert rank (weighted ×1.5).</li>
+            <li><b>Weekly:</b> weather at kickoff from Open-Meteo (15+ mph wind or rain/snow hurts passing games and kickers, slightly helps runners; domes are neutral), injuries (his status; his starting QB out; a teammate ahead of him out), defensive matchup (points allowed to his position vs average), Vegas implied team total.</li>
+            <li><b>Rest of season:</b> schedule ahead (incl. fantasy playoffs) and injury outlook.</li>
+            <li><b>Dynasty:</b> age cliff (RB ~27, WR/TE ~30, QB ~34), team situation & outlook (offense rank and trend), coaching (same head coach as last season vs a new one, plus the offense&apos;s trend), usage (snaps and share of team looks), combine & draft profile (draft round plus speed score from the NFL Combine; counts less for veterans).</li>
+            <li>Data: Sleeper, NFLverse (stats, snaps, schedule, coaches, Vegas lines, combine), DynastyProcess / FantasyPros, Open-Meteo.</li>
+          </ul>
+        </Card>
+
         <Card title="Stats & schedule">
           <ul className="list-disc space-y-1.5 pl-5 text-sm leading-relaxed">
             <li><b>Defense vs position:</b> fantasy points each NFL defense has allowed per game to QB/RB/WR/TE/K/DEF this season, in your league&apos;s scoring. Factor = allowed ÷ league average.</li>

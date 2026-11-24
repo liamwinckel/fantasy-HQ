@@ -40,7 +40,27 @@ export const parseSchedule = (body: string, season: string): Game[] =>
           kickoff: r.gameday ? `${r.gameday}T${r.gametime || "13:00"}` : null,
           homeScore: r.home_score === "" || r.home_score === "NA" ? null : n(r.home_score),
           awayScore: r.away_score === "" || r.away_score === "NA" ? null : n(r.away_score),
+          roof: r.roof && r.roof !== "NA" ? r.roof : null,
+          neutral: r.location === "Neutral",
+          homeCoach: r.home_coach && r.home_coach !== "NA" ? r.home_coach : null,
+          awayCoach: r.away_coach && r.away_coach !== "NA" ? r.away_coach : null,
+          spread: r.spread_line && r.spread_line !== "NA" ? n(r.spread_line) : null,
+          total: r.total_line && r.total_line !== "NA" ? n(r.total_line) : null,
         }));
+
+export interface CombineRow { gsis: string; forty: number | null; wt: number | null; vertical: number | null; broad: number | null; cone: number | null; shuttle: number | null; draftYear: number | null }
+
+/** NFL Combine results, keyed to GSIS IDs through the players file's PFR IDs. */
+export function parseCombine(body: string, pfrToGsis: Map<string, string>): CombineRow[] {
+  const v = (x: string | undefined) => (x === undefined || x === "" || x === "NA" ? null : Number(x) || null);
+  const out: CombineRow[] = [];
+  for (const r of parseCsv(body)) {
+    const gsis = r.pfr_id ? pfrToGsis.get(r.pfr_id) : undefined;
+    if (!gsis) continue;
+    out.push({ gsis, forty: v(r.forty), wt: v(r.wt), vertical: v(r.vertical), broad: v(r.broad_jump), cone: v(r.cone), shuttle: v(r.shuttle), draftYear: v(r.draft_year) });
+  }
+  return out;
+}
 
 export function parsePlayers(body: string): NflPlayerInfo[] {
       const map = new Map<string, NflPlayerInfo>();
