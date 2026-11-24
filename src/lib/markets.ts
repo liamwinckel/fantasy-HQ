@@ -132,7 +132,8 @@ export function marketMeans(lines: MarketLine[]): Partial<Record<MarketStat, num
  */
 export function marketPoints(lines: MarketLine[], proj: Record<string, number> | undefined, scoring: Record<string, number>, pos: string): { pts: number; covered: string[]; means: Partial<Record<MarketStat, number>> } | null {
   const means = marketMeans(lines);
-  const keys = Object.keys(means) as MarketStat[];
+  // Anytime-TD first, so a specific rec/rush TD market (when both exist) refines it rather than being overwritten.
+  const keys = (Object.keys(means) as MarketStat[]).sort((a, b) => (a === "td" ? -1 : 0) - (b === "td" ? -1 : 0));
   if (!keys.length) return null;
   const st: Record<string, number> = { ...(proj ?? {}) };
   const set = (k: string, v: number) => {
