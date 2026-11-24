@@ -60,6 +60,13 @@ export interface BalanceSuggestion {
   gapAfter: number; // remaining market gap (positive = you still win)
 }
 
+export interface BuildRow {
+  slot: string; // e.g. "RB2", "FLEX"
+  before: { id: string | null; name: string; ppg: number };
+  after: { id: string | null; name: string; ppg: number };
+  delta: number;
+}
+
 export interface TradeResult {
   mode: Mode;
   /** Strategy labels only exist in dynasty valuation. */
@@ -83,6 +90,8 @@ export interface TradeResult {
   verdict: string;
   verdictTone: "good" | "bad" | "even";
   explanation: string[];
+  /** Team build: who would start at each lineup spot before and after (healthy points per game). */
+  build: { a: BuildRow[]; b: BuildRow[] };
   confidence: number;
   limitations: string[];
 }
@@ -245,16 +254,49 @@ export function evaluateTrade(ctx: LeagueContext, req: TradeRequest): TradeResul
     };
   }
 
+  // Team build: the lineup each side would actually field, spot by spot (healthy points per game).
+  const buildRows = (before: string[], after: string[]): BuildRow[] => {
+    const lu = (roster: string[]) => optimizeLineup(ctx.league.roster_positions, roster.map((pid) => ({
+      id: pid, positions: ctx.players.get(pid)?.positions ?? [], points: ctx.projections.get(pid)?.base ?? 0,
+    })));
+    const b = lu(before), a = lu(after);
+    // Compare by position: sort each position's starters so RB1 vs RB1, RB2 vs RB2.
+    const byPos = (l: typeof b) => {
+      const m = new Map<string, { id: string; ppg: number }[]>();
+      for (const s of l) if (s.playerId) {
+        const pos = ctx.players.get(s.playerId)?.pos ?? "?";
+        (m.get(pos) ?? m.set(pos, []).get(pos)!).push({ id: s.playerId, ppg: ctx.projections.get(s.playerId)?.base ?? 0 });
+      }
+      for (const v of m.values()) v.sort((x, y) => y.ppg - x.ppg);
+      return m;
+    };
+    const pb = byPos(b), pa = byPos(a);
+    const rows: BuildRow[] = [];
+    for (const pos of new Set([...pb.keys(), ...pa.keys()])) {
+      const xb = pb.get(pos) ?? [], xa = pa.get(pos) ?? [];
+      for (let i = 0; i < Math.max(xb.length, xa.length); i++) {
+        const bb = xb[i], aa = xa[i];
+        if (bb?.id === aa?.id) continue;
+        const nm = (x?: { id: string; ppg: number }) => ({ id: x?.id ?? null, name: x ? ctx.players.get(x.id)?.name ?? x.id : "Nobody", ppg: r1(x?.ppg ?? 0) });
+        rows.push({ slot: `${pos}${Math.max(xb.length, xa.length) > 1 ? i + 1 : ""}`, before: nm(bb), after: nm(aa), delta: r1((aa?.ppg ?? 0) - (bb?.ppg ?? 0)) });
+      }
+    }
+    return rows.sort((x, y) => x.delta - y.delta);
+  };
+  const build = { a: buildRows(aBefore, aAfter), b: buildRows(bBefore, bAfter) };
+
   // Verdict
   const scaleA = Math.max(5, Math.abs(sum(req.teamA, (a) => a.toA)) + Math.abs(sum(req.teamB, (a) => a.toA)));
   const scaleB = Math.max(5, Math.abs(sum(req.teamA, (a) => a.toB)) + Math.abs(sum(req.teamB, (a) => a.toB)));
   let aRel = aNet / scaleA;
   let bRel = bNet / scaleB;
-  if (!dynasty) {
-    // Redraft: value is rest-of-season points, so blend in each side's actual lineup gain.
+  if (!ctx.seasonOver) {
+    // Team build: what each side can actually start afterwards. Losing a good RB2 and having to start
+    // a weak backup costs real points even if the values look even. Redraft leans on it most.
     const rosScale = Math.max(10, Math.abs(lineup.aRosDelta) + Math.abs(lineup.bRosDelta));
-    aRel = 0.5 * aRel + 0.5 * (lineup.aRosDelta / rosScale);
-    bRel = 0.5 * bRel + 0.5 * (lineup.bRosDelta / rosScale);
+    const w = dynasty ? 0.25 : 0.65;
+    aRel = (1 - w) * aRel + w * (lineup.aRosDelta / rosScale);
+    bRel = (1 - w) * bRel + w * (lineup.bRosDelta / rosScale);
   }
   let verdict: string, verdictTone: TradeResult["verdictTone"];
   if (assets.length === 0) { verdict = "Add assets to both sides"; verdictTone = "even"; }
@@ -275,6 +317,10 @@ export function evaluateTrade(ctx: LeagueContext, req: TradeRequest): TradeResul
     explanation.push(`As a ${classA}, the trade is worth ${aNet >= 0 ? "+" : ""}${aNet} to you strategically. As a ${classB}, it's worth ${bNet >= 0 ? "+" : ""}${bNet} to ${teamB.name}.`);
   const dA = r1(lineup.aWeekAfter - lineup.aWeekBefore);
   if (!ctx.seasonOver) explanation.push(`Your best lineup this week: ${dA >= 0 ? "+" : ""}${dA} pts. Rest of season: ${lineup.aRosDelta >= 0 ? "+" : ""}${lineup.aRosDelta} pts.`);
+  const worstA = build.a[0];
+  if (worstA && worstA.delta <= -2) explanation.push(`Team build: your ${worstA.slot} would be ${worstA.after.name} (${worstA.after.ppg} pts/g) instead of ${worstA.before.name} (${worstA.before.ppg}).`);
+  const worstB = build.b[0];
+  if (worstB && worstB.delta <= -2) explanation.push(`${teamB.name}'s ${worstB.slot} would drop to ${worstB.after.name} (${worstB.after.ppg} pts/g).`);
   if (odds) explanation.push(`Simulated title odds: ${odds.aTitleBefore}% → ${odds.aTitleAfter}%.`);
   if (mode === "redraft" && assets.some((a) => a.kind === "pick")) explanation.push("Draft picks carry no value in Redraft mode.");
 
@@ -342,7 +388,7 @@ export function evaluateTrade(ctx: LeagueContext, req: TradeRequest): TradeResul
     mode, classA, classB, assets, balance, power, positionsA: posShift(req.teamA), positionsB: posShift(req.teamB), suggestions,
     market: { aSends: r1(aSendsMkt), bSends: r1(bSendsMkt), aSendsRaw: r1(aSendsRaw), bSendsRaw: r1(bSendsRaw), netForA, pctForA },
     rosterSpots,
-    strategic: { aNet, bNet }, lineup, odds, verdict, verdictTone, explanation, confidence,
+    strategic: { aNet, bNet }, lineup, odds, verdict, verdictTone, explanation, confidence, build,
     limitations: [
       "Values come from SHS Fantasy HQ's own model, not a market consensus.",
       "Projections are internal estimates built from this season's production and usage.",

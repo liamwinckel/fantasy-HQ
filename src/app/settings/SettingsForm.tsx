@@ -54,16 +54,16 @@ export function SettingsForm({ username, userId, season, seasonPinned, leagues, 
 
       <Card title="Leagues" className="lg:col-span-2" pad={false}>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-sm">
+          <table className="w-full text-sm">
             <thead><tr className="text-left text-[11px] uppercase tracking-wider text-muted">
-              <th className="px-5 py-2.5">League</th><th className="px-2 py-2.5">Sleeper format</th><th className="px-2 py-2.5" title="Fantasy HQ values each league by its own format. Change only if a league plays differently from its Sleeper setting.">Valuation (advanced)</th><th className="px-5 py-2.5 text-right">Tracking</th>
+              <th className="px-3 py-2.5 sm:px-5">League</th><th className="hidden px-2 py-2.5 sm:table-cell">Sleeper format</th><th className="hidden px-2 py-2.5 md:table-cell" title="Fantasy HQ values each league by its own format. Change only if a league plays differently from its Sleeper setting.">Valuation (advanced)</th><th className="px-5 py-2.5 text-right">Tracking</th>
             </tr></thead>
             <tbody>
               {leagues.map((l) => (
                 <tr key={l.id} className="border-t border-line">
-                  <td className="px-5 py-3"><div className="flex items-center gap-2 font-semibold"><Logo src={l.avatar} name={l.name} size={26} />{l.name}</div><div className="text-xs text-muted">{l.teams} teams · ID {l.id}{l.manual && " · added manually"}</div></td>
-                  <td className="px-2 py-3 capitalize">{l.format}</td>
-                  <td className="px-2 py-3">
+                  <td className="px-3 py-3 sm:px-5"><div className="flex items-center gap-2 font-semibold"><Logo src={l.avatar} name={l.name} size={26} />{l.name}</div><div className="text-xs text-muted"><span className="capitalize sm:hidden">{l.format} · </span>{l.teams} teams<span className="hidden sm:inline"> · ID {l.id}</span>{l.manual && " · added manually"}</div></td>
+                  <td className="hidden px-2 py-3 capitalize sm:table-cell">{l.format}</td>
+                  <td className="hidden px-2 py-3 md:table-cell">
                     <select aria-label={`Valuation for ${l.name}`} className={input} value={l.override} onChange={(e) => post({ leagueMode: { leagueId: l.id, mode: e.target.value as "auto" | "redraft" | "dynasty" } })}>
                       <option value="auto">Auto ({l.format === "dynasty" ? "Dynasty" : "Redraft"})</option>
                       <option value="redraft">Redraft</option>

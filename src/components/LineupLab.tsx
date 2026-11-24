@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Lock, X } from "lucide-react";
 import { PlayerImg, Segmented } from "@/components/client";
@@ -16,27 +16,57 @@ export interface LabPlayer {
   snapL3: number[] | null; recent: { week: number; pts: number }[];
 }
 
-type View = "current" | "recommended" | "custom";
+type View = "current" | "optimal";
 const short = (slot: string) => slot.replace("SUPER_FLEX", "SFLX").replace("IDP_FLEX", "IDP").replace("WRRB_FLEX", "W/R").replace("REC_FLEX", "W/T");
 /** Same columns for the header and every row, so titles sit over their numbers. */
 const GRID = "grid grid-cols-[3.25rem_2.25rem_minmax(0,1fr)_3.5rem] items-center gap-x-2.5 sm:grid-cols-[3.5rem_2.25rem_minmax(0,1fr)_11rem_3.5rem] sm:gap-x-3";
 
-export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots, week }: {
-  slots: string[]; players: LabPlayer[]; current: (string | null)[]; optimal: (string | null)[]; swaps: Swap[]; rosterSlots: string; week: number;
+/** FLIP: rows glide from where they were to where they are after a swap. */
+function useFlip(deps: unknown[]) {
+  const box = useRef<HTMLDivElement>(null);
+  const last = useRef(new Map<string, number>());
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const now = new Map<string, number>();
+    el.querySelectorAll<HTMLElement>("[data-flip]").forEach((n) => now.set(n.dataset.flip!, n.getBoundingClientRect().top));
+    el.querySelectorAll<HTMLElement>("[data-flip]").forEach((n) => {
+      const before = last.current.get(n.dataset.flip!);
+      const after = now.get(n.dataset.flip!)!;
+      if (before === undefined || Math.abs(before - after) < 1) return;
+      n.classList.remove("flip-move");
+      n.style.transform = `translateY(${before - after}px)`;
+      n.style.zIndex = "2";
+      void n.offsetHeight; // commit the starting position
+      n.classList.add("flip-move");
+      n.style.transform = "";
+      setTimeout(() => { n.classList.remove("flip-move"); n.style.zIndex = ""; }, 450);
+    });
+    last.current = now;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+  return box;
+}
+
+export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots, week, onTotal }: {
+  slots: string[]; players: LabPlayer[]; current: (string | null)[]; optimal: (string | null)[]; swaps: Swap[]; rosterSlots: string; week: number; onTotal?: (t: number) => void;
 }) {
-  const [view, setView] = useState<View>(swaps.length ? "recommended" : "current");
-  const [custom, setCustom] = useState<(string | null)[]>(current);
+  const [view, setView] = useState<View>("current");
+  const [mine, setMine] = useState<(string | null)[]>(current);
   const byId = useMemo(() => new Map(players.map((p) => [p.id, p])), [players]);
-  const lineup = view === "current" ? current : view === "recommended" ? optimal : custom;
+  const lineup = view === "current" ? mine : optimal;
   const total = (l: (string | null)[]) => Math.round(l.reduce((a, id) => a + (id ? byId.get(id)?.median ?? 0 : 0), 0) * 10) / 10;
   const curTotal = total(current);
   const optTotal = total(optimal);
   const shownTotal = total(lineup);
+  const edited = mine.some((x, i) => x !== current[i]);
+  useEffect(() => { onTotal?.(shownTotal); }, [shownTotal, onTotal]);
   const starters = new Set(lineup.filter(Boolean) as string[]);
   const bench = players.filter((p) => !starters.has(p.id)).sort((a, b) => b.median - a.median);
   const currentSet = new Set(current.filter(Boolean) as string[]);
-  const changed = (i: number) => view !== "current" && !!lineup[i] && !currentSet.has(lineup[i]!);
+  const changed = (i: number) => !!lineup[i] && !currentSet.has(lineup[i]!);
   const [slotOpen, setSlotOpen] = useState<number | null>(null);
+  const box = useFlip([lineup]);
 
   /** Put a player in slot i; whoever was there takes his old slot if eligible, otherwise goes to the bench. */
   const place = (i: number, pid: string | null) => {
@@ -45,8 +75,8 @@ export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots
     const occupant = base[i];
     base[i] = pid;
     if (from >= 0) base[from] = occupant && byId.get(occupant)?.eligible[from] ? occupant : null;
-    setCustom(base);
-    setView("custom");
+    setMine(base);
+    setView("current");
     setSlotOpen(null);
   };
 
@@ -56,13 +86,13 @@ export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots
   const aSlot = aId ? lineup.indexOf(aId) : -1;
   const bOptions = players.filter((p) => p.id !== aId && !p.unavailable && (aSlot < 0 || p.eligible[aSlot]));
   const [bPick, setBPick] = useState<string | null>(firstSwap?.inId ?? null);
-  const bId = bPick && bOptions.some((p) => p.id === bPick) ? bPick : bOptions.sort((x, y) => y.median - x.median)[0]?.id ?? null;
+  const bId = bPick && bOptions.some((p) => p.id === bPick) ? bPick : [...bOptions].sort((x, y) => y.median - x.median)[0]?.id ?? null;
   const A = aId ? byId.get(aId) : undefined;
   const B = bId ? byId.get(bId) : undefined;
   const better = A && B ? (B.median > A.median ? B : A) : undefined;
 
-  const row = (p: LabPlayer | undefined, slotLabel: React.ReactNode, i: number | null, isNew = false) => (
-    <div className={cx(GRID, "px-3 py-2 sm:px-5", isNew && "bg-acc-soft")}>
+  const row = (key: string, p: LabPlayer | undefined, slotLabel: React.ReactNode, i: number | null, isNew = false) => (
+    <div key={key} data-flip={key} className={cx(GRID, "relative border-b border-line bg-panel px-3 py-2 transition-colors duration-300 sm:px-5", isNew && "bg-acc-soft")}>
       {slotLabel}
       {p ? <PlayerImg id={p.id} name={p.name} pos={p.pos} /> : <span className="h-9 w-9 rounded-full border border-dashed border-neg" />}
       <div className="min-w-0">
@@ -86,44 +116,30 @@ export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-        <div className="flex gap-3">
-          <div className="rounded-xl border border-line bg-panel px-4 py-3 text-center">
-            <div className="text-[11px] uppercase tracking-wider text-muted">{view === "custom" ? "Your lineup" : view === "current" ? "Current lineup" : "Recommended"}</div>
-            <div className="num font-[family-name:var(--font-display)] text-4xl font-bold leading-none">{shownTotal.toFixed(1)}</div>
-          </div>
-          <div className="rounded-xl bg-acc-soft px-4 py-3 text-center">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-acc-ink">vs current</div>
-            <div className="num font-[family-name:var(--font-display)] text-4xl font-bold leading-none text-acc-ink">{signed(view === "current" ? optTotal - curTotal : shownTotal - curTotal)}</div>
-          </div>
-        </div>
-        <Segmented label="Lineup view" size="lg" value={view} onChange={(v) => { if (v === "custom" && view !== "custom") setCustom(lineup); setView(v); }}
-          options={[{ value: "current", label: "Current" }, { value: "recommended", label: "Best" }, { value: "custom", label: "Mine" }]} />
-      </div>
-
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-        <Card pad={false} className="min-w-0 lg:flex-[3]" title={`Week ${week} roster`}
-          info={<>Tap a position (QB, RB…) to choose who plays there; the player you replace moves to the bench, or swaps slots if he can play the other one. <b>Proj</b> = expected fantasy points this week in your scoring (Sleeper). <b>Range</b> = a bad week (1 in 5 is worse) · expected · a good week (1 in 5 is better). Matchup % = how many more (+) or fewer (−) points this opponent allows to the position. Slots: {rosterSlots}. Nothing here changes Sleeper.</>}>
+        <Card pad={false} className="min-w-0 overflow-hidden lg:flex-[3]" title={`Your lineup · Week ${week}`}
+          right={<Segmented label="Lineup view" value={view} onChange={(v) => setView(v)} options={[{ value: "current", label: edited ? "Yours" : "Current" }, { value: "optimal", label: "Optimal" }]} />}
+          info={<>Tap a position (QB, RB…) to choose who plays there; the player you replace moves to the bench, or swaps slots if he can play the other one. <b>Proj</b> = Sleeper&apos;s projection in your scoring. <b>Range</b> = a bad week (1 in 5 is worse) · expected · a good week. Matchup % = how many more (+) or fewer (−) points this opponent allows to the position. Slots: {rosterSlots}. Nothing here changes Sleeper.</>}>
+          <div className="flex items-center justify-between gap-2 border-b border-line px-3 py-2 text-xs sm:px-5">
+            <span className="text-muted">{view === "optimal" ? "Optimal lineup" : edited ? "Your changes" : "Set in Sleeper"}: <b className="num text-fg">{shownTotal.toFixed(1)}</b> pts</span>
+            {view === "current" && optTotal - shownTotal > 0.05 && <span className="font-semibold text-acc-ink">Optimal is {signed(optTotal - shownTotal)}</span>}
+            {view === "optimal" && <span className="font-semibold text-acc-ink">{signed(optTotal - curTotal)} vs current</span>}
+            {edited && view === "current" && <button type="button" onClick={() => setMine(current)} className="font-semibold text-muted underline">Reset</button>}
+          </div>
           <div className={cx(GRID, "border-b border-line px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted sm:px-5")}>
             <span>Slot</span><span /><span>Player</span><span className="hidden sm:block">Range · low / exp / high</span><span className="text-right">Proj</span>
           </div>
-          <div className="divide-y divide-line">
+          <div ref={box}>
             {slots.map((slot, i) => {
               const p = lineup[i] ? byId.get(lineup[i]!) : undefined;
               const canEdit = !p?.locked;
-              return (
-                <div key={i}>
-                  {row(p, (
-                    <button type="button" disabled={!canEdit} onClick={() => setSlotOpen(i)} aria-label={`Choose who plays ${slot}`}
-                      className={cx("rounded-md py-1.5 text-center text-[11px] font-extrabold transition-colors", canEdit ? "bg-acc text-on-acc active:scale-95" : "bg-panel2 text-muted")}>{short(slot)}</button>
-                  ), i, changed(i))}
-                </div>
-              );
+              return row(p ? p.id : `empty-${i}`, p, (
+                <button type="button" disabled={!canEdit} onClick={() => setSlotOpen(i)} aria-label={`Choose who plays ${slot}`}
+                  className={cx("rounded-md py-1.5 text-center text-[11px] font-extrabold transition-transform", canEdit ? "bg-acc text-on-acc active:scale-90" : "bg-panel2 text-muted")}>{short(slot)}</button>
+              ), i, changed(i));
             })}
-          </div>
-          <div className="border-y border-line bg-panel2/50 px-5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted">Bench</div>
-          <div className="divide-y divide-line">
-            {bench.map((b) => <div key={b.id}>{row(b, <span className="rounded-md bg-panel2 py-1.5 text-center text-[11px] font-bold text-muted">{b.unavailable === "IR slot" ? "IR" : b.unavailable === "Taxi" ? "TAXI" : "BN"}</span>, null)}</div>)}
+            <div className="border-b border-line bg-panel2/50 px-5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted">Bench</div>
+            {bench.map((b) => row(b.id, b, <span className="rounded-md bg-panel2 py-1.5 text-center text-[11px] font-bold text-muted">{b.unavailable === "IR slot" ? "IR" : b.unavailable === "Taxi" ? "TAXI" : "BN"}</span>, null))}
           </div>
         </Card>
 
@@ -147,7 +163,7 @@ export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots
                 <div className="mt-3 rounded-lg bg-acc-soft px-3 py-2.5 text-sm leading-relaxed">
                   <strong className="text-acc-ink">Start {better!.name}</strong> ({signed(Math.abs(B.median - A.median))} projected).{" "}
                   {better!.notes.slice(0, 2).join(" ")}
-                  {B.id !== better!.id ? "" : lineup.includes(B.id) ? "" : <button type="button" className="ml-1 font-semibold text-acc-ink underline" onClick={() => place(aSlot, B.id)}>Put him in</button>}
+                  {B.id === better!.id && !lineup.includes(B.id) && aSlot >= 0 && <button type="button" className="ml-1 font-semibold text-acc-ink underline" onClick={() => place(aSlot, B.id)}>Put him in</button>}
                 </div>
               </>
             )}

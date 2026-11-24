@@ -3,7 +3,8 @@
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeftRight, Check, ChevronDown, ChevronLeft, ChevronRight, Home, LayoutGrid, ListOrdered, Moon, RefreshCw, Sun, Swords, X } from "lucide-react";
+import { ArrowLeftRight, BarChart3, Check, ChevronDown, ChevronLeft, ChevronRight, Home, ListOrdered, Moon, RefreshCw, Scale, Sparkles, Sun, Swords, TrendingUp, Trophy, UserPlus, X } from "lucide-react";
+import { BASE_PATH } from "@/lib/net";
 import { cx, Logo } from "./ui";
 import { usePlayerCard } from "./PlayerCard";
 import { useApp } from "./AppData";
@@ -53,36 +54,81 @@ export function RefreshButton({ compact = false }: { compact?: boolean }) {
 const TABS = [
   { href: "/", label: "Dashboard", icon: Home },
   { href: "/matchup", label: "Matchup", icon: Swords },
-  { href: "/lineup", label: "Lineup", icon: ListOrdered },
-  { href: "/trade-finder", label: "Trades", icon: ArrowLeftRight },
+  { href: "/rankings", label: "Rankings", icon: ListOrdered },
+  { href: "/league", label: "League", icon: Trophy },
 ];
 
-export function MobileTabs({ more }: { more: { href: string; label: string }[] }) {
+export const QUICK_ACTIONS = [
+  { href: "/trade", label: "Trade Analyzer", sub: "Evaluate and compare trades", icon: Scale },
+  { href: "/trade-finder", label: "Trade Finder", sub: "Find trade opportunities", icon: ArrowLeftRight },
+  { href: "/waivers", label: "Waiver Assistant", sub: "Best pickups for your team", icon: UserPlus },
+  { href: "/breakouts", label: "Breakout Finder", sub: "Emerging young players", icon: TrendingUp },
+  { href: "/rookies", label: "Rookie Report", sub: "Evaluate this year's rookies", icon: Sparkles },
+  { href: "/stats", label: "Stats & Schedule", sub: "Stats, schedules, matchups", icon: BarChart3 },
+];
+
+/** Bottom bar on phones: four tabs and the SHS quick-actions button in the middle. */
+export function MobileTabs({ keeper }: { keeper: boolean }) {
   const path = usePathname();
   const [open, setOpen] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const btn = useRef<HTMLButtonElement>(null);
+  const card = useRef<HTMLDivElement>(null);
   const isOn = (href: string) => (href === "/" ? path === "/" : path.startsWith(href) && !(href === "/trade" && path.startsWith("/trade-finder")));
-  const inMore = !TABS.some((t) => isOn(t.href));
+  const close = () => {
+    if (!open || closing) return;
+    setClosing(true);
+    setTimeout(() => { setOpen(false); setClosing(false); }, 270);
+  };
+  const toggle = () => (open ? close() : setOpen(true));
+  // Grow the card out of the button's centre.
+  useEffect(() => {
+    if (!open || !card.current || !btn.current) return;
+    const b = btn.current.getBoundingClientRect();
+    const c = card.current.getBoundingClientRect();
+    card.current.style.setProperty("--ox", `${b.left + b.width / 2 - c.left}px`);
+    card.current.style.setProperty("--oy", `${b.top + b.height / 2 - c.top}px`);
+  }, [open]);
+  useEffect(() => { setOpen(false); setClosing(false); }, [path]);
+  const tab = ({ href, label, icon: Icon }: (typeof TABS)[number]) => (
+    <Link key={href} href={href} onClick={close} className={cx("flex flex-1 flex-col items-center gap-0.5 py-1.5 text-[10px] font-semibold", isOn(href) && !open ? "text-acc-ink" : "text-muted")}>
+      <Icon size={22} aria-hidden />
+      {label}
+    </Link>
+  );
   return (
     <>
-      <div className={cx("fixed inset-0 z-40 bg-black/50 transition-opacity md:hidden", open ? "opacity-100" : "pointer-events-none opacity-0")} onClick={() => setOpen(false)} />
-      <div className={cx("fixed inset-x-0 bottom-0 z-40 rounded-t-2xl border-t border-line bg-bg px-4 pb-24 pt-4 transition-transform duration-300 md:hidden", open ? "translate-y-0" : "translate-y-full")} aria-hidden={!open}>
-        <div className="mb-3 flex items-center justify-between"><span className="h-display text-xl">All tools</span><button type="button" onClick={() => setOpen(false)} aria-label="Close menu" className="rounded-full bg-panel2 p-2"><X size={16} /></button></div>
-        <nav className="grid grid-cols-2 gap-2">
-          {more.map((m) => (
-            <Link key={m.href} href={m.href} onClick={() => setOpen(false)} className={cx("rounded-xl border px-3 py-3 text-sm font-semibold", isOn(m.href) ? "border-acc bg-acc-soft" : "border-line bg-panel")}>{m.label}</Link>
-          ))}
-        </nav>
-      </div>
-      <nav aria-label="Primary" className="fixed inset-x-0 bottom-0 z-50 flex justify-around border-t border-line bg-panel pb-[max(env(safe-area-inset-bottom),8px)] pt-1.5 md:hidden">
-        {TABS.map(({ href, label, icon: Icon }) => (
-          <Link key={href} href={href} onClick={() => setOpen(false)} className={cx("flex min-w-16 flex-col items-center gap-0.5 py-1.5 text-[11px] font-semibold", isOn(href) && !open ? "text-acc-ink" : "text-muted")}>
-            <Icon size={22} aria-hidden />
-            {label}
-          </Link>
-        ))}
-        <button type="button" onClick={() => setOpen(!open)} className={cx("flex min-w-16 flex-col items-center gap-0.5 py-1.5 text-[11px] font-semibold", open || inMore ? "text-acc-ink" : "text-muted")}>
-          <LayoutGrid size={22} aria-hidden />More
-        </button>
+      {open && <div className={cx("qa-scrim fixed inset-0 z-40 bg-black/55 backdrop-blur-[2px] md:hidden", closing && "qa-closing")} onClick={close} />}
+      {open && (
+        <div ref={card} role="dialog" aria-label="Quick actions" className={cx("qa-card fixed inset-x-3 bottom-[calc(max(env(safe-area-inset-bottom),8px)+74px)] z-50 rounded-3xl border border-line bg-panel p-3 shadow-2xl md:hidden", closing && "qa-closing")}>
+          <div className="grid grid-cols-2 gap-2">
+            {QUICK_ACTIONS.map((a, i) => (
+              <Link key={a.href} href={a.href} style={{ animationDelay: `${90 + i * 35}ms` }}
+                className={cx("qa-tile flex min-h-24 flex-col justify-between rounded-2xl border p-3 active:scale-[0.97]", isOn(a.href) ? "border-acc bg-acc-soft" : "border-line bg-panel2")}>
+                <a.icon size={22} className="text-acc-ink" aria-hidden />
+                <span><span className="block text-sm font-bold leading-tight">{a.label}</span><span className="block text-[11px] leading-snug text-muted">{a.sub}</span></span>
+              </Link>
+            ))}
+          </div>
+          <div className="qa-tile mt-2 flex justify-center gap-4 text-xs font-semibold text-muted" style={{ animationDelay: "320ms" }}>
+            {keeper && <Link href="/keepers" className="py-1.5 hover:text-fg">Keeper Planner</Link>}
+            <Link href="/methodology" className="py-1.5 hover:text-fg">How it&apos;s calculated</Link>
+            <Link href="/settings" className="py-1.5 hover:text-fg">Settings</Link>
+          </div>
+        </div>
+      )}
+      <nav aria-label="Primary" className="fixed inset-x-0 bottom-0 z-50 flex items-end border-t border-line bg-panel px-1 pb-[max(env(safe-area-inset-bottom),8px)] pt-1.5 md:hidden">
+        {TABS.slice(0, 2).map(tab)}
+        <div className="flex flex-1 justify-center">
+          <button ref={btn} type="button" onClick={toggle} aria-label={open ? "Close quick actions" : "Quick actions"} aria-expanded={open}
+            className={cx("qa-btn -mt-6 flex h-16 w-16 items-center justify-center rounded-full border-4 border-bg shadow-lg", open && !closing ? "rotate-90 bg-acc" : "bg-panel2")}>
+            {open && !closing
+              ? <X size={28} className="text-on-acc" strokeWidth={2.5} />
+              // eslint-disable-next-line @next/next/no-img-element
+              : <img src={`${BASE_PATH}/shs-mark.png`} alt="" width={40} height={40} className="h-10 w-10 object-contain" />}
+          </button>
+        </div>
+        {TABS.slice(2).map(tab)}
       </nav>
     </>
   );

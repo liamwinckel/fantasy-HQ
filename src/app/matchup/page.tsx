@@ -1,13 +1,17 @@
 "use client";
 
 import { LeaguePage, type LeagueData } from "@/components/AppData";
+import { useState } from "react";
+import { MyLineup } from "@/components/MyLineup";
+import { TeamLink } from "@/components/TeamPeek";
+import { PlayerImg } from "@/components/client";
 import Link from "next/link";
 import { parseWeek } from "@/lib/services/selected";
 import { formatLabel } from "@/lib/services/portfolio";
 import { gameView, teamWeek, weekGames, weekKind, type TeamWeek } from "@/lib/services/views";
 import { winProbability } from "@/lib/engine/simulate";
 import { powerRankings } from "@/lib/engine/power";
-import { NflLogo, Bar, Card, Logo, Notice, PageHeader, Tag, cx, Info, WinBar } from "@/components/ui";
+import { InjuryChip, NflLogo, Bar, Card, Logo, Notice, PageHeader, Tag, cx, Info, WinBar } from "@/components/ui";
 import { WeekNav } from "@/components/client";
 import { MatchupBoard } from "@/components/matchup";
 import { PlayerLink } from "@/components/PlayerCard";
@@ -30,6 +34,11 @@ function MatchupPageBody({ setup, league, ctx, sp }: LeagueData) {
   const name = (rid: number | null) => (rid === null ? "—" : ctx.teams.find((t) => t.rosterId === rid)?.name ?? "—");
   const av = (rid: number | null) => (rid === null ? null : ctx.teams.find((t) => t.rosterId === rid)?.avatar ?? null);
   const games = weekGames(ctx, week);
+  const me = ctx.teams.find((t) => t.rosterId === ctx.myRosterId);
+  const myGame = !!me && g.a.rosterId === me.rosterId && kind !== "past";
+  const [myTotal, setMyTotal] = useState<number | null>(null);
+  const oppStrength = g.b ? (kind === "current" ? ctx.liveScore.get(g.b.rosterId)?.projected : ctx.weekStrength.get(g.b.rosterId)?.get(week)) ?? null : null;
+  const myStrength = kind === "current" ? ctx.liveScore.get(g.a.rosterId)?.projected ?? null : ctx.weekStrength.get(g.a.rosterId)?.get(week) ?? null;
 
   // Head-to-head by position: points (actual for past weeks, projected otherwise)
   const byPos = (t: TeamWeek | null) => {
@@ -69,20 +78,26 @@ function MatchupPageBody({ setup, league, ctx, sp }: LeagueData) {
         })}
       </div>
 
-      <div>
-        <div className="rounded-xl border border-line bg-panel p-4">
-          {g.kind === "past" ? (
-            <><div className="text-xs text-muted">Result</div><div className="h-display mt-1 text-3xl">{g.result === "W" ? `${g.a.name} won` : g.result === "L" ? `${g.b?.name} won` : g.result === "T" ? "Tie" : "—"}</div>
-              <div className="text-xs text-muted">by {g.a.actual !== null && g.b?.actual != null ? Math.abs(g.a.actual - g.b.actual).toFixed(1) : "—"} pts</div></>
-          ) : (
-            <><div className="flex justify-between text-xs text-muted"><span>{g.a.name} win chance · power #{rankOf(g.a.rosterId)}{g.b ? ` vs #${rankOf(g.b.rosterId)}` : ""}</span><Tag kind="MODEL" /></div>
-              <div className="mt-2 flex items-center gap-3"><WinBar pct={g.winProbA ?? 50} /><span className="num w-14 text-right text-2xl font-bold">{g.winProbA?.toFixed(0) ?? "—"}%</span></div></>
-          )}
-        </div>
-      </div>
+      <Preview g={g} kind={kind} started={started} myTotal={myGame ? myTotal : null} oppStrength={oppStrength} myStrength={myStrength} rank={rankOf} />
+
+      {myGame && me && <MyLineup ctx={ctx} me={me} week={week} onTotal={setMyTotal} />}
 
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
-        <Card title="Lineups" pad={false} className="xl:flex-[3]"><MatchupBoard g={g} /></Card>
+        {!myGame && <Card title="Lineups" pad={false} className="xl:flex-[3]"><MatchupBoard g={g} /></Card>}
+        {myGame && g.b && (
+          <Card title={`${g.b.name}'s lineup`} pad={false} className="xl:flex-[3]">
+            <ul className="divide-y divide-line">
+              {g.b.starters.map((l, i) => (
+                <li key={i} className="flex items-center gap-2.5 px-3 py-2 sm:px-5">
+                  <span className="w-11 shrink-0 rounded bg-panel2 py-1 text-center text-[10px] font-extrabold">{l.slot.replace("SUPER_FLEX", "SFLX").replace("IDP_FLEX", "IDP").replace("WRRB_FLEX", "W/R").replace("REC_FLEX", "W/T")}</span>
+                  {l.playerId ? <PlayerImg id={l.playerId} name={l.name} pos={l.pos} size={30} /> : <span className="h-[30px] w-[30px] rounded-full border border-dashed border-line" />}
+                  <div className="min-w-0 flex-1"><div className="flex items-center gap-1.5 text-sm font-semibold">{l.playerId ? <PlayerLink id={l.playerId} name={l.name} /> : <span className="text-muted">{l.name}</span>}<InjuryChip status={l.injury} /></div><div className="flex items-center gap-1 truncate text-xs text-muted"><NflLogo team={l.team} size={12} />{l.team ?? l.pos}{l.note ? ` · ${l.note}` : ""}</div></div>
+                  <span className="num w-12 text-right text-sm font-bold">{(kind === "current" && started && l.actual ? l.actual : l.proj)?.toFixed(1) ?? "—"}</span>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
         <div className="flex min-w-0 flex-col gap-4 xl:flex-[2]">
           <Card title="Head to head by position" right={<span className="text-[11px] text-muted">{kind === "past" ? "actual pts" : "projected pts"}</span>}>
             <div className="flex flex-col gap-3">
@@ -145,5 +160,35 @@ function MatchupPageBody({ setup, league, ctx, sp }: LeagueData) {
         </ul>
       </Card>
     </div>
+  );
+}
+
+/** Score preview: both teams, scores and win chance. On your own game the score follows your lineup edits. */
+function Preview({ g, kind, started, myTotal, oppStrength, myStrength, rank }: {
+  g: ReturnType<typeof gameView>; kind: string; started: boolean; myTotal: number | null;
+  oppStrength: { mean: number; sd: number } | null; myStrength: { mean: number; sd: number } | null; rank: (rid: number) => number | undefined;
+}) {
+  const live = kind === "past" || started;
+  const aScore = live ? g.a.actual : myTotal ?? g.a.projected;
+  const bScore = g.b ? (live ? g.b.actual : g.b.projected) : null;
+  const wp = kind === "past" ? null : myTotal !== null && !started && myStrength && oppStrength
+    ? winProbability({ mean: myTotal, sd: myStrength.sd }, oppStrength)
+    : g.winProbA;
+  const head = (t: typeof g.a | null, score: number | null, right: boolean) => t ? (
+    <div className={cx("flex min-w-0 flex-1 flex-col gap-1", right ? "items-end text-right" : "items-start")}>
+      <TeamLink rosterId={t.rosterId} name={t.name} avatar={t.avatar} size={28} className="max-w-full text-sm font-semibold" />
+      <div className="num font-[family-name:var(--font-display)] text-4xl font-bold leading-none">{score !== null ? score.toFixed(1) : "—"}</div>
+      <div className="text-[11px] text-muted">{live ? (kind === "past" ? "Final" : "Live") : "Projected"} · power #{rank(t.rosterId)}</div>
+    </div>
+  ) : <div className="flex-1 text-center text-sm text-muted">No opponent</div>;
+  return (
+    <section className="rounded-xl border border-line bg-panel p-4">
+      <div className="flex items-start gap-3">{head(g.a, aScore, false)}<span className="pt-8 text-xs font-bold text-muted">VS</span>{head(g.b, bScore, true)}</div>
+      {kind === "past" ? (
+        <div className="mt-3 text-center text-sm font-semibold">{g.result === "W" ? `${g.a.name} won` : g.result === "L" ? `${g.b?.name} won` : g.result === "T" ? "Tie" : ""}{g.a.actual !== null && g.b?.actual != null ? ` by ${Math.abs(g.a.actual - g.b.actual).toFixed(1)}` : ""}</div>
+      ) : wp !== null && (
+        <div className="mt-4 flex items-center gap-3"><span className="shrink-0 text-xs text-muted">Win chance</span><WinBar pct={wp} /><span className="num w-12 text-right text-xl font-bold">{wp.toFixed(0)}%</span></div>
+      )}
+    </section>
   );
 }

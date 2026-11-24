@@ -82,7 +82,7 @@ function DashboardBody({ setup, league, ctx, sp }: LeagueData) {
             </div>
           ) : <p className="text-sm text-muted">No opponent this week.</p>}
         </Card>
-        <Card title="Action queue" right={<Link href="/lineup" className="text-xs font-semibold text-acc-ink">Lineup Optimizer →</Link>} pad={false}>
+        <Card title="Action queue" right={<Link href="/matchup" className="text-xs font-semibold text-acc-ink">Set lineup →</Link>} pad={false}>
           {swaps.length === 0 && <p className="px-5 py-4 text-sm text-muted">Your lineup matches the best projected lineup.</p>}
           {swaps.slice(0, 4).map((s, i) => (
             <div key={i} className="flex items-start justify-between gap-3 border-t border-line px-5 py-3 first:border-t-0">

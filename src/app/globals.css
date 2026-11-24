@@ -49,3 +49,27 @@ html { scroll-behavior: smooth; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+
+/* Quick actions: the menu grows out of the centre button as an expanding circle while the card settles,
+   tiles rise in one after another; closing plays it back into the button. */
+@keyframes qa-open {
+  from { clip-path: circle(0px at var(--ox) var(--oy)); transform: translateY(18px) scale(0.86); opacity: 0.4; }
+  60% { opacity: 1; }
+  to { clip-path: circle(150% at var(--ox) var(--oy)); transform: none; opacity: 1; }
+}
+@keyframes qa-close {
+  from { clip-path: circle(150% at var(--ox) var(--oy)); transform: none; opacity: 1; }
+  to { clip-path: circle(0px at var(--ox) var(--oy)); transform: translateY(18px) scale(0.86); opacity: 0.3; }
+}
+@keyframes qa-tile { from { opacity: 0; transform: translateY(12px) scale(0.96); } to { opacity: 1; transform: none; } }
+@keyframes qa-fade { from { opacity: 0; } to { opacity: 1; } }
+.qa-card { animation: qa-open 0.46s cubic-bezier(0.22, 1, 0.36, 1) both; transform-origin: var(--ox) var(--oy); will-change: clip-path, transform; }
+.qa-card.qa-closing { animation: qa-close 0.28s cubic-bezier(0.55, 0, 0.75, 0.2) both; }
+.qa-card .qa-tile { animation: qa-tile 0.36s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.qa-card.qa-closing .qa-tile { animation: none; }
+.qa-scrim { animation: qa-fade 0.25s ease-out both; }
+.qa-scrim.qa-closing { animation: qa-fade 0.25s ease-in reverse both; }
+.qa-btn { transition: transform 0.4s cubic-bezier(0.22, 1.4, 0.36, 1), background-color 0.2s, box-shadow 0.2s; }
+
+/* Lineup: rows glide to their new spot when players are swapped (FLIP). */
+.flip-move { transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1); }

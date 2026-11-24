@@ -46,42 +46,42 @@ export function KeeperBoard({ leagueId, rows, rules, rounds, sleeperMax, season 
 
       <Card title={`Your keeper options for ${season}`} right={<Tag kind="MODEL" />} pad={false}>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[860px] text-sm">
+          <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-[11px] uppercase tracking-wider text-muted">
-                <th className="px-5 py-2.5 font-semibold">Player</th>
-                <th className="px-2 py-2.5 font-semibold" title="Round drafted this season">Drafted</th>
-                <th className="px-2 py-2.5 font-semibold" title="Round you give up next season">Keeper cost</th>
-                <th className="px-2 py-2.5 text-right font-semibold" title="Projected points per game next season (age-adjusted)">Next season</th>
-                <th className="px-2 py-2.5 font-semibold" title="Player's value vs what a pick in that round usually returns (points per game above replacement)">Player value vs round value</th>
+                <th className="px-3 py-2.5 font-semibold sm:px-5">Player</th>
+                <th className="hidden px-2 py-2.5 font-semibold sm:table-cell" title="Round drafted this season">Drafted</th>
+                <th className="px-2 py-2.5 font-semibold" title="Round you give up next season">Cost</th>
+                <th className="hidden px-2 py-2.5 text-right font-semibold md:table-cell" title="Projected points per game next season (age-adjusted)">Next season</th>
+                <th className="hidden px-2 py-2.5 font-semibold lg:table-cell" title="Player's value vs what a pick in that round usually returns (points per game above replacement)">Player value vs round value</th>
                 <th className="px-2 py-2.5 text-right font-semibold" title="Player value minus round value">Surplus</th>
-                <th className="px-5 py-2.5 font-semibold">Set cost</th>
+                <th className="px-3 py-2.5 font-semibold sm:px-5">Set cost</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.playerId} className={cx("border-t border-line transition-colors", r.recommended && "bg-acc-soft")}>
-                  <td className="px-5 py-2.5">
+                  <td className="px-3 py-2.5 sm:px-5">
                     <div className="flex items-center gap-2">
                       {r.recommended && <span className="rounded bg-acc px-1.5 py-0.5 text-[10px] font-extrabold text-on-acc">KEEP</span>}
                       <PlayerLink id={r.playerId} name={r.name} className="font-semibold" />
                     </div>
                     <div className="text-xs text-muted">{r.pos}{r.team ? ` · ${r.team}` : ""}{r.age ? ` · ${Math.floor(r.age)}` : ""}{r.wasKeeper ? " · kept this year" : ""}</div>
                   </td>
-                  <td className="num px-2 py-2.5">{r.draftedRound ? `R${r.draftedRound}` : <span className="text-muted">Undrafted</span>}</td>
+                  <td className="num hidden px-2 py-2.5 sm:table-cell">{r.draftedRound ? `R${r.draftedRound}` : <span className="text-muted">Undrafted</span>}</td>
                   <td className="num px-2 py-2.5">{r.costRound ? <b>R{r.costRound}</b> : <span className="text-neg">Not eligible</span>}<div className="text-[11px] text-muted">{r.costSource === "manual" ? "custom" : r.costSource}{r.capped ? " · capped" : ""}</div></td>
-                  <td className="num px-2 py-2.5 text-right">{r.nextSeasonPpg.toFixed(1)}</td>
-                  <td className="min-w-48 px-2 py-2.5">
+                  <td className="num hidden px-2 py-2.5 text-right md:table-cell">{r.nextSeasonPpg.toFixed(1)}</td>
+                  <td className="hidden min-w-48 px-2 py-2.5 lg:table-cell">
                     <div className="flex flex-col gap-1">
                       <div className="h-2 rounded-full bg-panel2"><div className="h-2 rounded-full bg-acc transition-[width] duration-500" style={{ width: `${(100 * r.keeperValue) / maxV}%` }} /></div>
                       <div className="h-2 rounded-full bg-panel2"><div className="h-2 rounded-full bg-muted transition-[width] duration-500" style={{ width: `${(100 * r.roundValue) / maxV}%` }} /></div>
                     </div>
                   </td>
                   <td className={cx("num px-2 py-2.5 text-right font-bold", r.surplus === null ? "text-muted" : r.surplus > 0 ? "text-pos" : "text-neg")}>{r.surplus === null ? "—" : signed(r.surplus)}</td>
-                  <td className="px-5 py-2.5">
+                  <td className="px-3 py-2.5 sm:px-5">
                     <select aria-label={`Keeper cost for ${r.name}`} className="rounded-md border border-line bg-panel2 px-2 py-1 text-xs" value={r.costSource === "manual" ? r.costRound ?? 0 : 0} onChange={(e) => save({ override: { playerId: r.playerId, round: Number(e.target.value) } })}>
                       <option value={0}>Auto</option>
-                      {Array.from({ length: rounds }, (_, i) => i + 1).map((n) => <option key={n} value={n}>Custom: R{n}</option>)}
+                      {Array.from({ length: rounds }, (_, i) => i + 1).map((n) => <option key={n} value={n}>R{n}</option>)}
                     </select>
                   </td>
                 </tr>

@@ -267,6 +267,28 @@ function Result({ r, partner, busy, onApply, me, partnerId }: { r: TradeResult; 
         </div>
       </Card>
 
+      {(r.build.a.length > 0 || r.build.b.length > 0) && (
+        <Card title="Team build" info={<>Who each team would actually start afterwards, compared spot by spot by healthy points per game. Losing a good starter and having to play a weak backup counts against a trade even when the values look even.</>}>
+          <div className="grid grid-cols-2 gap-3 sm:gap-6">
+            {[{ label: "You", rows: r.build.a }, { label: partner, rows: r.build.b }].map((side) => (
+              <div key={side.label} className="min-w-0">
+                <div className="mb-2 truncate text-xs font-semibold uppercase tracking-wider text-muted">{side.label}</div>
+                {side.rows.length === 0 && <p className="text-xs text-muted">Same starters.</p>}
+                <ul className="flex flex-col gap-1.5">
+                  {side.rows.map((b) => (
+                    <li key={b.slot} className="rounded-lg bg-panel2 px-2 py-1.5 text-xs">
+                      <div className="flex items-center justify-between gap-1"><b>{b.slot}</b><span className={cx("num font-bold", b.delta > 0.2 ? "text-pos" : b.delta < -0.2 ? "text-neg" : "text-muted")}>{signed(b.delta)}/g</span></div>
+                      <div className="truncate text-muted">{b.before.name} {b.before.ppg}</div>
+                      <div className="truncate">→ {b.after.name} <span className="num">{b.after.ppg}</span></div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
       <Card title="Package value" right={<span className="text-[11px] text-muted">simple sum vs consolidated</span>}>
         <div className="flex flex-col gap-3">
           {[{ label: "You send", raw: r.market.aSendsRaw, pkg: r.market.aSends, tone: "bg-fg" }, { label: "You receive", raw: r.market.bSendsRaw, pkg: r.market.bSends, tone: "bg-acc" }].map((row) => {
@@ -324,7 +346,7 @@ function Result({ r, partner, busy, onApply, me, partnerId }: { r: TradeResult; 
       </div>
           <Card title="Value breakdown" pad={false}>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[460px] text-sm">
+              <table className="w-full text-sm">
                 <thead><tr className="text-left text-[11px] uppercase tracking-wider text-muted">
                   <th className="px-5 py-2.5 font-semibold">Asset · what drives its value</th><th className="px-2 py-2.5 text-right font-semibold">Value</th>
                   {r.classA && <><th className="px-2 py-2.5 text-right font-semibold" title={`Re-weighted for a ${r.classA}`}>To you</th><th className="px-5 py-2.5 text-right font-semibold" title={`Re-weighted for a ${r.classB}`}>To {partner}</th></>}

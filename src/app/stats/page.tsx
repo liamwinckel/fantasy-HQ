@@ -29,7 +29,7 @@ function StatsBody({ league, ctx, sp }: LeagueData) {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader eyebrow={`${league.name} · ${formatLabel(league)} · ${ctx.scoring}`} title="Stats & Schedule" />
-      <div className="flex gap-1.5 overflow-x-auto pb-1" role="tablist">
+      <div className="flex flex-wrap justify-center gap-1.5" role="tablist">
         {TABS.map((t) => (
           <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} onClick={() => set({ tab: t.id }, true)}
             className={cx("shrink-0 rounded-full border px-3.5 py-2 text-sm font-semibold transition-colors", tab === t.id ? "border-acc bg-acc text-on-acc" : "border-line text-muted hover:text-fg")}>{t.label}</button>
@@ -71,12 +71,12 @@ function Sos({ ctx, sched }: { ctx: Ctx; sched: ReturnType<typeof scheduleTable>
       {me && starters.length > 0 && (
         <Card title="Your starters' schedule" right={<Tag kind="MODEL" />} pad={false}>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px] text-sm">
+            <table className="w-full text-sm">
               <thead><tr className="text-left text-[11px] uppercase tracking-wider text-muted">
-                <th className="px-5 py-2 font-semibold">Player</th>
-                <th className="px-2 py-2 text-right font-semibold" title="Remaining schedule vs an average one (+ = easier)">Rest of season</th>
-                <th className="px-2 py-2 text-right font-semibold" title="Fantasy playoff weeks">Playoffs</th>
-                {sched.weeks.map((w) => <th key={w} className={cx("px-1 py-2 text-center font-semibold", w >= ctx.playoffStart && "text-acc-ink")}>Wk {w}</th>)}
+                <th className="px-3 py-2 font-semibold sm:px-5">Player</th>
+                <th className="hidden px-2 py-2 text-right font-semibold sm:table-cell" title="Remaining schedule vs an average one (+ = easier)">Rest of season</th>
+                <th className="hidden px-2 py-2 text-right font-semibold sm:table-cell" title="Fantasy playoff weeks">Playoffs</th>
+                {sched.weeks.map((w) => <th key={w} className={cx("px-1 py-2 text-center font-semibold", w >= ctx.playoffStart && "text-acc-ink")}><span className="hidden sm:inline">Wk </span>{w}</th>)}
               </tr></thead>
               <tbody>
                 {starters.map((id) => {
@@ -85,9 +85,9 @@ function Sos({ ctx, sched }: { ctx: Ctx; sched: ReturnType<typeof scheduleTable>
                   const sp = p.pos as SosPos;
                   return (
                     <tr key={id} className="border-t border-line">
-                      <td className="px-5 py-2"><div className="flex items-center gap-2"><PlayerImg id={id} name={p.name} pos={p.pos} size={28} /><div className="min-w-0"><PlayerLink id={id} name={p.name} className="font-semibold" /><div className="text-[11px] text-muted">{p.pos} · {p.team}</div></div></div></td>
-                      <td className="num px-2 py-2 text-right">{r?.ros[sp] ? signed((r.ros[sp]! - 1) * 100, 0) + "%" : "—"}</td>
-                      <td className="num px-2 py-2 text-right">{r?.playoffs[sp] ? signed((r.playoffs[sp]! - 1) * 100, 0) + "%" : "—"}</td>
+                      <td className="max-w-32 px-3 py-2 sm:max-w-none sm:px-5"><div className="flex items-center gap-2"><span className="hidden sm:block"><PlayerImg id={id} name={p.name} pos={p.pos} size={28} /></span><div className="min-w-0"><PlayerLink id={id} name={p.name} className="block max-w-full text-xs font-semibold sm:text-sm" /><div className="text-[11px] text-muted">{p.pos} · {p.team} · <span className="sm:hidden">RoS {r?.ros[sp] ? signed((r.ros[sp]! - 1) * 100, 0) + "%" : "—"}</span></div></div></div></td>
+                      <td className="num hidden px-2 py-2 text-right sm:table-cell">{r?.ros[sp] ? signed((r.ros[sp]! - 1) * 100, 0) + "%" : "—"}</td>
+                      <td className="num hidden px-2 py-2 text-right sm:table-cell">{r?.playoffs[sp] ? signed((r.playoffs[sp]! - 1) * 100, 0) + "%" : "—"}</td>
                       {sched.weeks.map((w) => {
                         const opp = r?.weeks[w] ?? null;
                         return <td key={w} className="px-0.5 py-1.5"><span style={{ background: heat(defF(opp, sp)) }} className="flex h-8 items-center justify-center rounded-md text-[11px] font-semibold">{opp ? <NflLogo team={opp} size={18} textFallback /> : <span className="text-muted">BYE</span>}</span></td>;
@@ -104,19 +104,19 @@ function Sos({ ctx, sched }: { ctx: Ctx; sched: ReturnType<typeof scheduleTable>
 
       <Card title="NFL strength of schedule" right={<PosChips pos={pos} setPos={(p) => setPos(p as SosPos)} options={SOS_POS} />} pad={false}>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] text-sm">
+          <table className="w-full text-sm">
             <thead><tr className="text-left text-[11px] uppercase tracking-wider text-muted">
-              <th className="cursor-pointer px-5 py-2 font-semibold" onClick={() => setSort("team")}>Team</th>
-              <th className="cursor-pointer px-2 py-2 text-right font-semibold" onClick={() => setSort("ros")}>RoS rank {sort === "ros" && "▲"}</th>
-              <th className="cursor-pointer px-2 py-2 text-right font-semibold" onClick={() => setSort("playoffs")}>Playoff rank {sort === "playoffs" && "▲"}</th>
-              {sched.weeks.map((w) => <th key={w} className={cx("px-1 py-2 text-center font-semibold", w >= ctx.playoffStart && "text-acc-ink")}>Wk {w}</th>)}
+              <th className="cursor-pointer px-3 py-2 font-semibold sm:px-5" onClick={() => setSort("team")}>Team</th>
+              <th className="cursor-pointer px-2 py-2 text-right font-semibold" onClick={() => setSort("ros")}>RoS {sort === "ros" && "▲"}</th>
+              <th className="hidden cursor-pointer px-2 py-2 text-right font-semibold sm:table-cell" onClick={() => setSort("playoffs")}>Playoff rank {sort === "playoffs" && "▲"}</th>
+              {sched.weeks.map((w) => <th key={w} className={cx("px-1 py-2 text-center font-semibold", w >= ctx.playoffStart && "text-acc-ink")}><span className="hidden sm:inline">Wk </span>{w}</th>)}
             </tr></thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.team} className="border-t border-line">
-                  <td className="px-5 py-1.5"><span className="flex items-center gap-2 font-semibold"><NflLogo team={r.team} size={22} />{r.team}</span></td>
+                  <td className="px-3 py-1.5 sm:px-5"><span className="flex items-center gap-1.5 font-semibold"><NflLogo team={r.team} size={20} />{r.team}</span></td>
                   <td className="num px-2 py-1.5 text-right"><b>{r.rosRank[pos] ?? "—"}</b> <span className="text-[11px] text-muted">{r.ros[pos] ? signed((r.ros[pos]! - 1) * 100, 0) + "%" : ""}</span></td>
-                  <td className="num px-2 py-1.5 text-right"><b>{r.playoffRank[pos] ?? "—"}</b> <span className="text-[11px] text-muted">{r.playoffs[pos] ? signed((r.playoffs[pos]! - 1) * 100, 0) + "%" : ""}</span></td>
+                  <td className="num hidden px-2 py-1.5 text-right sm:table-cell"><b>{r.playoffRank[pos] ?? "—"}</b> <span className="text-[11px] text-muted">{r.playoffs[pos] ? signed((r.playoffs[pos]! - 1) * 100, 0) + "%" : ""}</span></td>
                   {sched.weeks.map((w) => {
                     const opp = r.weeks[w];
                     return <td key={w} className="px-0.5 py-1"><span style={{ background: heat(opp ? defTableFactor(ctx, opp, pos) : undefined) }} className="flex h-7 items-center justify-center rounded-md">{opp ? <NflLogo team={opp} size={16} textFallback /> : <span className="text-[10px] text-muted">BYE</span>}</span></td>;
@@ -145,7 +145,7 @@ function Dvp({ def }: { def: ReturnType<typeof defenseTable> }) {
   return (
     <Card title="Fantasy points allowed per game" right={<span className="text-[11px] text-muted">your league&apos;s scoring · tap a column to sort</span>} pad={false}>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[620px] text-sm">
+        <table className="w-full text-sm">
           <thead><tr className="text-left text-[11px] uppercase tracking-wider text-muted">
             <th className="px-5 py-2 font-semibold">Defense</th>
             {SOS_POS.map((p) => <th key={p} onClick={() => setSortPos(p)} className={cx("cursor-pointer px-2 py-2 text-center font-semibold", sortPos === p && "text-acc-ink")}>vs {p} {sortPos === p && "▲"}</th>)}
@@ -153,7 +153,7 @@ function Dvp({ def }: { def: ReturnType<typeof defenseTable> }) {
           <tbody>
             {rows.map((r) => (
               <tr key={r.team} className="border-t border-line">
-                <td className="px-5 py-1.5"><span className="flex items-center gap-2 font-semibold"><NflLogo team={r.team} size={22} />{r.team}</span></td>
+                <td className="px-3 py-1.5 sm:px-5"><span className="flex items-center gap-1.5 font-semibold"><NflLogo team={r.team} size={20} />{r.team}</span></td>
                 {SOS_POS.map((p) => (
                   <td key={p} className="px-1 py-1">
                     <span style={{ background: heat(r.factor[p]) }} className="flex flex-col items-center rounded-md py-1">
@@ -260,32 +260,32 @@ function Teams({ ctx }: { ctx: Ctx }) {
   return (
     <Card title="Fantasy team scoring" right={<Tag kind="ACTUAL" />} pad={false}>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[820px] text-sm">
+        <table className="w-full text-sm">
           <thead><tr className="text-left text-[11px] uppercase tracking-wider text-muted">
-            <th className="px-5 py-2 font-semibold">Team</th>
+            <th className="px-3 py-2 font-semibold sm:px-5">Team</th>
             <th className="px-2 py-2 font-semibold">Record</th>
             <th className="px-2 py-2 text-right font-semibold">PF</th>
             <th className="px-2 py-2 text-right font-semibold">PA</th>
-            <th className="px-2 py-2 text-right font-semibold">Avg</th>
-            <th className="px-2 py-2 text-right font-semibold">High</th>
-            <th className="px-2 py-2 text-right font-semibold">Low</th>
-            <th className="px-2 py-2 text-right font-semibold" title="Your record if you played every team every week">All-play</th>
+            <th className="hidden px-2 py-2 text-right font-semibold md:table-cell">Avg</th>
+            <th className="hidden px-2 py-2 text-right font-semibold md:table-cell">High</th>
+            <th className="hidden px-2 py-2 text-right font-semibold md:table-cell">Low</th>
+            <th className="hidden px-2 py-2 text-right font-semibold sm:table-cell" title="Your record if you played every team every week">All-play</th>
             <th className="px-2 py-2 text-right font-semibold" title="Actual wins minus all-play expected wins. + = lucky schedule, − = unlucky">Luck</th>
-            <th className="px-5 py-2 font-semibold">Weekly scores</th>
+            <th className="hidden px-5 py-2 font-semibold lg:table-cell">Weekly scores</th>
           </tr></thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.rosterId} className={cx("border-t border-line", r.rosterId === ctx.myRosterId && "bg-acc-soft")}>
-                <td className="px-5 py-2"><TeamLink rosterId={r.rosterId} name={r.name} avatar={r.avatar} size={28} className="font-semibold" /></td>
+                <td className="max-w-36 px-3 py-2 sm:max-w-none sm:px-5"><TeamLink rosterId={r.rosterId} name={r.name} avatar={r.avatar} size={24} className="max-w-full text-xs font-semibold sm:text-sm" /></td>
                 <td className="num px-2 py-2">{r.record}</td>
                 <td className="num px-2 py-2 text-right font-semibold">{r.pf.toFixed(1)}</td>
                 <td className="num px-2 py-2 text-right">{r.pa.toFixed(1)}</td>
-                <td className="num px-2 py-2 text-right">{r.avg.toFixed(1)}</td>
-                <td className="num px-2 py-2 text-right">{r.high.toFixed(1)}</td>
-                <td className="num px-2 py-2 text-right">{r.low.toFixed(1)}</td>
-                <td className="num px-2 py-2 text-right">{r.allPlay.w}–{r.allPlay.l} <span className="text-[11px] text-muted">{r.allPlay.pct}%</span></td>
+                <td className="num hidden px-2 py-2 text-right md:table-cell">{r.avg.toFixed(1)}</td>
+                <td className="num hidden px-2 py-2 text-right md:table-cell">{r.high.toFixed(1)}</td>
+                <td className="num hidden px-2 py-2 text-right md:table-cell">{r.low.toFixed(1)}</td>
+                <td className="num hidden px-2 py-2 text-right sm:table-cell">{r.allPlay.w}–{r.allPlay.l} <span className="text-[11px] text-muted">{r.allPlay.pct}%</span></td>
                 <td className={cx("num px-2 py-2 text-right font-semibold", r.luck > 0.5 ? "text-pos" : r.luck < -0.5 ? "text-neg" : "text-muted")}>{signed(r.luck)}</td>
-                <td className="px-5 py-2">
+                <td className="hidden px-5 py-2 lg:table-cell">
                   <svg viewBox={`0 0 ${r.weekly.length * 8} 24`} width={r.weekly.length * 8} height={24} aria-label="Weekly scores">
                     {r.weekly.map((v, i) => <rect key={i} x={i * 8 + 1} y={24 - (v / max) * 22} width={6} height={Math.max(1, (v / max) * 22)} rx={1} fill="var(--acc)" opacity={0.85}><title>{`Week ${i + 1}: ${v.toFixed(1)}`}</title></rect>)}
                   </svg>

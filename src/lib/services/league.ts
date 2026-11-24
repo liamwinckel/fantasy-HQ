@@ -82,6 +82,8 @@ export interface LeagueContext {
   values: Map<string, PlayerValue>;
   replacement: Record<string, number>;
   waiverLevel: Record<string, number>;
+  /** Sleeper's projected stat lines: week → player → stats (Sleeper keys). */
+  projStats: Map<number, Map<string, Record<string, number>>>;
   /** NFLverse weekly stat lines for this season (all players). */
   stats: WeekStat[];
   logs: Map<string, GameLog[]>;
@@ -303,6 +305,7 @@ async function buildLeagueContext(
   }
   // ---------- Sleeper projections (preferred) ----------
   const sleeperWeeks = new Map<number, Map<string, number> | null>();
+  const projStats = new Map<number, Map<string, Record<string, number>>>();
   const liveInjury = new Map<string, string | null>();
   if (!seasonOver) {
     const idp = ["DL", "LB", "DB"].some((p) => leaguePositions.has(p));
@@ -312,13 +315,16 @@ async function buildLeagueContext(
       try {
         const lists = await Promise.all(groups.map((g) => sleeper.projections(season, w, g, force && w === currentWeek)));
         const m = new Map<string, number>();
+        const st = new Map<string, Record<string, number>>();
         for (const l of lists) for (const r of l.data) {
           const p = players.get(r.id);
           if (!p) continue;
+          st.set(r.id, r.stats);
           m.set(r.id, scoreSleeperStats(r.stats, league.scoring_settings, p.pos));
           if (w === Math.min(currentWeek, lastWeek)) liveInjury.set(r.id, r.injury);
         }
         sleeperWeeks.set(w, m.size ? m : null);
+        if (st.size) projStats.set(w, st);
       } catch {
         sleeperWeeks.set(w, null);
       }
@@ -585,7 +591,7 @@ async function buildLeagueContext(
   return {
     league, format, valuationMode, scoring: scoringLabel(league.scoring_settings), superflex: isSuperflex(league.roster_positions),
     teamsCount, currentWeek, playoffStart, lastWeek, inPlayoffs, seasonOver, teams, myRosterId, players, projections, values,
-    replacement, waiverLevel, stats, logs, lineups, weekStrength, sim, remainingSchedule: Object.fromEntries(remaining.map((r) => [r.week, r.games])), classifications, picks, matchupsThisWeek: thisWeekMatchups, matchupsByWeek: matchupWeeks, healthyStrength, showClasses, extras, nflOpponents: opponents, liveScore,
+    replacement, waiverLevel, projStats, stats, logs, lineups, weekStrength, sim, remainingSchedule: Object.fromEntries(remaining.map((r) => [r.week, r.games])), classifications, picks, matchupsThisWeek: thisWeekMatchups, matchupsByWeek: matchupWeeks, healthyStrength, showClasses, extras, nflOpponents: opponents, liveScore,
     fetchedAt: Math.min(rostersR.fetchedAt, leagueR.fetchedAt), stale, warnings,
   };
 }

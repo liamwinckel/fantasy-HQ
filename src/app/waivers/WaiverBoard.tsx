@@ -24,17 +24,17 @@ export function WaiverBoard({ leagueId, rows, roster, full, limit, used, valueLa
         Roster spots: <b>{used}/{limit}</b>{full ? " · full: every add needs a drop" : ` · ${limit - used} open`}
         <span className="text-muted">· Tap a player to see the impact on your team</span>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[760px] text-sm">
+      <div>
+        <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-[11px] uppercase tracking-wider text-muted">
-              <th className="px-5 py-2.5 font-semibold">Player</th>
+              <th className="px-3 py-2.5 font-semibold sm:px-5">Player</th>
               <th className="px-2 py-2.5 text-right font-semibold" title="Sleeper projection this week, in your league's scoring">Proj · wk</th>
-              <th className="px-2 py-2.5 text-right font-semibold" title="Sleeper rest-of-season projection per game">Proj · RoS/g</th>
-              <th className="px-2 py-2.5 text-right font-semibold" title="Extra points your best lineup scores this week">Lineup gain · wk</th>
-              <th className="px-2 py-2.5 text-right font-semibold" title={`Extra points your best lineups score through Week ${lastWeek}`}>Lineup gain · season</th>
-              <th className="px-2 py-2.5 text-right font-semibold" title="SHS trade value, 0–100 in this league">{valueLabel}</th>
-              <th className="px-5 py-2.5 font-semibold">Why</th>
+              <th className="hidden px-2 py-2.5 text-right font-semibold md:table-cell" title="Sleeper rest-of-season projection per game">Proj · RoS/g</th>
+              <th className="hidden px-2 py-2.5 text-right font-semibold md:table-cell" title="Extra points your best lineup scores this week">Lineup gain · wk</th>
+              <th className="px-2 py-2.5 text-right font-semibold" title={`Extra points your best lineups score through Week ${lastWeek}`}><span className="md:hidden">Gain RoS</span><span className="hidden md:inline">Lineup gain · season</span></th>
+              <th className="hidden px-2 py-2.5 text-right font-semibold md:table-cell" title="SHS trade value, 0–100 in this league">{valueLabel}</th>
+              <th className="hidden px-5 py-2.5 font-semibold lg:table-cell">Why</th>
               <th className="w-8" />
             </tr>
           </thead>
@@ -42,22 +42,22 @@ export function WaiverBoard({ leagueId, rows, roster, full, limit, used, valueLa
             {rows.map((w) => (
               <Fragment key={w.id}>
                 <tr onClick={() => setOpen(open === w.id ? null : w.id)} className={cx("cursor-pointer border-t border-line align-top transition-colors hover:bg-panel2", open === w.id && "bg-acc-soft")}>
-                  <td className="px-5 py-3">
+                  <td className="px-3 py-3 sm:px-5">
                     <div className="flex items-center gap-2.5">
                       <PlayerImg id={w.id} name={w.name} pos={w.pos} />
-                      <div><div className="flex items-center gap-1.5 font-semibold"><PlayerLink id={w.id} name={w.name} /><InjuryChip status={w.injury} /></div><div className="flex items-center gap-1 text-xs text-muted"><NflLogo team={w.team} size={14} />{w.pos}{w.team ? ` · ${w.team}` : ""}{w.age ? ` · age ${Math.floor(w.age)}` : ""}</div>{w.fills && <span className="mt-1 inline-block rounded bg-acc px-1.5 py-0.5 text-[10px] font-bold uppercase text-on-acc">Fills {w.fills}</span>}</div>
+                      <div className="min-w-0"><div className="flex items-center gap-1.5 font-semibold"><PlayerLink id={w.id} name={w.name} /><InjuryChip status={w.injury} /></div><div className="flex items-center gap-1 text-xs text-muted"><NflLogo team={w.team} size={14} />{w.pos}{w.team ? ` · ${w.team}` : ""}{w.age ? ` · age ${Math.floor(w.age)}` : ""}</div>{w.fills && <span className="mt-1 inline-block rounded bg-acc px-1.5 py-0.5 text-[10px] font-bold uppercase text-on-acc">Fills {w.fills}</span>}</div>
                     </div>
                   </td>
                   <td className="num px-2 py-3 text-right">{w.median.toFixed(1)}</td>
-                  <td className="num px-2 py-3 text-right">{w.base.toFixed(1)}</td>
-                  <td className="num px-2 py-3 text-right">{w.weekGain > 0 ? <span className="text-pos">{signed(w.weekGain)}</span> : "—"}</td>
+                  <td className="num hidden px-2 py-3 text-right md:table-cell">{w.base.toFixed(1)}</td>
+                  <td className="num hidden px-2 py-3 text-right md:table-cell">{w.weekGain > 0 ? <span className="text-pos">{signed(w.weekGain)}</span> : "—"}</td>
                   <td className="num px-2 py-3 text-right">{w.rosGain > 0 ? <span className="font-semibold text-pos">{signed(w.rosGain)}</span> : "—"}</td>
-                  <td className="num px-2 py-3 text-right font-bold text-acc-ink">{w.value.toFixed(1)}</td>
-                  <td className="px-5 py-3 text-xs text-muted">{w.reasons.slice(0, 2).join(" ") || "Depth / stash option."}</td>
-                  <td className="py-3 pr-4"><ChevronDown size={16} className={cx("text-muted transition-transform", open === w.id && "rotate-180")} /></td>
+                  <td className="num hidden px-2 py-3 text-right font-bold text-acc-ink md:table-cell">{w.value.toFixed(1)}</td>
+                  <td className="hidden px-5 py-3 text-xs text-muted lg:table-cell">{w.reasons.slice(0, 2).join(" ") || "Depth / stash option."}</td>
+                  <td className="py-3 pr-3"><ChevronDown size={16} className={cx("text-muted transition-transform", open === w.id && "rotate-180")} /></td>
                 </tr>
                 {open === w.id && (
-                  <tr className="bg-acc-soft/40"><td colSpan={8} className="px-5 pb-4 pt-1"><Impact leagueId={leagueId} row={w} roster={roster} full={full} /></td></tr>
+                  <tr className="bg-acc-soft/40"><td colSpan={8} className="px-2 pb-4 pt-1 sm:px-5"><p className="mb-2 px-1 text-xs text-muted lg:hidden">{w.reasons.slice(0, 2).join(" ") || "Depth / stash option."}</p><Impact leagueId={leagueId} row={w} roster={roster} full={full} /></td></tr>
                 )}
               </Fragment>
             ))}
