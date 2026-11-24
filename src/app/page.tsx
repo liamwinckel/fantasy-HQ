@@ -15,6 +15,7 @@ import { Logo, Bar, Card, ClassBadge, InjuryChip, Notice, PageHeader, Stat, Tag,
 import { PlayerImg } from "@/components/client";
 import { PlayerLink } from "@/components/PlayerCard";
 import { NewsCard } from "@/components/News";
+import { KeeperReadout } from "@/components/KeeperReadout";
 import { DynastyWindowCard } from "@/components/DynastyWindow";
 import { TrackRecord } from "@/components/TrackRecord";
 import { SeasonChart } from "@/components/charts";
@@ -97,6 +98,8 @@ function DashboardBody({ setup, league, ctx, sp }: LeagueData) {
         {open && <DashDetail k={open} ctx={ctx} me={me.rosterId} power={power} />}
       </Sheet>
 
+      {fmt === "keeper" && <KeeperReadout plan={keeper} />}
+
       <div className="grid gap-4 xl:grid-cols-[3fr_2fr]">
         <Card title={`Week ${week} · this week`} href="/matchup/">
           {g.b ? (
@@ -130,22 +133,6 @@ function DashboardBody({ setup, league, ctx, sp }: LeagueData) {
 
       {/* Format-specific section */}
       {fmt === "redraft" && <PlayoffPath ctx={ctx} me={me.rosterId} power={power} />}
-      {fmt === "keeper" && keeper && (
-        <Card title="Keeper preview" href="/keepers/">
-          {keeper.note && <p className="mb-2 text-xs text-warn">{keeper.note}</p>}
-          <div className="grid gap-2 md:grid-cols-3">
-            {keeper.rows.filter((r) => r.recommended).map((r) => (
-              <div key={r.playerId} className="rounded-xl border border-acc bg-acc-soft p-3">
-                <PlayerLink id={r.playerId} name={r.name} className="font-bold" />
-                <div className="text-xs text-muted">{r.pos} · costs R{r.costRound} ({r.costSource === "drafted" ? `drafted R${r.draftedRound}` : r.costSource})</div>
-                <div className="num mt-1 text-sm">Surplus <b className="text-pos">{signed(r.surplus)}</b> pts/g</div>
-              </div>
-            ))}
-            {keeper.rows.filter((r) => r.recommended).length === 0 && <p className="text-sm text-muted">No keeper beats the value of its draft round right now.</p>}
-          </div>
-          <Info className="mt-3">Rules: keep {keeper.rules.maxKeepers}, cost = this year&apos;s round {keeper.rules.modifier === "same" ? "(same round)" : `${keeper.rules.modifier} (${keeper.rules.direction})`}. Undrafted players cost R{keeper.rules.undraftedRound}.</Info>
-        </Card>
-      )}
       {fmt === "dynasty" && <DynastyWindowCard ctx={ctx} />}
       {fmt === "dynasty" && (
         <div className="grid gap-4 lg:grid-cols-2">

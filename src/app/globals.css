@@ -53,7 +53,7 @@ body { position: fixed; inset: 0; width: 100%; height: 100%; height: 100dvh; min
 .app-bottom-pad { padding-bottom: calc(env(safe-area-inset-bottom) + 7.5rem); }
 @media (min-width: 768px) { .app-bottom-pad { padding-bottom: 3rem; } }
 .sheet-bottom-pad { padding-bottom: calc(env(safe-area-inset-bottom) + 2.5rem); }
-#fhq-scroll { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; overflow-x: hidden; overscroll-behavior: none; touch-action: pan-y pinch-zoom; }
+#fhq-scroll { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; overflow-x: hidden; overscroll-behavior: none; touch-action: pan-y; }
 /* Inner horizontal scrollers (tables, boards) still pan sideways themselves. */
 #fhq-scroll .overflow-x-auto, #fhq-scroll .overflow-x-scroll { touch-action: pan-x pan-y; overscroll-behavior-x: contain; }
 @media (prefers-reduced-motion: reduce) {
@@ -85,3 +85,10 @@ body { position: fixed; inset: 0; width: 100%; height: 100%; height: 100dvh; min
 .flip-move { transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1); }
 
 .qa-fade-in { animation: qa-fade 0.22s ease-out both; }
+
+/* App, not web page: iOS zooms into any text field under 16px, so fields are 16px on phones; no double-tap zoom. */
+html { touch-action: manipulation; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+@media (max-width: 767px) { input, textarea, select { font-size: 16px !important; } }
+/* Keyboard open: the tab bar steps aside so the field sits right above the keyboard. */
+html.kb-open nav[aria-label="Primary"] { display: none; }
+html.kb-open .kb-dock { bottom: 8px !important; }

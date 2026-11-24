@@ -378,8 +378,16 @@ describe.skipIf(!have)("league context on fixtures", () => {
     const { ask, findPlayers } = await import("@/lib/services/ask");
     const a = ctx.players.get(ids[0])!, b = ctx.players.get(ids[1])!;
     expect(findPlayers(ctx, `start ${a.name} or ${b.name}?`)).toEqual([a.id, b.id]);
-    expect(ask(ctx, `Should I start ${a.name} or ${b.name}?`).text).toMatch(/^Start /);
-    expect(ask(ctx, "what are my playoff odds").text).toMatch(/playoffs/);
-    expect(ask(ctx, "hello").bullets!.length).toBeGreaterThan(3);
+    expect(ask(ctx, `Should I start ${a.name} or ${b.name}?`).answer.text).toMatch(/start /);
+    // Same players, any wording: rest of season, then a follow-up that only changes the time frame.
+    const ros = ask(ctx, `${a.name} or ${b.name} rest of season`);
+    expect(ros.answer.text).toMatch(/^Rest of season/);
+    expect(ask(ctx, `rest of season who's better, ${b.name} vs ${a.name}`).answer.text).toMatch(/^Rest of season/);
+    const fu = ask(ctx, "what about this week?", [], ros.memory);
+    expect(fu.answer.text).toMatch(/^This week: start/);
+    expect(ask(ctx, "for the playoffs", [], ros.memory).answer.text).toMatch(/^For the playoffs/);
+    expect(ask(ctx, "what are my playoff odds").answer.text).toMatch(/playoffs/);
+    expect(ask(ctx, "top 5 wrs rest of season").answer.bullets!.length).toBe(5);
+    expect(ask(ctx, "hello").answer.bullets!.length).toBeGreaterThan(3);
   });
 });
