@@ -10,7 +10,7 @@ import path from "node:path";
 import type { Row } from "./shs-history";
 
 type Pair = [number, number]; // indices: winner, loser
-const MULTS = [0, 0.5, 1, 1.5, 2, 3];
+const MULTS = [-1, -0.5, 0, 0.5, 1, 1.5, 2, 3];
 const EXPERTS = [30, 40, 50, 60, 65, 70, 75, 80, 85, 90, 95, 97.5, 100];
 const BLENDS = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6];
 
@@ -86,31 +86,20 @@ export function analyse(rows: Row[], projSource: string) {
     const pairs = pairsOf(test);
     return {
       season, weeks: new Set(test.map((r) => r.week)).size, players: test.length,
-      experts: grade(test, (r) => -r.ecrPos).pick, expertsMae: grade(test, (r) => r.ecrPts).mae,
+      experts: grade(test, (r) => r.ecrPts).pick, expertsMae: grade(test, (r) => r.ecrPts).mae,
       projection: grade(test, (r) => r.proj).pick, projectionMae: grade(test, (r) => r.proj).mae,
       shsDefault: r1(acc(def, pairs)), shsTuned: r1(acc(tuned, pairs)), shsTunedMae: r2(mae(tuned, test)),
       fitted: { expert: f.expert, mult: f.mult, blend: f.blend },
     };
   });
   const all = fit(rows, keys);
-  // Each factor on its own: correlation with beating (+) or missing (−) the expert rank, by season.
-  const resid = new Map<number, number>();
-  for (const idx of groups(rows).values()) {
-    const n = idx.length; if (n < 4) continue;
-    const byA = [...idx].sort((a, b) => rows[a].actual - rows[b].actual), byE = [...idx].sort((a, b) => rows[b].ecrPos - rows[a].ecrPos);
-    for (const i of idx) resid.set(i, byA.indexOf(i) / (n - 1) - byE.indexOf(i) / (n - 1));
-  }
-  const corr = (xs: number[], ys: number[]) => {
-    const n = xs.length; if (n < 30) return null;
-    const mx = xs.reduce((a, b) => a + b, 0) / n, my = ys.reduce((a, b) => a + b, 0) / n;
-    let sxy = 0, sx = 0, sy = 0; for (let i = 0; i < n; i++) { sxy += (xs[i] - mx) * (ys[i] - my); sx += (xs[i] - mx) ** 2; sy += (ys[i] - my) ** 2; }
-    return sx && sy ? Math.round((sxy / Math.sqrt(sx * sy)) * 1000) / 1000 : null;
-  };
+  // Each factor on its own: how many points of "picks right" it adds (or costs) when it nudges the expert rank by
+  // up to ±5%. (A plain correlation with beating the rank is misleading: top-ranked players can't beat their rank.)
+  const nudge = (sub: Row[], k: string, c: number) => { const p = pairsOf(sub); return acc(Float64Array.from(sub.map((r) => r.ecrPts * (1 + c * (r.f[k]?.[0] ?? 0)))), p) - acc(Float64Array.from(sub.map((r) => r.ecrPts)), p); };
   const factors = keys.map((k) => {
     const bySeason: Record<number, number | null> = {};
-    for (const s of seasons) { const xs: number[] = [], ys: number[] = []; rows.forEach((r, i) => { if (r.season === s && r.f[k] && resid.has(i)) { xs.push(r.f[k][0]); ys.push(resid.get(i)!); } }); bySeason[s] = corr(xs, ys); }
-    const xs: number[] = [], ys: number[] = []; rows.forEach((r, i) => { if (r.f[k] && resid.has(i)) { xs.push(r.f[k][0]); ys.push(resid.get(i)!); } });
-    return { key: k, n: xs.length, corr: corr(xs, ys), bySeason, mult: all.mult[k] };
+    for (const s of seasons) { const sub = rows.filter((r) => r.season === s); bySeason[s] = Math.round(nudge(sub, k, 0.05) * 100) / 100; }
+    return { key: k, n: rows.filter((r) => r.f[k]).length, corr: Math.round(nudge(rows, k, 0.05) * 100) / 100, flipped: Math.round(nudge(rows, k, -0.05) * 100) / 100, bySeason, mult: all.mult[k] };
   });
   const avg = (k: keyof typeof perSeason[number]) => r1(perSeason.reduce((a, s) => a + (s[k] as number), 0) / perSeason.length);
   const summary = { experts: avg("experts"), projection: avg("projection"), shsDefault: avg("shsDefault"), shsTuned: avg("shsTuned") };
@@ -132,8 +121,8 @@ function report(o: { generatedAt: string; projSource: string; seasons: number[];
   for (const s of o.perSeason) L.push(`| ${s.season} | ${s.weeks} | ${s.experts}% | ${s.projection}% | ${s.shsDefault}% | **${s.shsTuned}%** |`);
   L.push(`| **Average** | | ${o.summary.experts}% | ${o.summary.projection}% | ${o.summary.shsDefault}% | **${o.summary.shsTuned}%** |`, "");
   L.push(`**New default:** ${Math.round(o.blend * 100)}% of the weekly projection blended into the expert rank · expert share ${o.expert}% · factor weights ${Object.entries(o.mult).map(([k, v]) => `${k} ${v}×`).join(", ")}.`, "");
-  L.push("## Factors", "", "Correlation of each factor with beating (+) or missing (−) the expert rank.", "", `| Factor | Player-weeks | All seasons | ${o.seasons.join(" | ")} | Weight |`, `|---|---|---|${o.seasons.map(() => "---").join("|")}|---|`);
-  for (const f of [...o.factors].sort((a, b) => (b.corr ?? 0) - (a.corr ?? 0))) L.push(`| ${f.key} | ${f.n.toLocaleString()} | ${f.corr ?? "—"} | ${o.seasons.map((s) => f.bySeason[s] ?? "—").join(" | ")} | ${f.mult}× |`);
+  L.push("## Factors", "", "Change in *picks right* (percentage points) when each factor alone nudges the expert rank by up to ±5%, and when it's flipped (−5%). Positive = it adds information the experts missed.", "", `| Factor | Player-weeks | All seasons | Flipped | ${o.seasons.join(" | ")} | Weight |`, `|---|---|---|---|${o.seasons.map(() => "---").join("|")}|---|`);
+  for (const f of [...o.factors].sort((a, b) => (b.corr ?? 0) - (a.corr ?? 0))) L.push(`| ${f.key} | ${f.n.toLocaleString()} | ${f.corr ?? "—"} | ${(f as { flipped?: number }).flipped ?? "—"} | ${o.seasons.map((s) => f.bySeason[s] ?? "—").join(" | ")} | ${f.mult}× |`);
   return L.join("\n") + "\n";
 }
 

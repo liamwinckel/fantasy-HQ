@@ -272,7 +272,8 @@ describe.skipIf(!have)("league context on fixtures", () => {
     const a = shsAi(ctx, rankings(ctx, "week"), "week", null).get(target.id)!;
     ctx.signals.markets = null;
     expect(a.market).not.toBeNull();
-    expect(a.blend.market).toBeCloseTo(0.3);
+    const { DEFAULT_SHS: D } = await import("@/lib/settings");
+    expect(a.blend.market).toBeCloseTo(D.wkMarket / (D.wkExpert + D.wkMarket + D.wkFactors));
     // Markets imply roughly double his projected receiving yards → more points than Sleeper projects.
     expect(a.market!.pts).toBeGreaterThan(target.pts);
     expect(Math.abs(a.market!.value)).toBeLessThanOrEqual(1);

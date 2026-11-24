@@ -21,6 +21,10 @@ import { DEFAULT_SHS, getSettings } from "../settings";
 import { getTuning } from "./accuracy";
 import { marketPoints } from "../markets";
 import { DOMINATOR_AVG, type CollegeProfile } from "../cfbd";
+import RESEARCH_JSON from "./shsResearch.json";
+
+/** Weekly defaults learned by replaying every week since 2021 (scripts/research). */
+export const RESEARCH = RESEARCH_JSON as { expert: number; blend?: number; mult: Record<string, number>; summary: Record<string, number>; generatedAt: string; weeks: number; rows: number; seasons: number[]; projSource: string };
 
 export interface Factor { key: string; label: string; value: number; detail: string; weight: number }
 export interface ShsAi {
@@ -290,8 +294,9 @@ export function shsAi(ctx: LeagueContext, rows: RankRow[], scope: RankScope, wea
         }
       }
     }
-    // Your weights (Settings) × auto-tuned multipliers from tracked results.
-    for (const f of factors) f.weight = Math.round(f.weight * (cfg.factor[f.key] ?? 1) * (tune[f.key] ?? 1) * 100) / 100;
+    // Research-fitted weekly weights × your weights (Settings) × auto-tuned multipliers from tracked results.
+    const rm = scope === "week" && !opts.neutral ? RESEARCH.mult : {};
+    for (const f of factors) f.weight = Math.round(f.weight * (rm[f.key] ?? 1) * (cfg.factor[f.key] ?? 1) * (tune[f.key] ?? 1) * 100) / 100;
     const wsum = factors.reduce((a, x) => a + x.weight, 0);
     const F = wsum ? factors.reduce((a, x) => a + x.value * x.weight, 0) / wsum : 0;
     const ecrRating = r.ecrPos !== null ? atRank(r.pos, r.ecrPos) : r.pts;
@@ -303,7 +308,8 @@ export function shsAi(ctx: LeagueContext, rows: RankRow[], scope: RankScope, wea
       const mk = mp ? marketPoints(mp.lines, ctx.projStats.get(w0)?.get(r.id), scoring, p.pos) : null;
       if (mk && ecrRating > 0.5) market = { pts: Math.round(mk.pts * 10) / 10, value: Math.round(clamp((mk.pts / ecrRating - 1) / 0.3) * 100) / 100, covered: mk.covered };
     }
-    let blend = { expert: cfg.expert / 100, market: 0, factors: 1 - cfg.expert / 100 };
+    const exp = scope === "week" ? cfg.wkNoMkt : cfg.expert;
+    let blend = { expert: exp / 100, market: 0, factors: 1 - exp / 100 };
     if (market) {
       const t = cfg.wkExpert + cfg.wkMarket + cfg.wkFactors || 1;
       blend = { expert: cfg.wkExpert / t, market: cfg.wkMarket / t, factors: cfg.wkFactors / t };
@@ -312,9 +318,13 @@ export function shsAi(ctx: LeagueContext, rows: RankRow[], scope: RankScope, wea
     const nonExpert = blend.market + blend.factors;
     const T = nonExpert > 0 ? ((market ? market.value * blend.market : 0) + F * (factors.length ? blend.factors : 0)) / nonExpert : 0;
     const shift = nonExpert * T; // e.g. 0.25 × F, or 0.3 × M + 0.2 × F
+    // Weekly: research found mixing some of the projection into the expert rank helps.
+    const pb = scope === "week" && !opts.neutral ? RESEARCH.blend ?? 0 : 0;
+    const baseRating = r.ecrPos !== null ? (1 - pb) * ecrRating + pb * r.pts : r.pts;
+    const rating = r.ecrPos !== null ? baseRating * (1 + shift) : r.pts * 0.9;
     out.set(r.id, {
-      pct: r.ecrPos !== null && (factors.length || market) ? Math.round(100 * shift) : null,
-      rating: r.ecrPos !== null ? ecrRating * (1 + shift) : r.pts * 0.9, rank: 0, factors, market, blend,
+      pct: r.ecrPos !== null && (factors.length || market || pb) && ecrRating > 0.5 ? Math.round(100 * (rating / ecrRating - 1)) : null,
+      rating, rank: 0, factors, market, blend,
     });
   }
   // SHS AI rank at each position (players with an expert rank first)

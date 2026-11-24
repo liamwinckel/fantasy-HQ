@@ -34,7 +34,7 @@ export function ShsExplainer({ scope }: { scope: RankScope }) {
       <p className="text-fg"><b>SHS AI</b> starts from the expert consensus rank and asks: does the evidence agree?</p>
       <p className="mt-1.5">
         {scope === "week"
-          ? <>When betting markets have lines on a player this week, the score is <b className="text-fg">{pc(w.wkExpert)} experts · {pc(w.wkMarket)} betting markets · {pc(w.wkFactors)} SHS factors</b>. Otherwise it&apos;s <b className="text-fg">{w.expert}% experts · {100 - w.expert}% SHS factors</b>.</>
+          ? <>When betting markets have lines on a player this week, the score is <b className="text-fg">{pc(w.wkExpert)} experts · {pc(w.wkMarket)} betting markets · {pc(w.wkFactors)} SHS factors</b>. Otherwise it&apos;s <b className="text-fg">{w.wkNoMkt}% experts · {100 - w.wkNoMkt}% SHS factors</b>, the mix that tested best over every week since 2021.</>
           : <>The score is <b className="text-fg">{w.expert}% experts · {100 - w.expert}% SHS factors</b>.</>}
         {" "}Each factor compares him with players ranked near him at his position, from −1 (points to worse) to +1 (better).
       </p>

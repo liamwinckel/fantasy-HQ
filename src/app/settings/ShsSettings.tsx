@@ -51,8 +51,13 @@ export function ShsSettings() {
     <Card title="SHS AI" info={<>SHS AI starts from the expert consensus and moves a player up or down by what the evidence says. These sliders set how much each part counts. Factor weights multiply the default (1.00× = normal, 0 = ignore).</>}>
       <div className="flex flex-col gap-5">
         <div>
-          <h3 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted">Without betting lines</h3>
-          <Slider label="Expert consensus" value={w.expert} min={50} max={95} onChange={(v) => set({ expert: v })} />
+          <h3 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted">This week, without betting lines</h3>
+          <Slider label="Expert consensus" value={w.wkNoMkt} min={50} max={100} onChange={(v) => set({ wkNoMkt: v })} />
+          <p className="mt-1 text-xs text-muted">{w.wkNoMkt}% experts · {100 - w.wkNoMkt}% SHS factors. Default {DEFAULT_SHS.wkNoMkt}% is what replaying every week since 2021 found most accurate.</p>
+        </div>
+        <div>
+          <h3 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted">Rest of season &amp; dynasty</h3>
+          <Slider label="Expert consensus" value={w.expert} min={50} max={100} onChange={(v) => set({ expert: v })} />
           <p className="mt-1 text-xs text-muted">{w.expert}% experts · {100 - w.expert}% SHS factors</p>
         </div>
         <div>

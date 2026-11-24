@@ -116,6 +116,19 @@ export function BacktestDetail({ r }: { r: BacktestReport }) {
         </section>
       ) : null}
       <section>
+        <h3 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted">Betting lines</h3>
+        {r.markets ? (
+          <>
+            <div className="grid grid-cols-3 gap-2 text-center text-xs">
+              {([["Betting lines", r.markets.markets], ["Experts", r.markets.experts], ["SHS AI", r.markets.shs]] as const).map(([l, v]) => (
+                <div key={l} className={cx("rounded-lg p-2", v === Math.max(r.markets!.markets, r.markets!.experts, r.markets!.shs) ? "bg-pos/15" : "bg-panel2")}><div className="num text-lg font-bold">{v.toFixed(1)}%</div><div className="text-muted">{l}</div></div>
+              ))}
+            </div>
+            <p className="mt-2 text-[11px] text-muted">Picks right on the {r.markets.n.toLocaleString()} player-weeks with saved lines ({r.markets.weeks} week{r.markets.weeks === 1 ? "" : "s"}). Lines above a player&apos;s expert rank → beat it: correlation {r.markets.corr > 0 ? "+" : ""}{r.markets.corr.toFixed(3)}.</p>
+          </>
+        ) : <p className="text-xs text-muted">Lines are now saved before every game; they&apos;ll be graded here once those weeks finish.</p>}
+      </section>
+      <section>
         <h3 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted">What each factor told us</h3>
         <p className="mb-2 text-[11px] text-muted">Correlation between the factor and a player beating (+) or missing (−) his expert rank. Weight = the multiplier auto-tune now uses (0.5×–1.5×, halfway between default and best fit).</p>
         <ul className="divide-y divide-line rounded-xl border border-line text-sm">
