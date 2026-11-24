@@ -82,7 +82,7 @@ export function RefreshButton({ compact = false }: { compact?: boolean }) {
 }
 
 const TABS = [
-  { href: "/", label: "Dashboard", icon: Home },
+  { href: "/", label: "Home", icon: Home },
   { href: "/matchup", label: "Matchup", icon: ScoreboardIcon },
   { href: "/rankings", label: "Rankings", icon: ListOrdered },
   { href: "/league", label: "League", icon: Trophy },

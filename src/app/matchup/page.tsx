@@ -16,11 +16,13 @@ import { InjuryChip, NflLogo, Bar, Card, Logo, Notice, PageHeader, Tag, cx, Info
 import { WeekNav } from "@/components/client";
 import { MatchupBoard } from "@/components/matchup";
 import { PlayerLink } from "@/components/PlayerCard";
+import { LeagueOverview } from "@/components/LeagueOverview";
+import { LeagueTabs } from "@/components/LeagueTabs";
 
 const groupOf = (pos: string) => (["DL", "LB", "DB"].includes(pos) ? "IDP" : pos);
 
 export default function MatchupPage() {
-  return <LeaguePage>{(d) => <MatchupPageBody {...d} />}</LeaguePage>;
+  return <LeaguePage>{(d) => (d.sp.view === "overview" ? <LeagueOverview {...d} /> : <MatchupPageBody {...d} />)}</LeaguePage>;
 }
 
 function MatchupPageBody({ setup, league, ctx, sp }: LeagueData) {
@@ -67,6 +69,7 @@ function MatchupPageBody({ setup, league, ctx, sp }: LeagueData) {
       <PageHeader eyebrow={`${league.name} · ${formatLabel(league)} · ${ctx.scoring}`} title="Matchup">
         <WeekNav week={week} current={Math.min(ctx.currentWeek, ctx.lastWeek)} last={ctx.lastWeek} label={label} />
       </PageHeader>
+      <LeagueTabs view="matchup" />
 
       <div className="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Games this week">
         {games.map(({ a, b }) => {

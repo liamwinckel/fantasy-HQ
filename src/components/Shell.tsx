@@ -13,7 +13,7 @@ import { Component, useEffect, useRef, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 
 const MAIN = [
-  { href: "/", label: "Dashboard" },
+  { href: "/", label: "Home" },
   { href: "/matchup", label: "Matchup" },
   { href: "/rankings", label: "Rankings" },
   { href: "/league", label: "League" },
@@ -85,7 +85,7 @@ function Frame({ children }: { children: ReactNode }) {
 
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="z-30 flex shrink-0 items-center gap-2 border-b border-line bg-bg px-3 pb-2.5 pt-[max(env(safe-area-inset-top),0.625rem)] sm:gap-3 sm:px-6">
-            <Link href="/" className="shrink-0 md:hidden" aria-label="Dashboard">
+            <Link href="/" className="shrink-0 md:hidden" aria-label="Home">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={`${BASE_PATH}/shs-logo.png`} alt="SHS" width={34} height={34} />
             </Link>
