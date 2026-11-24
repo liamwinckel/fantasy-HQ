@@ -13,14 +13,18 @@ export interface FeedItem extends NewsItem { scope: "mine" | "league" | "nfl"; o
 export const loadNews = (force = false) =>
   cached("news", "nflverse", 30 * 60_000, () => fetchText(dataUrl("news.json"), 30_000), (b) => (JSON.parse(b) as { builtAt: string; items: NewsItem[] }), { force });
 
+/** Names of players no longer on an NFL team (for old transactions). */
+export const loadNames = () =>
+  cached("player-names", "nflverse", 24 * 3600_000, () => fetchText(dataUrl("player-names.json"), 30_000), (b) => JSON.parse(b) as Record<string, string>);
+
 export const KIND_LABEL: Record<string, string> = {
-  injury: "Injury", ir: "IR", return: "Returning", healthy: "Cleared", team: "Roster move", depth: "Depth chart", trending: "Trending", trade: "Trade", add: "Pickup", drop: "Dropped",
+  injury: "Injury", ir: "IR", return: "Returning", healthy: "Cleared", team: "Roster move", depth: "Depth chart", trending: "Most added", dropping: "Most dropped", trade: "Trade", add: "Pickup", drop: "Dropped",
 };
 
-export function leagueFeed(ctx: LeagueContext, items: NewsItem[]): FeedItem[] {
+export function leagueFeed(ctx: LeagueContext, items: NewsItem[], names: Record<string, string> = {}): FeedItem[] {
   const owner = new Map<string, { rid: number; name: string }>();
   for (const t of ctx.teams) for (const pid of t.players) owner.set(pid, { rid: t.rosterId, name: t.name });
-  const nm = (id: string) => ctx.players.get(id)?.name ?? id;
+  const nm = (id: string) => ctx.players.get(id)?.name ?? ctx.txNames?.[id] ?? names[id] ?? (/^[A-Z]{2,3}$/.test(id) ? `${id} defense` : "a player");
   const team = (rid: number) => ctx.teams.find((t) => t.rosterId === rid)?.name ?? `Team ${rid}`;
   const out: FeedItem[] = [];
   for (const n of items) {

@@ -3,7 +3,7 @@
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeftRight, BarChart3, ClipboardList, KeyRound, MessageCircle, Newspaper, Users, Check, ChevronDown, ChevronLeft, ChevronRight, Home, ListOrdered, Moon, RefreshCw, Scale, Sparkles, Sun, TrendingUp, Trophy, UserPlus, X } from "lucide-react";
+import { ArrowLeftRight, BarChart3, ClipboardList, MessageCircle, Newspaper, Users, Check, ChevronDown, ChevronLeft, ChevronRight, Home, ListOrdered, Moon, RefreshCw, Scale, Sparkles, Sun, TrendingUp, Trophy, UserPlus, X } from "lucide-react";
 import { BASE_PATH } from "@/lib/net";
 import { cx, Logo } from "./ui";
 import { usePlayerCard } from "./PlayerCard";
@@ -168,7 +168,7 @@ export function MobileTabs({ keeper }: { keeper: boolean }) {
             <ChevronRight size={18} className="text-muted" aria-hidden />
           </Link>
           <div className="grid grid-cols-3 gap-2">
-            {[...(keeper ? [{ href: "/keepers", label: "Keepers", sub: "Plan, costs, targets", icon: KeyRound }] : []), ...QUICK_ACTIONS].map((a, i) => (
+            {QUICK_ACTIONS.map((a, i) => (
               <Link key={a.href} href={a.href} style={{ animationDelay: `${90 + i * 30}ms` }}
                 className={cx("qa-tile flex min-h-[5.5rem] flex-col justify-between rounded-2xl border p-2.5 active:scale-[0.97]", isOn(a.href) ? "border-acc bg-acc-soft" : "border-line bg-panel2")}>
                 <a.icon size={20} className="text-acc-ink" aria-hidden />

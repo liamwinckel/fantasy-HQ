@@ -128,16 +128,18 @@ async function main() {
       }
     } catch (e) { console.warn("gsis fill failed", (e as Error).message); }
     const out: Record<string, Record<string, unknown>> = {};
+    const names: Record<string, string> = {};
     for (const [id, p] of Object.entries(all)) {
       const pos = String(p.position ?? "");
       if (!FANTASY.has(pos)) continue;
-      // Drop long-retired / never-active players without a team or recent experience.
-      if (!p.team && (p.status !== "Active") && Number(p.years_exp ?? 0) > 1) continue;
+      // Drop long-retired / never-active players without a team or recent experience (names kept for the news feed).
+      if (!p.team && (p.status !== "Active") && Number(p.years_exp ?? 0) > 1) { if (Number(p.years_exp ?? 0) < 25) names[id] = String(p.full_name ?? `${p.first_name ?? ""} ${p.last_name ?? ""}`).trim(); continue; }
       const slim: Record<string, unknown> = {};
       for (const k of KEEP) if (p[k] !== undefined && p[k] !== null) slim[k] = p[k];
       out[id] = slim;
     }
     write("sleeper-players.json", JSON.stringify(out));
+    write("player-names.json", JSON.stringify(names));
   }]);
 
   // FantasyPros expert consensus rankings + dynasty market values, published openly by DynastyProcess
@@ -289,11 +291,18 @@ async function main() {
       }
       if (team && o[0] === team && dc !== o[3] && (dc === 1 || o[3] === 1) && pos !== "K") add("depth", dc === 1 ? `${name} moves to the top of the ${team} depth chart` : `${name} no longer listed as the ${team} starter`);
     }
-    // Sleeper trending adds (last 24h)
+    // Waiver-wire movement on Sleeper this week: most added and most dropped at each position.
     try {
-      const tr = await (await fetch("https://api.sleeper.app/v1/players/nfl/trending/add?lookback_hours=24&limit=15")).json() as { player_id: string; count: number }[];
-      feed = feed.filter((x) => x.kind !== "trending");
-      for (const t of tr) { const p = sleeperAll[t.player_id]; if (p && OFF.has(String(p.position))) feed.push({ at: now, id: t.player_id, kind: "trending", text: `${p.full_name} added ${t.count.toLocaleString()} times on Sleeper in the last day`, pos: String(p.position), team: (p.team as string) || null }); }
+      const get = async (kind: "add" | "drop") => (await (await fetch(`https://api.sleeper.app/v1/players/nfl/trending/${kind}?lookback_hours=168&limit=200`)).json()) as { player_id: string; count: number }[];
+      const [adds, drops] = await Promise.all([get("add"), get("drop")]);
+      feed = feed.filter((x) => x.kind !== "trending" && x.kind !== "dropping");
+      const ord = ["", "", "2nd ", "3rd "];
+      for (const pos of ["QB", "RB", "WR", "TE"]) {
+        const a = adds.filter((t) => sleeperAll[t.player_id]?.position === pos).slice(0, 3);
+        a.forEach((t, i) => { const p = sleeperAll[t.player_id]; feed.push({ at: now, id: t.player_id, kind: "trending", text: `${p.full_name}${i === 0 ? ` is the most-added ${pos}` : ` is the ${ord[i + 1]}most-added ${pos}`} on Sleeper this week (${t.count.toLocaleString()} adds)`, pos, team: (p.team as string) || null }); });
+        const d = drops.filter((t) => sleeperAll[t.player_id]?.position === pos).slice(0, 2);
+        d.forEach((t, i) => { const p = sleeperAll[t.player_id]; feed.push({ at: now, id: t.player_id, kind: "dropping", text: `${p.full_name} is ${i === 0 ? "the most-dropped" : "among the most-dropped"} ${pos}s this week (${t.count.toLocaleString()} drops)`, pos, team: (p.team as string) || null }); });
+      }
     } catch { /* optional */ }
     const cut = Date.now() - 10 * 864e5;
     feed = feed.filter((x) => Date.parse(x.at) >= cut).slice(-800);

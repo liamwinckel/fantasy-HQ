@@ -134,17 +134,17 @@ function wants(s: MockState, pos: string) {
 }
 
 /** A computer team's pick: near ADP with randomness, filling needs, kickers/defences only at the end. */
-export function botPick(s: MockState, rand: () => number, pk: MockPick | null = clockPick(s)): string | null {
+export function botPick(s: MockState, rand: () => number, pk: MockPick | null = clockPick(s), noise = 1): string | null {
   if (!pk) return null;
   const mine = rosterOf(s, pk.owner);
   const left = s.picks.filter((p) => p.owner === pk.owner && !p.playerId).length;
   const count = (pos: string) => mine.filter((p) => p.pos === pos).length;
   const lateNeeds = ["K", "DEF"].filter((pos) => wants(s, pos).start > count(pos)).length;
-  const cands = available(s).slice(0, 18);
+  const cands = available(s).slice(0, noise > 1.2 ? 26 : 18);
   let best: MockPlayer | null = null, bestScore = Infinity;
   for (const p of cands) {
     const w = wants(s, p.pos);
-    let score = p.adp + (rand() + rand() + rand() - 1.5) * (2 + p.adp * 0.07);
+    let score = p.adp + (rand() + rand() + rand() - 1.5) * (2 + p.adp * 0.07) * noise;
     if (s.mode !== "rookie") {
       if ((p.pos === "K" || p.pos === "DEF") && left > lateNeeds) score += 500;
       if (count(p.pos) >= w.max) score += 60;

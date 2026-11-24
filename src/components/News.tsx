@@ -6,11 +6,11 @@ import { useAsync } from "./AppData";
 import { Card, cx } from "./ui";
 import { Sheet } from "./Sheet";
 import { PlayerImg } from "./client";
-import { ago, KIND_LABEL, leagueFeed, loadNews, type FeedItem } from "@/lib/news";
+import { ago, KIND_LABEL, leagueFeed, loadNames, loadNews, type FeedItem } from "@/lib/news";
 import type { LeagueContext } from "@/lib/services/league";
 
 const TONE: Record<string, string> = {
-  injury: "text-warn", ir: "text-neg", return: "text-pos", healthy: "text-pos", team: "text-acc-ink", depth: "text-acc-ink", trending: "text-acc-ink", trade: "text-fg", add: "text-muted", drop: "text-muted",
+  injury: "text-warn", ir: "text-neg", return: "text-pos", healthy: "text-pos", team: "text-acc-ink", depth: "text-acc-ink", trending: "text-pos", dropping: "text-neg", trade: "text-fg", add: "text-muted", drop: "text-muted",
 };
 type Filter = "all" | "mine" | "league";
 
@@ -34,11 +34,12 @@ function Row({ n, ctx }: { n: FeedItem; ctx: LeagueContext }) {
 
 export function NewsCard({ ctx }: { ctx: LeagueContext }) {
   const news = useAsync(() => loadNews(), []);
+  const names = useAsync(() => loadNames().catch(() => null), []);
   const [open, setOpen] = useState(false);
   const [f, setF] = useState<Filter>("all");
-  const feed = useMemo(() => leagueFeed(ctx, news.data?.data.items ?? []), [ctx, news.data]);
+  const feed = useMemo(() => leagueFeed(ctx, news.data?.data.items ?? [], names.data?.data ?? {}), [ctx, news.data, names.data]);
   // Dashboard: your news first, then league, then the biggest NFL items.
-  const top = useMemo(() => [...feed.filter((x) => x.scope === "mine"), ...feed.filter((x) => x.scope === "league"), ...feed.filter((x) => x.scope === "nfl" && x.kind !== "trending")].slice(0, 6), [feed]);
+  const top = useMemo(() => [...feed.filter((x) => x.scope === "mine"), ...feed.filter((x) => x.scope === "league"), ...feed.filter((x) => x.scope === "nfl" && x.kind !== "trending" && x.kind !== "dropping"), ...feed.filter((x) => x.kind === "trending" && x.text.includes(" the most-added"))].slice(0, 6), [feed]);
   const list = feed.filter((x) => f === "all" || x.scope === f);
   return (
     <Card title="News" onOpen={() => setOpen(true)} info={<>Built every refresh from Sleeper&apos;s player database (injury designations, IR moves, signings and releases, depth-chart starters, most-added players) and your league&apos;s own trades and pickups. Your players first.</>}>
