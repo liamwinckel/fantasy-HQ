@@ -1,6 +1,6 @@
 # SHS AI research (2021–2026)
 
-Generated 2026-11-24 · 95 weeks · 17,959 player-weeks · projection source: fantasypros.
+Generated 2026-11-24 · 95 weeks · 17,959 player-weeks · projection source: sleeper.
 
 ## Weekly
 
@@ -8,15 +8,15 @@ Every week was replayed with only what was known before Sunday's first kickoff. 
 
 | Season | Weeks | Experts | Projection | 50/50 | Old mix 25/25/50 | **SHS formula** |
 |---|---|---|---|---|---|---|
-| 2021 | 17 | 66.4% | 66.4% | 66.4% | 66% | **66.5%** |
-| 2022 | 17 | 66.9% | 66.8% | 66.9% | 66% | **66.9%** |
-| 2023 | 17 | 68.2% | 68% | 68.1% | 67.9% | **68.2%** |
-| 2024 | 17 | 67.4% | 67.2% | 67.3% | 66.6% | **67.4%** |
-| 2025 | 17 | 67.6% | 67.5% | 67.5% | 66.7% | **67.5%** |
-| 2026 | 10 | 67.9% | 67.7% | 67.8% | 66.9% | **67.9%** |
-| **Average** | | 67.4% | 67.3% | 67.3% | 66.7% | **67.4%** |
+| 2021 | 17 | 66.4% | 65.3% | 65.9% | 65.7% | **66.5%** |
+| 2022 | 17 | 66.9% | 66.8% | 67% | 66.6% | **66.9%** |
+| 2023 | 17 | 68.2% | 67.7% | 68.1% | 67.7% | **68.2%** |
+| 2024 | 17 | 67.3% | 66.9% | 67.3% | 67% | **67.4%** |
+| 2025 | 17 | 67.6% | 67.5% | 67.7% | 67.4% | **67.6%** |
+| 2026 | 10 | 67.9% | 67.9% | 68.2% | 67.7% | **67.9%** |
+| **Average** | | 67.4% | 67% | 67.4% | 67% | **67.4%** |
 
-When SHS AI disagreed with the experts on which of two players would score more, it was right 51.9% of the time (1,363 pairs).
+When SHS AI disagreed with the experts on which of two players would score more, it was right 53.4% of the time (1,974 pairs).
 
 ### Weekly formula by position
 
@@ -25,23 +25,23 @@ When SHS AI disagreed with the experts on which of two players would score more,
 | QB | 0 | none | +0 |
 | RB | 0 | none | +0 |
 | WR | 0 | none | +0 |
-| TE | 0 | ppg -0.076 | +0.01 |
+| TE | 0.275 | ppg -0.079, script -0.047 | +0.28 |
 
 ### Each factor alone (gain in picks right vs experts, out of sample)
 
 | Factor | QB | RB | WR | TE | Kept for |
 |---|---|---|---|---|---|
-| gap | 0.01 | -0.04 | -0.02 | -0.06 | — |
-| inj | -0.01 | -0.05 | 0 | -0.11 | — |
-| matchup | -0.09 | -0.13 | -0.14 | -0.13 | — |
-| vegas | 0.13 | -0.14 | -0.15 | 0.04 | — |
-| script | -0.22 | -0.17 | -0.14 | 0.01 | — |
-| ppg | -0.14 | -0.14 | -0.08 | 0.1 | TE |
-| snap | -0.07 | -0.13 | -0.14 | -0.12 | — |
-| xfp | -0.12 | -0.15 | -0.15 | -0.16 | — |
-| track | -0.01 | -0.1 | -0.15 | -0.14 | — |
-| adv | -0.14 | -0.12 | -0.11 | -0.11 | — |
-| chart | -0.02 | -0.14 | -0.13 | -0.13 | — |
+| gap | -0.2 | -0.04 | -0.09 | -0.16 | TE |
+| inj | -0.09 | -0.02 | -0.09 | -0.05 | — |
+| matchup | -0.35 | -0.14 | -0.13 | -0.27 | — |
+| vegas | 0.01 | -0.17 | -0.14 | 0.15 | — |
+| script | -0.29 | -0.17 | -0.14 | -0.04 | TE |
+| ppg | -0.27 | -0.18 | -0.11 | 0.16 | TE |
+| xfp | -0.32 | -0.15 | -0.14 | -0.13 | — |
+| track | -0.21 | -0.09 | -0.12 | -0.1 | — |
+| snap | — | -0.13 | -0.11 | 0.02 | — |
+| adv | -0.43 | -0.13 | -0.12 | -0.16 | — |
+| chart | -0.26 | -0.11 | -0.13 | -0.01 | — |
 
 ## Rest of season
 

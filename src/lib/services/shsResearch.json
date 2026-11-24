@@ -1,6 +1,6 @@
 {
- "generatedAt": "2026-11-24T15:58:33.869Z",
- "projSource": "fantasypros",
+ "generatedAt": "2026-11-24T15:59:32.796Z",
+ "projSource": "sleeper",
  "seasons": [
   2021,
   2022,
@@ -53,26 +53,27 @@
    }
   },
   "TE": {
-   "gamma": 0,
+   "gamma": 0.275,
    "beta": {
-    "ppg": -0.076
+    "ppg": -0.079,
+    "script": -0.047
    },
-   "gain": 0.01,
+   "gain": 0.28,
    "seasons": {
-    "2021": 0.11,
-    "2022": 0.06,
-    "2023": -0.15,
-    "2024": 0.27,
-    "2025": -0.2,
-    "2026": -0.04
+    "2021": 0.45,
+    "2022": 0.05,
+    "2023": 0.04,
+    "2024": 0.54,
+    "2025": -0.02,
+    "2026": 0.62
    }
   }
  },
  "summary": {
   "experts": 67.4,
-  "projection": 67.3,
-  "ecrSleeper": 67.3,
-  "mix": 66.7,
+  "projection": 67,
+  "ecrSleeper": 67.4,
+  "mix": 67,
   "shs": 67.4
  },
  "perSeason": [
@@ -81,9 +82,9 @@
    "weeks": 17,
    "players": 3191,
    "experts": 66.4,
-   "projection": 66.4,
-   "ecrSleeper": 66.4,
-   "mix": 66,
+   "projection": 65.3,
+   "ecrSleeper": 65.9,
+   "mix": 65.7,
    "shs": 66.5
   },
   {
@@ -92,8 +93,8 @@
    "players": 3230,
    "experts": 66.9,
    "projection": 66.8,
-   "ecrSleeper": 66.9,
-   "mix": 66,
+   "ecrSleeper": 67,
+   "mix": 66.6,
    "shs": 66.9
   },
   {
@@ -101,19 +102,19 @@
    "weeks": 17,
    "players": 3232,
    "experts": 68.2,
-   "projection": 68,
+   "projection": 67.7,
    "ecrSleeper": 68.1,
-   "mix": 67.9,
+   "mix": 67.7,
    "shs": 68.2
   },
   {
    "season": 2024,
    "weeks": 17,
    "players": 3199,
-   "experts": 67.4,
-   "projection": 67.2,
+   "experts": 67.3,
+   "projection": 66.9,
    "ecrSleeper": 67.3,
-   "mix": 66.6,
+   "mix": 67,
    "shs": 67.4
   },
   {
@@ -122,18 +123,18 @@
    "players": 3218,
    "experts": 67.6,
    "projection": 67.5,
-   "ecrSleeper": 67.5,
-   "mix": 66.7,
-   "shs": 67.5
+   "ecrSleeper": 67.7,
+   "mix": 67.4,
+   "shs": 67.6
   },
   {
    "season": 2026,
    "weeks": 10,
    "players": 1889,
    "experts": 67.9,
-   "projection": 67.7,
-   "ecrSleeper": 67.8,
-   "mix": 66.9,
+   "projection": 67.9,
+   "ecrSleeper": 68.2,
+   "mix": 67.7,
    "shs": 67.9
   }
  ],
@@ -141,118 +142,121 @@
   {
    "key": "gap",
    "byPos": {
-    "QB": 0.01,
+    "QB": -0.2,
     "RB": -0.04,
-    "WR": -0.02,
-    "TE": -0.06
-   },
-   "kept": []
-  },
-  {
-   "key": "inj",
-   "byPos": {
-    "QB": -0.01,
-    "RB": -0.05,
-    "WR": 0,
-    "TE": -0.11
-   },
-   "kept": []
-  },
-  {
-   "key": "matchup",
-   "byPos": {
-    "QB": -0.09,
-    "RB": -0.13,
-    "WR": -0.14,
-    "TE": -0.13
-   },
-   "kept": []
-  },
-  {
-   "key": "vegas",
-   "byPos": {
-    "QB": 0.13,
-    "RB": -0.14,
-    "WR": -0.15,
-    "TE": 0.04
-   },
-   "kept": []
-  },
-  {
-   "key": "script",
-   "byPos": {
-    "QB": -0.22,
-    "RB": -0.17,
-    "WR": -0.14,
-    "TE": 0.01
-   },
-   "kept": []
-  },
-  {
-   "key": "ppg",
-   "byPos": {
-    "QB": -0.14,
-    "RB": -0.14,
-    "WR": -0.08,
-    "TE": 0.1
+    "WR": -0.09,
+    "TE": -0.16
    },
    "kept": [
     "TE"
    ]
   },
   {
-   "key": "snap",
+   "key": "inj",
    "byPos": {
-    "QB": -0.07,
-    "RB": -0.13,
-    "WR": -0.14,
-    "TE": -0.12
+    "QB": -0.09,
+    "RB": -0.02,
+    "WR": -0.09,
+    "TE": -0.05
    },
    "kept": []
   },
   {
+   "key": "matchup",
+   "byPos": {
+    "QB": -0.35,
+    "RB": -0.14,
+    "WR": -0.13,
+    "TE": -0.27
+   },
+   "kept": []
+  },
+  {
+   "key": "vegas",
+   "byPos": {
+    "QB": 0.01,
+    "RB": -0.17,
+    "WR": -0.14,
+    "TE": 0.15
+   },
+   "kept": []
+  },
+  {
+   "key": "script",
+   "byPos": {
+    "QB": -0.29,
+    "RB": -0.17,
+    "WR": -0.14,
+    "TE": -0.04
+   },
+   "kept": [
+    "TE"
+   ]
+  },
+  {
+   "key": "ppg",
+   "byPos": {
+    "QB": -0.27,
+    "RB": -0.18,
+    "WR": -0.11,
+    "TE": 0.16
+   },
+   "kept": [
+    "TE"
+   ]
+  },
+  {
    "key": "xfp",
    "byPos": {
-    "QB": -0.12,
+    "QB": -0.32,
     "RB": -0.15,
-    "WR": -0.15,
-    "TE": -0.16
+    "WR": -0.14,
+    "TE": -0.13
    },
    "kept": []
   },
   {
    "key": "track",
    "byPos": {
-    "QB": -0.01,
-    "RB": -0.1,
-    "WR": -0.15,
-    "TE": -0.14
+    "QB": -0.21,
+    "RB": -0.09,
+    "WR": -0.12,
+    "TE": -0.1
+   },
+   "kept": []
+  },
+  {
+   "key": "snap",
+   "byPos": {
+    "RB": -0.13,
+    "WR": -0.11,
+    "TE": 0.02
    },
    "kept": []
   },
   {
    "key": "adv",
    "byPos": {
-    "QB": -0.14,
-    "RB": -0.12,
-    "WR": -0.11,
-    "TE": -0.11
+    "QB": -0.43,
+    "RB": -0.13,
+    "WR": -0.12,
+    "TE": -0.16
    },
    "kept": []
   },
   {
    "key": "chart",
    "byPos": {
-    "QB": -0.02,
-    "RB": -0.14,
+    "QB": -0.26,
+    "RB": -0.11,
     "WR": -0.13,
-    "TE": -0.13
+    "TE": -0.01
    },
    "kept": []
   }
  ],
  "calls": {
-  "flipped": 1363,
-  "right": 51.9
+  "flipped": 1974,
+  "right": 53.4
  }
 }
