@@ -103,6 +103,30 @@ async function main() {
       : await (await fetch("https://api.sleeper.app/v1/players/nfl")).text();
     const all = JSON.parse(raw) as Record<string, Record<string, unknown>>;
     sleeperAll = all;
+    // Sleeper often has no NFL (GSIS) id for rookies, which hides their stats, draft slot and snaps.
+    // Fill it from DynastyProcess' id map, then by name + position (+ team when names collide) from nflverse.
+    try {
+      const missing = Object.values(all).filter((p) => FANTASY.has(String(p.position ?? "")) && !p.gsis_id);
+      if (missing.length) {
+        const ids = parseCsv(FX ? (fs.existsSync(path.join(FX, "db_playerids.csv")) ? fs.readFileSync(path.join(FX, "db_playerids.csv"), "utf8") : "sleeper_id,gsis_id\n") : await text("https://github.com/dynastyprocess/data/raw/master/files/db_playerids.csv", "db_playerids.csv"));
+        const bySleeper = new Map(ids.filter((r) => r.sleeper_id && r.gsis_id && r.gsis_id !== "NA").map((r) => [r.sleeper_id, r.gsis_id]));
+        const nfl = parseCsv(await text(`${REL}/players/players.csv`, "players.csv"));
+        const byName = new Map<string, { gsis: string; team: string }[]>();
+        for (const r of nfl) if (r.gsis_id && r.position) { const k = `${normName(r.display_name || `${r.first_name} ${r.last_name}`)}|${r.position}`; (byName.get(k) ?? byName.set(k, []).get(k)!).push({ gsis: r.gsis_id, team: r.latest_team }); }
+        const team = (t: string) => (t === "LA" ? "LAR" : t);
+        let filled = 0;
+        for (const [id, p] of Object.entries(all)) {
+          if (!FANTASY.has(String(p.position ?? "")) || p.gsis_id) continue;
+          let g = bySleeper.get(id);
+          if (!g) {
+            const c = byName.get(`${normName(String(p.full_name ?? `${p.first_name} ${p.last_name}`))}|${p.position}`) ?? [];
+            g = c.length === 1 ? c[0].gsis : c.find((x) => p.team && team(x.team) === p.team)?.gsis;
+          }
+          if (g) { p.gsis_id = g; filled++; }
+        }
+        console.log(`sleeper players: filled ${filled} of ${missing.length} missing NFL ids`);
+      }
+    } catch (e) { console.warn("gsis fill failed", (e as Error).message); }
     const out: Record<string, Record<string, unknown>> = {};
     for (const [id, p] of Object.entries(all)) {
       const pos = String(p.position ?? "");
