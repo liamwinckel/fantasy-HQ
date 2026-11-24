@@ -1,5 +1,3 @@
-import RESEARCH_JSON from "./services/shsResearch.json";
-const RESEARCH_EXPERT = (RESEARCH_JSON as { expert: number }).expert ?? 75;
 export type Mode = "redraft" | "dynasty";
 export type Theme = "dark" | "light";
 export type ClassOverride = "Contender" | "Pretender" | "Rebuilder" | "Tanking";
@@ -42,20 +40,16 @@ export interface AppSettings {
 }
 
 export interface ShsWeights {
-  /** Share given to expert consensus for rest of season and dynasty (default 75 → 75% ECR / 25% factors). */
-  expert: number;
-  /** This week, when a player has no betting lines (default: what the replayed seasons found best). */
-  wkNoMkt: number;
-  /** Weekly, when a player has prediction-market lines: experts / markets / factors (normalised; default 50/30/20). */
-  wkExpert: number;
-  wkMarket: number;
-  wkFactors: number;
+  /** The mix: expert consensus / second opinion (Sleeper's projection; SHS dynasty model in dynasty) / SHS factors. */
+  mix: { ecr: number; sleeper: number; factors: number };
+  /** This week, for players with betting lines. */
+  mixLines: { ecr: number; sleeper: number; markets: number; factors: number };
   /** Per-factor multipliers, 0–2 (1 = default). */
   factor: Record<string, number>;
-  /** Let tracked results nudge factor weights (only after enough finished weeks). */
+  /** Let graded results nudge factor weights. */
   autoTune: boolean;
 }
-export const DEFAULT_SHS: ShsWeights = { expert: 75, wkNoMkt: Math.min(100, Math.max(50, RESEARCH_EXPERT)), wkExpert: 50, wkMarket: 30, wkFactors: RESEARCH_EXPERT >= 100 ? 0 : 20, factor: {}, autoTune: true };
+export const DEFAULT_SHS: ShsWeights = { mix: { ecr: 25, sleeper: 25, factors: 50 }, mixLines: { ecr: 25, sleeper: 25, markets: 30, factors: 20 }, factor: {}, autoTune: true };
 
 const DEFAULTS: AppSettings = {
   username: null,

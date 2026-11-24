@@ -125,9 +125,9 @@ function Brief({ league, ctx }: LeagueData) {
             </div>
           )}
           <ul className="flex flex-col gap-2">
-            {swaps.map((x, i) => <Line key={i}><b>Lineup:</b> start <PlayerLink id={x.inId} name={x.inName} />{x.outId ? `, bench ${x.outName}` : ""} ({signed(x.gain)} pts).</Line>)}
-            {up.length > 0 && <Line><b>SHS AI likes more than the experts:</b> {up.map((id, i) => <span key={id}>{i ? ", " : ""}<PlayerLink id={id} name={name(id)} /> <AiChip v={ai.get(id)!.pct} /></span>)}</Line>}
-            {down.length > 0 && <Line><b>SHS AI is cooler on:</b> {down.map((id, i) => <span key={id}>{i ? ", " : ""}<PlayerLink id={id} name={name(id)} /> <AiChip v={ai.get(id)!.pct} /></span>)}</Line>}
+            {swaps.map((x, i) => <Line key={i}><b>Lineup:</b> start <PlayerLink id={x.inId} name={x.inName} />{x.slot ? ` at ${x.slot}` : ""}{x.outId ? `, bench ${x.outName}` : ""} ({signed(x.gain)} pts).</Line>)}
+            {up.length > 0 && <Line><b>SHS AI likes more than the experts:</b> {up.map((id, i) => <span key={id}>{i ? ", " : ""}<PlayerLink id={id} name={name(id)} /> <AiChip v={ai.get(id)!.pct} ai={ai.get(id)} name={name(id)} /></span>)}</Line>}
+            {down.length > 0 && <Line><b>SHS AI is cooler on:</b> {down.map((id, i) => <span key={id}>{i ? ", " : ""}<PlayerLink id={id} name={name(id)} /> <AiChip v={ai.get(id)!.pct} ai={ai.get(id)} name={name(id)} /></span>)}</Line>}
             {hurt.length > 0 && <Line><b>Injuries:</b> {hurt.map((p, i) => <span key={p.id}>{i ? ", " : ""}<PlayerLink id={p.id} name={p.name} /> <InjuryChip status={p.injury} /></span>)}</Line>}
             {adds.length > 0 && <Line><b>Waiver targets:</b> {adds.map((w, i) => <span key={w.player.id}>{i ? ", " : ""}<PlayerLink id={w.player.id} name={w.player.name} /></span>)}</Line>}
             {!swaps.length && <Line>Your lineup matches the best projected lineup.</Line>}

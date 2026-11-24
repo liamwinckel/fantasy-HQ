@@ -111,7 +111,7 @@ function DashboardBody({ setup, league, ctx, sp }: LeagueData) {
           {swaps.length === 0 && <p className="px-5 py-4 text-sm text-muted">Your lineup matches the best projected lineup.</p>}
           {swaps.slice(0, 4).map((s, i) => (
             <div key={i} className="flex items-start justify-between gap-3 border-t border-line px-5 py-3 first:border-t-0">
-              <div className="text-sm leading-snug"><b>Start <PlayerLink id={s.inId} name={s.inName} /></b>{s.outId ? `, bench ${s.outName}` : ""}<div className="text-xs text-muted">{s.reason}</div></div>
+              <div className="text-sm leading-snug"><b>Start <PlayerLink id={s.inId} name={s.inName} />{s.slot ? ` at ${s.slot}` : ""}</b>{s.outId ? `, bench ${s.outName}${s.outSlot && s.outSlot !== s.slot ? ` (${s.outSlot})` : ""}` : ""}<div className="text-xs text-muted">{s.reason}</div></div>
               <span className="num shrink-0 text-xs font-bold text-pos">{signed(s.gain)} pts</span>
             </div>
           ))}

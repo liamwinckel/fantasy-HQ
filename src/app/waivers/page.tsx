@@ -69,7 +69,7 @@ function WaiverPageBody({ setup, league, ctx, sp }: LeagueData) {
             <li key={d.player.id} className="flex items-center gap-3 px-5 py-2.5 text-sm">
               <PlayerImg id={d.player.id} name={d.player.name} pos={d.player.pos} size={30} />
               <div className="min-w-0 flex-1"><PlayerLink id={d.player.id} name={d.player.name} className="font-bold" /> <span className="text-muted">{d.player.pos}{d.player.team ? ` · ${d.player.team}` : ""}</span><div className="text-xs text-muted">{d.reason}</div></div>
-              <InjuryChip status={d.player.injury} /><AiChip v={aiRos.get(d.player.id)?.pct} />
+              <InjuryChip status={d.player.injury} /><AiChip v={aiRos.get(d.player.id)?.pct} ai={aiRos.get(d.player.id)} name={d.player.name} />
               <div className="w-20 text-right"><div className="num font-bold">{d.value.toFixed(1)}</div><div className="text-[10px] text-muted">{ctx.valuationMode === "dynasty" ? "dynasty value" : "value"}</div></div>
             </li>
           ))}
@@ -90,7 +90,7 @@ function ListCard({ title, hint, items, stat, statLabel, ai }: { title: string; 
         {items.map((w) => (
           <li key={w.player.id} className="flex items-center gap-3">
             <PlayerImg id={w.player.id} name={w.player.name} pos={w.player.pos} size={32} />
-            <div className="min-w-0 flex-1"><div className="flex min-w-0 items-center gap-1.5 text-sm font-semibold"><span className="truncate"><PlayerLink id={w.player.id} name={w.player.name} /></span><AiChip v={ai.get(w.player.id)?.pct} /></div><div className="flex items-center gap-1 truncate text-xs text-muted"><NflLogo team={w.player.team} size={13} />{w.player.pos} · {w.player.team}{w.proj.opponent ? ` · vs ${w.proj.opponent}` : ""}</div></div>
+            <div className="min-w-0 flex-1"><div className="flex min-w-0 items-center gap-1.5 text-sm font-semibold"><span className="truncate"><PlayerLink id={w.player.id} name={w.player.name} /></span><AiChip v={ai.get(w.player.id)?.pct} ai={ai.get(w.player.id)} name={w.player.name} /></div><div className="flex items-center gap-1 truncate text-xs text-muted"><NflLogo team={w.player.team} size={13} />{w.player.pos} · {w.player.team}{w.proj.opponent ? ` · vs ${w.proj.opponent}` : ""}</div></div>
             <div className="text-right"><div className="num text-sm font-bold text-acc-ink">{stat(w)}</div><div className="text-[10px] text-muted">{statLabel}</div></div>
           </li>
         ))}

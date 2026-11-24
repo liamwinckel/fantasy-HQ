@@ -1,4 +1,5 @@
 import type { LeagueContext } from "./league";
+import { canFill } from "../engine/positions";
 
 export interface Swap {
   inId: string;
@@ -7,33 +8,61 @@ export interface Swap {
   outName: string;
   gain: number;
   reason: string;
+  /** Slot he starts in, and the slot the benched player leaves. */
+  slot?: string;
+  outSlot?: string;
 }
 
-/** Turn "current vs best lineup" into human-sized swaps. */
+/**
+ * Turn "current vs best lineup" into moves that make sense slot by slot:
+ *   "Start Bijan Robinson at RB, bench Michael Mayer"   (direct: he can play that slot)
+ *   "Start X at FLEX; move Y from FLEX to RB, bench Z"   (when the bench player fits a different slot)
+ * Each player coming in is matched to a player going out whose slot he (or a teammate he displaces) can fill.
+ */
 export function lineupSwaps(ctx: LeagueContext, rosterId: number): Swap[] {
   const lu = ctx.lineups.get(rosterId);
   if (!lu) return [];
-  const cur = new Set(lu.current.map((s) => s.playerId).filter(Boolean) as string[]);
-  const opt = new Set(lu.optimal.map((s) => s.playerId).filter(Boolean) as string[]);
   const pts = (id: string) => ctx.projections.get(id)?.median ?? 0;
-  const ins = [...opt].filter((id) => !cur.has(id)).sort((a, b) => pts(b) - pts(a));
-  const outs: (string | null)[] = [...cur].filter((id) => !opt.has(id)).sort((a, b) => pts(a) - pts(b));
-  const empties = lu.current.filter((s) => !s.playerId).length;
-  for (let i = 0; i < empties; i++) outs.unshift(null);
-  return ins.map((inId, i) => {
-    const outId = outs[i] ?? null;
+  const pos = (id: string) => ctx.players.get(id)?.positions ?? [];
+  const slotName = (sl: string) => sl.replace("SUPER_FLEX", "SUPERFLEX").replace("REC_FLEX", "W/T FLEX").replace("WRRB_FLEX", "W/R FLEX").replace("IDP_FLEX", "IDP FLEX");
+  const cur = lu.current;
+  const curIds = new Set(cur.map((s) => s.playerId).filter(Boolean) as string[]);
+  const optIds = new Set(lu.optimal.map((s) => s.playerId).filter(Boolean) as string[]);
+  const locked = new Set(lu.locked);
+  const ins = [...optIds].filter((id) => !curIds.has(id)).sort((a, b) => pts(b) - pts(a));
+  // Slots that open up: starters leaving (worst first) and empty slots.
+  const open = cur.filter((s) => !s.playerId || !optIds.has(s.playerId)).sort((a, b) => (a.playerId ? pts(a.playerId) : -1) - (b.playerId ? pts(b.playerId) : -1));
+  const used = new Set<number>();
+  const out: Swap[] = [];
+  for (const inId of ins) {
+    let pick: { slot: (typeof cur)[number]; via: (typeof cur)[number] | null } | null = null;
+    // 1) a direct fit
+    for (const s of open) if (!used.has(s.index) && canFill(s.slot, pos(inId))) { pick = { slot: s, via: null }; break; }
+    // 2) one shuffle: he takes a starter's slot, that starter slides into the open slot
+    if (!pick) for (const s of open) {
+      if (used.has(s.index)) continue;
+      const m = cur.find((c) => c.playerId && optIds.has(c.playerId) && !locked.has(c.playerId) && canFill(s.slot, pos(c.playerId)) && canFill(c.slot, pos(inId)));
+      if (m) { pick = { slot: s, via: m }; break; }
+    }
+    if (!pick) continue;
+    used.add(pick.slot.index);
+    const outId = pick.slot.playerId;
     const o = outId ? ctx.players.get(outId) : null;
     const op = outId ? ctx.projections.get(outId) : null;
+    const at = slotName(pick.via ? pick.via.slot : pick.slot.slot);
     let reason = "Higher projection";
     if (!outId) reason = "Fills an empty starting slot";
     else if (op?.onBye) reason = `${o?.name} is on bye`;
     else if (o?.injury && ["Out", "IR", "PUP", "Sus", "Doubtful"].includes(o.injury)) reason = `${o.name} is ${o.injury}`;
     else if (o?.injury === "Questionable") reason = `${o.name} is questionable`;
-    return {
-      inId, inName: ctx.players.get(inId)?.name ?? inId, outId, outName: o?.name ?? "Empty slot",
-      gain: Math.round((pts(inId) - (outId ? pts(outId) : 0)) * 10) / 10, reason,
-    };
-  }).filter((s) => s.gain > 0.2);
+    const shuffle = pick.via ? `Move ${ctx.players.get(pick.via.playerId!)?.name} to ${slotName(pick.slot.slot)}. ` : "";
+    out.push({
+      inId, inName: ctx.players.get(inId)?.name ?? inId, outId: outId ?? null, outName: o?.name ?? "Empty slot",
+      gain: Math.round((pts(inId) - (outId ? pts(outId) : 0)) * 10) / 10,
+      slot: at, outSlot: slotName(pick.slot.slot), reason: `${shuffle}${reason}`,
+    });
+  }
+  return out.filter((s) => s.gain > 0.2);
 }
 
 /** Highest-value players nobody in this league rosters. */

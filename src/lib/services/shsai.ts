@@ -31,8 +31,8 @@ export interface ShsAi {
   pct: number | null; rating: number; rank: number; factors: Factor[];
   /** Weekly: points the prediction markets imply in this league's scoring, and which stats they covered. */
   market?: { pts: number; value: number; covered: string[] } | null;
-  /** The blend used: share of experts / markets / factors (sums to 1). */
-  blend: { expert: number; market: number; factors: number };
+  /** The mix used: shares of expert consensus / second opinion (Sleeper or dynasty model) / betting lines / SHS factors (sums to 1). */
+  blend: { expert: number; sleeper: number; market: number; factors: number };
 }
 export interface ShsOptions {
   college?: Map<string, CollegeProfile> | null;
@@ -153,7 +153,7 @@ export function shsAi(ctx: LeagueContext, rows: RankRow[], scope: RankScope, wea
         if (ref > 0) add("ppg", "Points per game", (f.ppg / ref - 1) / 0.35, `${f.ppg.toFixed(1)} pts/g vs ${ref.toFixed(1)} for players ranked near him`);
       }
       const peSnap = pe.map((x) => x.snap).filter((x): x is number => x !== null);
-      if (f.snap !== null && peSnap.length && !["K", "DEF"].includes(p.pos)) {
+      if (f.snap !== null && peSnap.length && ["RB", "WR", "TE"].includes(p.pos)) {
         const ref = median(peSnap);
         add("snap", "Snap share", (f.snap - ref) / 0.2, `${Math.round(f.snap * 100)}% of snaps (last 3) vs ${Math.round(ref * 100)}% typical at his rank`);
       }
@@ -199,14 +199,6 @@ export function shsAi(ctx: LeagueContext, rows: RankRow[], scope: RankScope, wea
         }
         if (cp.length) add("chart", "Film charting", mean(cp.map((x) => x.v)) * 0.7, cp.map((x) => `${x.l} ${x.pct}th pct`).join(" · "));
       }
-      if (scope !== "dynasty") {
-        const ref = atRank(r.pos, r.ecrPos);
-        if (ref > 0.5) add("proj", "Projection", (r.pts / ref - 1) / 0.3, `Sleeper projects ${r.pts.toFixed(1)} vs ${ref.toFixed(1)} for a ${r.pos}${r.ecrPos}`, 1.5);
-      } else {
-        const ref = atRank(r.pos, r.ecrPos);
-        if (ref > 0.5) add("proj", "SHS dynasty model", (r.pts / ref - 1) / 0.4, `Model value ${r.pts.toFixed(0)} vs ${ref.toFixed(0)} for a ${r.pos}${r.ecrPos}`, 1.5);
-      }
-
       // --- weekly ---
       if (scope === "week" && p.team) {
         const wx = weather?.get(p.team);
@@ -276,7 +268,7 @@ export function shsAi(ctx: LeagueContext, rows: RankRow[], scope: RankScope, wea
         }
         if (f.snap !== null || f.share !== null) {
           const share = f.share !== null ? pctile(posVals(p.pos, (x) => x.share), f.share) * 2 - 1 : 0;
-          const snap = f.snap !== null ? (f.snap - 0.6) / 0.3 : 0;
+          const snap = f.snap !== null && p.pos !== "QB" ? (f.snap - 0.6) / 0.3 : 0;
           add("usage", "Usage", (share + snap) / 2, `${f.snap !== null ? `${Math.round(f.snap * 100)}% snaps` : ""}${f.share !== null ? `${f.snap !== null ? ", " : ""}${p.pos === "QB" ? "volume" : "share of team looks"} ${Math.round(pctile(posVals(p.pos, (x) => x.share), f.share) * 100)}th pct` : ""}`);
         }
         const dr = p.draftRound;
@@ -308,22 +300,18 @@ export function shsAi(ctx: LeagueContext, rows: RankRow[], scope: RankScope, wea
       const mk = mp ? marketPoints(mp.lines, ctx.projStats.get(w0)?.get(r.id), scoring, p.pos) : null;
       if (mk && ecrRating > 0.5) market = { pts: Math.round(mk.pts * 10) / 10, value: Math.round(clamp((mk.pts / ecrRating - 1) / 0.3) * 100) / 100, covered: mk.covered };
     }
-    const exp = scope === "week" ? cfg.wkNoMkt : cfg.expert;
-    let blend = { expert: exp / 100, market: 0, factors: 1 - exp / 100 };
-    if (market) {
-      const t = cfg.wkExpert + cfg.wkMarket + cfg.wkFactors || 1;
-      blend = { expert: cfg.wkExpert / t, market: cfg.wkMarket / t, factors: cfg.wkFactors / t };
-    }
-    if (!factors.length && !market) blend = { expert: 1, market: 0, factors: 0 };
-    const nonExpert = blend.market + blend.factors;
-    const T = nonExpert > 0 ? ((market ? market.value * blend.market : 0) + F * (factors.length ? blend.factors : 0)) / nonExpert : 0;
-    const shift = nonExpert * T; // e.g. 0.25 × F, or 0.3 × M + 0.2 × F
-    // Weekly: research found mixing some of the projection into the expert rank helps.
-    const pb = scope === "week" && !opts.neutral ? RESEARCH.blend ?? 0 : 0;
-    const baseRating = r.ecrPos !== null ? (1 - pb) * ecrRating + pb * r.pts : r.pts;
-    const rating = r.ecrPos !== null ? baseRating * (1 + shift) : r.pts * 0.9;
+    // The mix (Settings → SHS AI): expert consensus + a second opinion (Sleeper's projection for week / rest of season,
+    // the SHS dynasty model for dynasty) + SHS factors, and betting lines this week when he has them.
+    const second = r.pts > 0.3 ? r.pts : null;
+    const w = market && scope === "week" ? cfg.mixLines : { ...cfg.mix, markets: 0 };
+    const parts = { ecr: w.ecr, sleeper: second !== null ? w.sleeper : 0, markets: market ? w.markets : 0, factors: factors.length ? w.factors : 0 };
+    const tot = parts.ecr + parts.sleeper + parts.markets + parts.factors || 1;
+    let blend = { expert: parts.ecr / tot, sleeper: parts.sleeper / tot, market: parts.markets / tot, factors: parts.factors / tot };
+    if (r.ecrPos === null) blend = { expert: 0, sleeper: 1, market: 0, factors: 0 };
+    const rating = r.ecrPos === null ? r.pts * 0.9
+      : blend.expert * ecrRating + blend.sleeper * (second ?? ecrRating) + blend.market * (market?.pts ?? ecrRating) + blend.factors * ecrRating * (1 + F);
     out.set(r.id, {
-      pct: r.ecrPos !== null && (factors.length || market || pb) && ecrRating > 0.5 ? Math.round(100 * (rating / ecrRating - 1)) : null,
+      pct: r.ecrPos !== null && ecrRating > 0.5 && (factors.length || market || second !== null) ? Math.round(100 * (rating / ecrRating - 1)) : null,
       rating, rank: 0, factors, market, blend,
     });
   }

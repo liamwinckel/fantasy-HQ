@@ -3,10 +3,10 @@
 import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { LeaguePage, useQuery, type LeagueData } from "@/components/AppData";
-import { PlayerImg, Segmented } from "@/components/client";
+import { PlayerImg, TabSwitch } from "@/components/client";
 import { PlayerLink } from "@/components/PlayerCard";
 import { InfoButton, InjuryChip, NflLogo, PageHeader, cx } from "@/components/ui";
-import { ShsExplainer, shsVerdict, useCollege, useShsWeights } from "@/components/ShsAiParts";
+import { AiChip, ShsExplainer, shsVerdict, useCollege, useShsWeights } from "@/components/ShsAiParts";
 import { accuracy, snapshotWeek } from "@/lib/services/accuracy";
 import { BacktestCard } from "@/components/Backtest";
 import { playerDist } from "@/lib/engine/ranges";
@@ -47,17 +47,10 @@ function SortHead({ k, by, desc, onSort, children, className }: { k: "experts" |
   );
 }
 
-/** SHS AI column: spots it moves him at his position (▲3) and the verdict word. */
-function Shs({ a, ecrPos }: { a: ShsAi | undefined; ecrPos: number | null }) {
-  const d = shsVerdict(a?.pct);
-  if (!a || !d || ecrPos === null) return <span className="text-[10px] text-muted">—</span>;
-  const move = ecrPos - a.rank;
-  return (
-    <span title={d.long} className={cx("flex flex-col items-center leading-tight", d.tone === "pos" ? "text-pos" : d.tone === "neg" ? "text-neg" : "text-muted")}>
-      <span className="num text-xs font-bold">{move > 0 ? `▲${move}` : move < 0 ? `▼${-move}` : "="}</span>
-      <span className="whitespace-nowrap text-[9px] font-semibold">{d.word}</span>
-    </span>
-  );
+/** SHS AI column: "=" or up/down ticks; tap for the exact number and why. */
+function Shs({ a, name }: { a: ShsAi | undefined; name: string }) {
+  if (!a || a.pct === null) return <span className="text-[10px] text-muted">—</span>;
+  return <AiChip v={a.pct} ai={a} name={name} />;
 }
 
 /** Why SHS AI agrees or disagrees: each factor from −1 (worse than his rank) to +1 (better). */
@@ -70,7 +63,7 @@ export function Factors({ a }: { a: ShsAi }) {
   ];
   return (
     <>
-    <p className="mb-2 text-[11px] text-muted">Blend: {pc(a.blend.expert)} expert rank{a.blend.market ? ` · ${pc(a.blend.market)} betting markets` : ""} · {pc(a.blend.factors)} SHS factors</p>
+    <p className="mb-2 text-[11px] text-muted">Mix: {pc(a.blend.expert)} expert rank{a.blend.sleeper ? ` · ${pc(a.blend.sleeper)} projection` : ""}{a.blend.market ? ` · ${pc(a.blend.market)} betting lines` : ""} · {pc(a.blend.factors)} SHS factors</p>
     <ul className="flex flex-col gap-1.5">
       {rowsF.map((f) => (
         <li key={f.key} className="text-[11px]">
@@ -137,8 +130,8 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
           {" "}<b>{dyn ? "Value" : "Pts"}</b> = {dyn ? <>dynasty trade value in this league (0–100{ctx.superflex ? ", superflex" : ""})</> : <>Sleeper&apos;s projection in your scoring, {scope === "week" ? `Week ${w0}` : `Weeks ${w0}–${ctx.lastWeek}`}</>}.
           {" "}<b>SHS</b> = SHS AI&apos;s agreement with the experts: <b className="text-pos">+</b> = better than his expert rank, <b className="text-neg">−</b> = worse. Tap the ⓘ on the SHS column for what goes into it, or a player to see each factor.
         </>}>
-        <Segmented label="Span" value={scope} onChange={(v) => { set({ scope: v === "week" ? undefined : v }, true); setLimit(75); }}
-          options={[{ value: "week", label: `Week ${w0}` }, { value: "ros", label: "Rest of season" }, { value: "dynasty", label: "Dynasty" }]} />
+        <TabSwitch label="Rankings span" value={scope} onChange={(v) => { set({ scope: v === "week" ? undefined : v }, true); setLimit(75); }}
+          options={[{ value: "week", label: "Week", sub: `Week ${w0}` }, { value: "ros", label: "Season", sub: `Weeks ${w0}–${ctx.lastWeek}` }, { value: "dynasty", label: "Dynasty", sub: "Long term" }]} />
       </PageHeader>
 
       <div className="flex flex-col gap-2 rounded-xl border border-line bg-panel p-3">
@@ -183,7 +176,7 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
                 </div>
               </div>
               <div className="hidden truncate text-xs text-muted sm:block">{statLine(r, scope)}</div>
-              <div className="flex justify-center"><Shs a={ai.get(r.id)} ecrPos={r.ecrPos} /></div>
+              <div className="flex justify-center"><Shs a={ai.get(r.id)} name={r.name} /></div>
               <div className="text-right">
                 <div className="num font-[family-name:var(--font-display)] text-xl font-bold leading-none">{(dyn ? r.value : r.pts).toFixed(dyn ? 0 : 1)}</div>
                 {scope === "ros" && r.games > 0 && <div className="text-[10px] text-muted">{(r.pts / r.games).toFixed(1)}/g</div>}

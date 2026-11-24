@@ -8,8 +8,8 @@ import { DEFAULT_SHS, getSettings, saveSettings, type ShsWeights } from "@/lib/s
 import { testCfbdKey } from "@/lib/cfbd";
 
 const FACTORS: [string, string][] = [
-  ["ppg", "Points per game"], ["snap", "Snap share"], ["adv", "Opportunity & efficiency"], ["xfp", "Expected points"],
-  ["track", "Player tracking"], ["chart", "Film charting"], ["proj", "Projection"],
+  ["ppg", "Points per game"], ["snap", "Snap share (RB/WR/TE)"], ["adv", "Opportunity & efficiency"], ["xfp", "Expected points"],
+  ["track", "Player tracking"], ["chart", "Film charting"],
   ["weather", "Weather"], ["inj", "Injuries & practice"], ["matchup", "Defensive matchup"], ["vegas", "Team implied total"], ["script", "Game script"],
   ["sched", "Schedule ahead"], ["age", "Age cliff"], ["team", "Team situation"], ["coach", "Coaching"], ["usage", "Usage (dynasty)"], ["draft", "Draft & combine"], ["college", "College production"],
 ];
@@ -41,33 +41,34 @@ function Slider({ label, value, min, max, step = 1, suffix = "%", onChange }: { 
   );
 }
 
+const pc = (v: number, m: Record<string, number>) => `${Math.round((v / (Object.values(m).reduce((a, b) => a + b, 0) || 1)) * 100)}%`;
+
 export function ShsSettings() {
   const w = useShsWeights();
   const set = (patch: Partial<ShsWeights>) => saveSettings({ shs: { ...w, ...patch } });
-  const t = w.wkExpert + w.wkMarket + w.wkFactors || 1;
   const [key, setKey] = useState(() => (typeof window === "undefined" ? "" : getSettings().cfbdKey ?? ""));
   const [msg, setMsg] = useState<string | null>(null);
   return (
     <Card title="SHS AI" info={<>SHS AI starts from the expert consensus and moves a player up or down by what the evidence says. These sliders set how much each part counts. Factor weights multiply the default (1.00× = normal, 0 = ignore).</>}>
       <div className="flex flex-col gap-5">
         <div>
-          <h3 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted">This week, without betting lines</h3>
-          <Slider label="Expert consensus" value={w.wkNoMkt} min={50} max={100} onChange={(v) => set({ wkNoMkt: v })} />
-          <p className="mt-1 text-xs text-muted">{w.wkNoMkt}% experts · {100 - w.wkNoMkt}% SHS factors. Default {DEFAULT_SHS.wkNoMkt}% is what replaying every week since 2021 found most accurate.</p>
-        </div>
-        <div>
-          <h3 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted">Rest of season &amp; dynasty</h3>
-          <Slider label="Expert consensus" value={w.expert} min={50} max={100} onChange={(v) => set({ expert: v })} />
-          <p className="mt-1 text-xs text-muted">{w.expert}% experts · {100 - w.expert}% SHS factors</p>
+          <h3 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted">The mix</h3>
+          <div className="flex flex-col gap-2">
+            <Slider label="Expert consensus" value={w.mix.ecr} min={0} max={100} suffix="" onChange={(v) => set({ mix: { ...w.mix, ecr: v } })} />
+            <Slider label="Sleeper projection" value={w.mix.sleeper} min={0} max={100} suffix="" onChange={(v) => set({ mix: { ...w.mix, sleeper: v } })} />
+            <Slider label="SHS factors" value={w.mix.factors} min={0} max={100} suffix="" onChange={(v) => set({ mix: { ...w.mix, factors: v } })} />
+          </div>
+          <p className="mt-1 text-xs text-muted">= {pc(w.mix.ecr, w.mix)} experts · {pc(w.mix.sleeper, w.mix)} Sleeper · {pc(w.mix.factors, w.mix)} factors. In dynasty, the Sleeper share goes to the SHS dynasty model (Sleeper has no dynasty projection), and only dynasty factors are used; week and rest-of-season use only redraft data.</p>
         </div>
         <div>
           <h3 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted">This week, when betting markets have his lines</h3>
           <div className="flex flex-col gap-2">
-            <Slider label="Experts" value={w.wkExpert} min={0} max={100} suffix="" onChange={(v) => set({ wkExpert: v })} />
-            <Slider label="Betting markets" value={w.wkMarket} min={0} max={100} suffix="" onChange={(v) => set({ wkMarket: v })} />
-            <Slider label="SHS factors" value={w.wkFactors} min={0} max={100} suffix="" onChange={(v) => set({ wkFactors: v })} />
+            <Slider label="Expert consensus" value={w.mixLines.ecr} min={0} max={100} suffix="" onChange={(v) => set({ mixLines: { ...w.mixLines, ecr: v } })} />
+            <Slider label="Sleeper projection" value={w.mixLines.sleeper} min={0} max={100} suffix="" onChange={(v) => set({ mixLines: { ...w.mixLines, sleeper: v } })} />
+            <Slider label="Betting lines" value={w.mixLines.markets} min={0} max={100} suffix="" onChange={(v) => set({ mixLines: { ...w.mixLines, markets: v } })} />
+            <Slider label="SHS factors" value={w.mixLines.factors} min={0} max={100} suffix="" onChange={(v) => set({ mixLines: { ...w.mixLines, factors: v } })} />
           </div>
-          <p className="mt-1 text-xs text-muted">= {Math.round((w.wkExpert / t) * 100)}% experts · {Math.round((w.wkMarket / t) * 100)}% markets · {Math.round((w.wkFactors / t) * 100)}% factors</p>
+          <p className="mt-1 text-xs text-muted">= {pc(w.mixLines.ecr, w.mixLines)} experts · {pc(w.mixLines.sleeper, w.mixLines)} Sleeper · {pc(w.mixLines.markets, w.mixLines)} lines · {pc(w.mixLines.factors, w.mixLines)} factors</p>
         </div>
         <div>
           <h3 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted">Factor weights</h3>

@@ -3,7 +3,7 @@
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeftRight, BarChart3, FlaskConical, Newspaper, Check, ChevronDown, ChevronLeft, ChevronRight, Home, ListOrdered, Moon, RefreshCw, Scale, Sparkles, Sun, Columns2, TrendingUp, Trophy, UserPlus, X } from "lucide-react";
+import { ArrowLeftRight, BarChart3, FlaskConical, Newspaper, Check, ChevronDown, ChevronLeft, ChevronRight, Home, ListOrdered, Moon, RefreshCw, Scale, Sparkles, Sun, TrendingUp, Trophy, UserPlus, X } from "lucide-react";
 import { BASE_PATH } from "@/lib/net";
 import { cx, Logo } from "./ui";
 import { usePlayerCard } from "./PlayerCard";
@@ -45,6 +45,31 @@ export function Segmented<T extends string>({ options, value, onChange, label, s
   );
 }
 
+/**
+ * Bigger two-line switch (title + small subtitle) with a sliding highlight. Equal-width cells that never
+ * truncate: titles stay short, detail goes in the subtitle.
+ */
+export function TabSwitch<T extends string>({ options, value, onChange, label }: { options: { value: T; label: string; sub?: string }[]; value: T; onChange: (v: T) => void; label: string }) {
+  const i = Math.max(0, options.findIndex((o) => o.value === value));
+  const n = options.length;
+  return (
+    <div role="tablist" aria-label={label} className="relative isolate grid w-full max-w-md rounded-2xl border border-line bg-panel2 p-1" style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` }}>
+      <span aria-hidden className="absolute inset-y-1 left-1 -z-10 rounded-xl bg-acc shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+        style={{ width: `calc((100% - 8px) / ${n})`, transform: `translateX(${i * 100}%)` }} />
+      {options.map((o) => {
+        const on = o.value === value;
+        return (
+          <button key={o.value} type="button" role="tab" aria-selected={on} onClick={() => onChange(o.value)}
+            className={cx("flex min-w-0 flex-col items-center justify-center rounded-xl px-2 py-2 text-center transition-colors duration-200", on ? "text-on-acc" : "text-muted hover:text-fg")}>
+            <span className="text-sm font-bold leading-tight">{o.label}</span>
+            {o.sub && <span className={cx("mt-0.5 text-[10px] leading-tight", on ? "text-on-acc/75" : "text-muted")}>{o.sub}</span>}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function RefreshButton({ compact = false }: { compact?: boolean }) {
   const { refresh, refreshing } = useApp();
   return (
@@ -58,7 +83,7 @@ export function RefreshButton({ compact = false }: { compact?: boolean }) {
 
 const TABS = [
   { href: "/", label: "Dashboard", icon: Home },
-  { href: "/matchup", label: "Matchup", icon: Columns2 },
+  { href: "/matchup", label: "Matchup", icon: ScoreboardIcon },
   { href: "/rankings", label: "Rankings", icon: ListOrdered },
   { href: "/league", label: "League", icon: Trophy },
 ];
@@ -73,6 +98,19 @@ export const QUICK_ACTIONS = [
   { href: "/brief", label: "Weekly Brief", sub: "Recap, model scorecard, preview", icon: Newspaper },
   { href: "/shs", label: "SHS AI Lab", sub: "Backtest and how it works", icon: FlaskConical },
 ];
+
+/** Matchup tab: a scoreboard (7 : 3), drawn in the same stroke style as the other tab icons. */
+export function ScoreboardIcon({ size = 24, className, strokeWidth = 2 }: { size?: number; className?: string; strokeWidth?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+      <rect x="2" y="4.5" width="20" height="15" rx="2.5" />
+      <circle cx="12" cy="10" r="0.5" fill="currentColor" />
+      <circle cx="12" cy="14" r="0.5" fill="currentColor" />
+      <path d="M5.6 9h3.2l-2.2 6" />
+      <path d="M15.2 9h3.2l-1.8 2.6c1.2 0 1.9.7 1.9 1.7 0 1.1-.8 1.7-1.9 1.7-.6 0-1.1-.2-1.5-.6" />
+    </svg>
+  );
+}
 
 /** Football in the app's icon style (stroke-drawn, like the other icons). */
 export function FootballIcon({ size = 24, className, strokeWidth = 2 }: { size?: number; className?: string; strokeWidth?: number }) {

@@ -68,6 +68,7 @@ function fit(rows: Row[], keys: string[]) {
 }
 
 const r1 = (x: number) => Math.round(x * 10) / 10;
+function factorIndex(r: Row) { let num = 0, den = 0; for (const k in r.f) { const [v, w] = r.f[k]; num += v * w; den += w; } return den ? num / den : 0; }
 const r2 = (x: number) => Math.round(x * 100) / 100;
 
 export function analyse(rows: Row[], projSource: string) {
@@ -88,7 +89,10 @@ export function analyse(rows: Row[], projSource: string) {
       season, weeks: new Set(test.map((r) => r.week)).size, players: test.length,
       experts: grade(test, (r) => r.ecrPts).pick, expertsMae: grade(test, (r) => r.ecrPts).mae,
       projection: grade(test, (r) => r.proj).pick, projectionMae: grade(test, (r) => r.proj).mae,
-      shsDefault: r1(acc(def, pairs)), shsTuned: r1(acc(tuned, pairs)), shsTunedMae: r2(mae(tuned, test)),
+      shsDefault: r1(acc(def, pairs)),
+      // The app's default mix: 25% experts + 25% Sleeper + 50% factor-adjusted expert points.
+      mix: r1(acc(Float64Array.from(test.map((r, i) => 0.25 * r.ecrPts + 0.25 * r.proj + 0.5 * r.ecrPts * (1 + factorIndex(r)))), pairs)),
+      ecrSleeper: r1(acc(Float64Array.from(test.map((r) => 0.5 * r.ecrPts + 0.5 * r.proj)), pairs)), shsTuned: r1(acc(tuned, pairs)), shsTunedMae: r2(mae(tuned, test)),
       fitted: { expert: f.expert, mult: f.mult, blend: f.blend },
     };
   });
@@ -102,7 +106,7 @@ export function analyse(rows: Row[], projSource: string) {
     return { key: k, n: rows.filter((r) => r.f[k]).length, corr: Math.round(nudge(rows, k, 0.05) * 100) / 100, flipped: Math.round(nudge(rows, k, -0.05) * 100) / 100, bySeason, mult: all.mult[k] };
   });
   const avg = (k: keyof typeof perSeason[number]) => r1(perSeason.reduce((a, s) => a + (s[k] as number), 0) / perSeason.length);
-  const summary = { experts: avg("experts"), projection: avg("projection"), shsDefault: avg("shsDefault"), shsTuned: avg("shsTuned") };
+  const summary = { experts: avg("experts"), projection: avg("projection"), shsDefault: avg("shsDefault"), shsTuned: avg("shsTuned"), mix: avg("mix"), ecrSleeper: avg("ecrSleeper") };
   const out = {
     generatedAt: new Date().toISOString(), projSource, seasons, rows: rows.length, weeks: perSeason.reduce((a, s) => a + s.weeks, 0),
     expert: all.expert, mult: all.mult, blend: all.blend, summary, perSeason, factors,
@@ -117,9 +121,9 @@ function report(o: { generatedAt: string; projSource: string; seasons: number[];
   const L: string[] = [];
   L.push(`# SHS AI research (${o.seasons[0]}–${o.seasons.at(-1)})`, "", `Generated ${o.generatedAt.slice(0, 10)} · ${o.weeks} weeks · ${o.rows.toLocaleString()} player-weeks · projection source: ${o.projSource}.`, "");
   L.push("Every week was replayed with only information available before Sunday's first kickoff: FantasyPros weekly expert consensus (PPR), the weekly projection, and every SHS factor built from earlier weeks. Scored in PPR. *Picks right* = for every pair of ranked players at the same position in the same week, how often the higher-ranked one outscored the other. SHS tuned is out of sample: weights fitted on the other seasons, graded on that season.", "");
-  L.push("| Season | Weeks | Experts | Projection | SHS (old default) | SHS (tuned, out of sample) |", "|---|---|---|---|---|---|");
-  for (const s of o.perSeason) L.push(`| ${s.season} | ${s.weeks} | ${s.experts}% | ${s.projection}% | ${s.shsDefault}% | **${s.shsTuned}%** |`);
-  L.push(`| **Average** | | ${o.summary.experts}% | ${o.summary.projection}% | ${o.summary.shsDefault}% | **${o.summary.shsTuned}%** |`, "");
+  L.push("| Season | Weeks | Experts | Projection | 50/50 experts + Sleeper | App mix 25/25/50 | SHS (tuned, out of sample) |", "|---|---|---|---|---|---|---|");
+  for (const s of o.perSeason as unknown as Record<string, number>[]) L.push(`| ${s.season} | ${s.weeks} | ${s.experts}% | ${s.projection}% | ${s.ecrSleeper}% | ${s.mix}% | **${s.shsTuned}%** |`);
+  L.push(`| **Average** | | ${o.summary.experts}% | ${o.summary.projection}% | ${o.summary.ecrSleeper}% | ${o.summary.mix}% | **${o.summary.shsTuned}%** |`, "");
   L.push(`**New default:** ${Math.round(o.blend * 100)}% of the weekly projection blended into the expert rank · expert share ${o.expert}% · factor weights ${Object.entries(o.mult).map(([k, v]) => `${k} ${v}×`).join(", ")}.`, "");
   L.push("## Factors", "", "Change in *picks right* (percentage points) when each factor alone nudges the expert rank by up to ±5%, and when it's flipped (−5%). Positive = it adds information the experts missed.", "", `| Factor | Player-weeks | All seasons | Flipped | ${o.seasons.join(" | ")} | Weight |`, `|---|---|---|---|${o.seasons.map(() => "---").join("|")}|---|`);
   for (const f of [...o.factors].sort((a, b) => (b.corr ?? 0) - (a.corr ?? 0))) L.push(`| ${f.key} | ${f.n.toLocaleString()} | ${f.corr ?? "—"} | ${(f as { flipped?: number }).flipped ?? "—"} | ${o.seasons.map((s) => f.bySeason[s] ?? "—").join(" | ")} | ${f.mult}× |`);

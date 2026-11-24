@@ -172,6 +172,19 @@ describe.skipIf(!have)("league context on fixtures", () => {
     expect(manual.find((r) => r.playerId === drafted.playerId)!.costRound).toBe(9);
   });
 
+  it("lineup moves only put players in slots they can play", async () => {
+    const { lineupSwaps } = await import("@/lib/services/views");
+    const { canFill } = await import("@/lib/engine/positions");
+    for (const id of ["fx1", "fx2", "fx3"]) {
+      const ctx = await mod.getLeagueContext(id, { userId: "389682598735060992" });
+      for (const t of ctx.teams) for (const sw of lineupSwaps(ctx, t.rosterId)) {
+        const slot = ctx.lineups.get(t.rosterId)!.current.find((c) => c.playerId === sw.outId)?.slot;
+        const at = ctx.lineups.get(t.rosterId)!.current.find((c) => (sw.slot ?? "").startsWith(c.slot.replace("SUPER_FLEX", "SUPERFLEX").split("_")[0]))?.slot ?? slot;
+        if (!sw.reason.startsWith("Move")) expect(canFill(slot ?? at ?? "BN", ctx.players.get(sw.inId)!.positions)).toBe(true);
+      }
+    }
+  });
+
   it("keeper board places your keepers and predicts other teams' keepers at picks they own", async () => {
     const { loadKeeperPlan } = await import("@/lib/services/keeperData");
     const { getSettings } = await import("@/lib/settings");
@@ -260,7 +273,7 @@ describe.skipIf(!have)("league context on fixtures", () => {
     expect(rows[0].grade).toBe("A");
     expect(rows[rows.length - 1].grade).toBe("D");
   });
-  it("SHS AI stays within ±25% of ECR and explains itself", async () => {
+  it("SHS AI mixes experts, projection and factors, and explains itself", async () => {
     const { rankings } = await import("@/lib/services/rankings");
     const { shsAi } = await import("@/lib/services/shsai");
     for (const scope of ["week", "ros", "dynasty"] as const) {
@@ -269,7 +282,10 @@ describe.skipIf(!have)("league context on fixtures", () => {
       const ai = shsAi(ctx, rows, scope, null);
       for (const r of rows) {
         const a = ai.get(r.id)!;
-        if (a.pct !== null) { expect(Math.abs(a.pct)).toBeLessThanOrEqual(25); expect(a.factors.length).toBeGreaterThan(0); }
+        if (a.pct !== null) { expect(Number.isFinite(a.pct)).toBe(true); expect(a.blend.expert + a.blend.sleeper + a.blend.market + a.blend.factors).toBeCloseTo(1); }
+        if (scope !== "dynasty") for (const f of a.factors) expect(["age", "team", "coach", "usage", "draft", "college"]).not.toContain(f.key); // no dynasty data in redraft
+        else for (const f of a.factors) expect(["weather", "inj", "matchup", "vegas", "script", "sched"]).not.toContain(f.key);
+        if (ctx.players.get(r.id)?.pos === "QB") expect(a.factors.some((f) => f.key === "snap")).toBe(false);
         for (const f of a.factors) expect(Math.abs(f.value)).toBeLessThanOrEqual(1);
       }
     }
@@ -287,7 +303,7 @@ describe.skipIf(!have)("league context on fixtures", () => {
     ctx.signals.markets = null;
     expect(a.market).not.toBeNull();
     const { DEFAULT_SHS: D } = await import("@/lib/settings");
-    expect(a.blend.market).toBeCloseTo(D.wkMarket / (D.wkExpert + D.wkMarket + D.wkFactors));
+    const L = D.mixLines; expect(a.blend.market).toBeCloseTo(L.markets / (L.ecr + L.sleeper + L.markets + (a.factors.length ? L.factors : 0)));
     // Markets imply roughly double his projected receiving yards → more points than Sleeper projects.
     expect(a.market!.pts).toBeGreaterThan(target.pts);
     expect(Math.abs(a.market!.value)).toBeLessThanOrEqual(1);

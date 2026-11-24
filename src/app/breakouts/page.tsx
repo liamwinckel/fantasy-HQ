@@ -54,7 +54,7 @@ function BreakoutCard({ r, rank, ai }: { r: BreakoutRow; rank: number; ai?: numb
         <span className="num w-6 pt-1 text-sm font-bold text-muted">{rank}</span>
         <PlayerImg id={r.id} name={r.name} pos={r.pos} size={44} />
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2"><PlayerLink id={r.id} name={r.name} className="text-base font-bold" /><InjuryChip status={r.injury} /><AiChip v={ai} label /></div>
+          <div className="flex items-center gap-2"><PlayerLink id={r.id} name={r.name} className="text-base font-bold" /><InjuryChip status={r.injury} /><AiChip v={ai} name={r.name} /></div>
           <div className="flex flex-wrap items-center gap-x-1 text-xs text-muted"><NflLogo team={r.team} size={14} />{r.pos} · {r.team} · {CLASS_LABEL[r.yearsExp]}{r.age ? ` · age ${Math.floor(r.age)}` : ""}{r.draftRound ? ` · R${r.draftRound} pick` : " · undrafted"} · <span className={r.mine ? "font-semibold text-acc-ink" : r.owner === "Free agent" ? "font-semibold text-pos" : ""}>{r.owner}</span></div>
         </div>
         <div className="text-right">

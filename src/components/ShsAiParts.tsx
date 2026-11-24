@@ -3,6 +3,8 @@
 /** Shared SHS AI pieces: the plain-language explainer, the ±% chip, and optional college data. */
 import { useEffect, useMemo, useState } from "react";
 import { cx } from "./ui";
+import { Sheet } from "./Sheet";
+import type { ShsAi as ShsAiT } from "@/lib/services/shsai";
 import { DEFAULT_SHS, getSettings, type ShsWeights } from "@/lib/settings";
 import { SHS_METRICS, shsAi } from "@/lib/services/shsai";
 import { rankings } from "@/lib/services/rankings";
@@ -26,19 +28,19 @@ export function useShsWeights(): ShsWeights {
 /** What SHS AI is, in plain terms: the blend and the metrics it weighs. */
 export function ShsExplainer({ scope }: { scope: RankScope }) {
   const w = useShsWeights();
-  const t = w.wkExpert + w.wkMarket + w.wkFactors || 1;
-  const pc = (x: number) => `${Math.round((x / t) * 100)}%`;
+  const pc = (x: number, m: Record<string, number>) => `${Math.round((x / (Object.values(m).reduce((a, b) => a + b, 0) || 1)) * 100)}%`;
+  const second = scope === "dynasty" ? "SHS dynasty model" : "Sleeper projection";
   const list = [...SHS_METRICS.all, ...SHS_METRICS[scope]];
   return (
     <div className="text-xs leading-relaxed text-muted">
-      <p className="text-fg"><b>SHS AI</b> starts from the expert consensus rank and asks: does the evidence agree?</p>
+      <p className="text-fg"><b>SHS AI</b> blends the expert consensus, a second opinion and its own factors into one value for each player, then compares it with his expert rank.</p>
       <p className="mt-1.5">
-        {scope === "week"
-          ? <>When betting markets have lines on a player this week, the score is <b className="text-fg">{pc(w.wkExpert)} experts · {pc(w.wkMarket)} betting markets · {pc(w.wkFactors)} SHS factors</b>. Otherwise it&apos;s <b className="text-fg">{w.wkNoMkt}% experts · {100 - w.wkNoMkt}% SHS factors</b>, the mix that tested best over every week since 2021.</>
-          : <>The score is <b className="text-fg">{w.expert}% experts · {100 - w.expert}% SHS factors</b>.</>}
+        The mix is <b className="text-fg">{pc(w.mix.ecr, w.mix)} experts · {pc(w.mix.sleeper, w.mix)} {second} · {pc(w.mix.factors, w.mix)} SHS factors</b>
+        {scope === "week" && <>; for players with betting lines this week, <b className="text-fg">{pc(w.mixLines.ecr, w.mixLines)} experts · {pc(w.mixLines.sleeper, w.mixLines)} Sleeper · {pc(w.mixLines.markets, w.mixLines)} lines · {pc(w.mixLines.factors, w.mixLines)} factors</b></>}.
+        {scope === "dynasty" ? " Dynasty uses only long-term data (age, situation, draft profile, usage)." : " Week and rest of season use only redraft data; nothing dynasty-specific."}
         {" "}Each factor compares him with players ranked near him at his position, from −1 (points to worse) to +1 (better).
       </p>
-      <p className="mt-1.5">The verdict says how far it moves him: <b className="text-pos">▲▲ Strong buy</b> (12%+ more valuable than his expert rank), <b className="text-pos">▲ Buy</b> (4–11%), <b>= Agree</b>, <b className="text-neg">▼ Fade</b>, <b className="text-neg">▼▼ Strong fade</b>. In Rankings the arrow number is how many spots SHS AI moves him at his position (▲3 = three spots higher than the experts).</p>
+      <p className="mt-1.5"><b className="text-fg">=</b> means it agrees with the experts. Up ticks mean SHS AI values him higher than his expert rank, down ticks lower: one tick = leans (4–7%), two = clear (8–14%), three = strong (15%+). Tap the mark for the exact number and the reasons.</p>
       <p className="mt-2 font-semibold text-fg">What it looks at{scope === "week" ? " this week" : scope === "ros" ? " for the rest of the season" : " in dynasty"}:</p>
       <ul className="mt-1 list-disc space-y-0.5 pl-4">{list.map((m) => <li key={m}>{m}</li>)}</ul>
       <p className="mt-2">Weights can be changed in Settings → SHS AI. Results are graded each week, and factors that predict well gain weight.</p>
@@ -59,14 +61,73 @@ export function shsVerdict(pct: number | null | undefined): { word: string; arro
   return { word: "Agree", arrow: "=", tone: "flat", long: "SHS AI agrees with the experts on him." };
 }
 
-/** Compact verdict chip: ▲ Buy / = Agree / ▼ Fade. */
-export function AiChip({ v, className, label }: { v: number | null | undefined; className?: string; label?: boolean }) {
-  const d = shsVerdict(v);
-  if (!d) return null;
+/** How many ticks: 1 = leans (4–7%), 2 = clear (8–14%), 3 = strong (15%+). */
+export const shsTicks = (pct: number) => (Math.abs(pct) < 4 ? 0 : Math.abs(pct) < 8 ? 1 : Math.abs(pct) < 15 ? 2 : 3);
+
+function Ticks({ pct }: { pct: number }) {
+  const n = shsTicks(pct);
+  if (!n) return <span className="text-sm font-bold leading-none text-muted">=</span>;
+  const up = pct > 0;
   return (
-    <span title={d.long} className={cx("inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded px-1.5 py-0.5 text-[10px] font-bold", d.tone === "pos" ? "bg-pos/15 text-pos" : d.tone === "neg" ? "bg-neg/15 text-neg" : "bg-panel2 text-muted", className)}>
-      {label && <span className="font-semibold opacity-75">SHS</span>}<span aria-hidden>{d.arrow}</span>{d.word}
+    <span className={cx("inline-flex items-center", up ? "text-pos" : "text-neg")} aria-hidden>
+      {Array.from({ length: n }, (_, i) => (
+        <svg key={i} width="9" height="10" viewBox="0 0 9 10" className="-mx-[1px]"><path d={up ? "M1 7.5 4.5 3 8 7.5" : "M1 2.5 4.5 7 8 2.5"} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+      ))}
     </span>
+  );
+}
+
+/**
+ * SHS AI's view as a small mark: "=" when it agrees with the experts, up/down ticks when it doesn't.
+ * Tap for the exact number and why.
+ */
+export function AiChip({ v, ai, name, className }: { v: number | null | undefined; ai?: ShsAiT | null; name?: string; className?: string; label?: boolean }) {
+  const [open, setOpen] = useState(false);
+  if (v === null || v === undefined) return null;
+  const d = shsVerdict(v)!;
+  return (
+    <>
+      <button type="button" onClick={(e) => { e.stopPropagation(); setOpen(true); }} aria-label={`SHS AI: ${d.word}. Tap for why.`}
+        className={cx("inline-flex h-6 min-w-6 shrink-0 items-center justify-center rounded-md px-1 transition-colors hover:bg-panel2", className)}>
+        <Ticks pct={v} />
+      </button>
+      <Sheet open={open} onClose={() => setOpen(false)} title="SHS AI" sub={name}>
+        <ShsWhy pct={v} ai={ai ?? null} />
+      </Sheet>
+    </>
+  );
+}
+
+/** The exact number, what it means, and the biggest reasons. */
+export function ShsWhy({ pct, ai }: { pct: number; ai: ShsAiT | null }) {
+  const d = shsVerdict(pct)!;
+  const reasons = ai ? [
+    ...(ai.market ? [{ label: "Betting lines", value: ai.market.value, w: ai.blend.market * 3, detail: `Lines imply ${ai.market.pts.toFixed(1)} pts in your scoring` }] : []),
+    ...ai.factors.map((f) => ({ label: f.label, value: f.value, w: f.weight, detail: f.detail })),
+  ].filter((r) => Math.abs(r.value) >= 0.1).sort((a, b) => Math.abs(b.value * b.w) - Math.abs(a.value * a.w)).slice(0, 4) : [];
+  return (
+    <div className="flex flex-col gap-4 pb-4">
+      <div className="flex items-center gap-4 rounded-xl bg-panel2/70 p-4">
+        <span className="scale-150"><Ticks pct={pct} /></span>
+        <div><div className={cx("num text-2xl font-bold", d.tone === "pos" ? "text-pos" : d.tone === "neg" ? "text-neg" : "")}>{pct > 0 ? "+" : ""}{pct}%</div><div className="text-xs text-muted">vs the value of his expert rank</div></div>
+      </div>
+      <p className="text-sm">{d.long}</p>
+      {ai && <p className="text-xs text-muted">Mix: {Math.round(ai.blend.expert * 100)}% expert consensus{ai.blend.sleeper ? ` · ${Math.round(ai.blend.sleeper * 100)}% Sleeper projection` : ""}{ai.blend.market ? ` · ${Math.round(ai.blend.market * 100)}% betting lines` : ""} · {Math.round(ai.blend.factors * 100)}% SHS factors.</p>}
+      {reasons.length > 0 ? (
+        <div>
+          <div className="mb-1.5 text-[11px] font-bold uppercase tracking-widest text-muted">Biggest reasons</div>
+          <ul className="flex flex-col gap-2">
+            {reasons.map((r) => (
+              <li key={r.label} className="rounded-lg border border-line p-2.5 text-sm">
+                <div className="flex items-center justify-between gap-2"><b>{r.label}</b><span className={cx("text-xs font-semibold", r.value > 0 ? "text-pos" : "text-neg")}>{r.value > 0 ? "points higher" : "points lower"}</span></div>
+                <div className="text-xs text-muted">{r.detail}</div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : <p className="text-xs text-muted">{shsTicks(pct) === 0 ? "Nothing in the data pulls him clearly away from where the experts have him." : ""}</p>}
+      <p className="text-[11px] text-muted">One tick = leans (4–7%), two = clear (8–14%), three = strong (15%+). “=” = agrees with the experts.</p>
+    </div>
   );
 }
 

@@ -121,7 +121,7 @@ function Side({ label, items, accent, ai }: { label: string; items: Item[]; acce
         {items.map((x) => (
           <li key={x.id} className="flex items-center justify-between gap-2">
             <span className="min-w-0 truncate">{x.id.startsWith("p:") ? <PlayerLink id={x.id.slice(2)} name={x.name} className="font-semibold" /> : <b>{x.name}</b>} <span className="text-xs text-muted">{x.pos}</span></span>
-            <span className="flex items-center gap-1.5">{x.id.startsWith("p:") && <AiChip v={ai.get(x.id.slice(2))?.pct} />}<span className="num text-xs">{x.value.toFixed(0)}</span></span>
+            <span className="flex items-center gap-1.5">{x.id.startsWith("p:") && <AiChip v={ai.get(x.id.slice(2))?.pct} ai={ai.get(x.id.slice(2))} name={x.name} />}<span className="num text-xs">{x.value.toFixed(0)}</span></span>
           </li>
         ))}
       </ul>
