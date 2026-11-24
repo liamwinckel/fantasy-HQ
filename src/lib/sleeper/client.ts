@@ -75,7 +75,16 @@ export const sleeper = {
   projections: (season: string, week: number, positions: string[], force = false) =>
     cached(
       `sleeper:proj:${season}:${week}:${positions.join(",")}`, "sleeper", 2 * HOUR,
-      async () => slimProjections(await netFetch(`https://api.sleeper.app/projections/nfl/${season}/${week}?season_type=regular&${positions.map((p) => `position[]=${p}`).join("&")}`, 30_000)),
+      () => limited(async () => {
+        // Retry: a missing week would otherwise skew rest-of-season totals.
+        let err: unknown;
+        for (let a = 0; a < 4; a++) {
+          try {
+            return slimProjections(await netFetch(`https://api.sleeper.app/projections/nfl/${season}/${week}?season_type=regular&${positions.map((p) => `position[]=${p}`).join("&")}`, 30_000));
+          } catch (e) { err = e; await new Promise((r) => setTimeout(r, 600 * (a + 1))); }
+        }
+        throw err;
+      }),
       (b) => JSON.parse(b) as SleeperProjection[],
       { force },
     ),

@@ -105,7 +105,7 @@ describe("values", () => {
     const v = computeValues({ players, projections, replacement: { RB: 10 }, currentWeek: 12, playoffStart: 13, lastWeek: 13 });
     expect(v.get("young")!.redraft).toBe(v.get("old")!.redraft);
     expect(v.get("young")!.dynasty).toBeGreaterThan(v.get("old")!.dynasty);
-    expect(v.get("repl")!.redraft).toBe(0);
+    expect(v.get("repl")!.redraft).toBeLessThan(v.get("young")!.redraft * 0.35); // replacement-level depth keeps a small value
   });
   it("replacement level sits just past league starter demand", () => {
     const r = replacementLevels(new Map([["QB", [30, 25, 20, 15, 10]]]), { QB: 1 }, 3);

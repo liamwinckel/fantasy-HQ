@@ -81,11 +81,12 @@ export function computeValues(inp: ValueInputs): Map<string, PlayerValue> {
     let ros = 0;
     for (let w = currentWeek; w <= lastWeek; w++) {
       const pts = proj.byWeek[w] ?? 0;
-      ros += Math.max(0, pts - repl) * (w >= playoffStart ? 1.4 : 1);
+      // Points above replacement, plus a small share of raw points so depth players aren't worth zero.
+      ros += (Math.max(0, pts - repl) + 0.1 * pts) * (w >= playoffStart ? 1.4 : 1);
     }
     // Dynasty: multi-season surplus from healthy base
     const ltInjury = proj.availability === 0 && ["IR", "PUP", "NFI"].includes(p.injury ?? "") ? 0.85 : 1;
-    const surplus0 = Math.max(0, proj.base - repl * 0.9) * ltInjury * (inp.dynastyAdjust?.get(p.id) ?? 1);
+    const surplus0 = (Math.max(0, proj.base - repl * 0.9) + 0.08 * proj.base) * ltInjury * (inp.dynastyAdjust?.get(p.id) ?? 1);
     const age = p.age;
     const m0 = ageMultiplier(p.pos, age);
     let now = 0;
@@ -154,3 +155,55 @@ export function replacementLevels(
 }
 
 const round1 = (x: number) => Math.round(x * 10) / 10;
+
+/** FantasyPros expert consensus for one player (via DynastyProcess). Lower ECR = better. */
+export interface Consensus {
+  ro?: number; rp?: number; w?: number; wsf?: number; do?: number; dsf?: number; dp?: number; v1?: number; v2?: number;
+}
+
+/** ECR rank → 0–100 (rank 1 = 100, rank 50 ≈ 44, rank 150 ≈ 8). */
+export const ecrToValue = (ecr: number) => 100 * Math.exp(-(Math.max(1, ecr) - 1) / 60);
+
+/**
+ * Blend the SHS model with the market so values reflect what managers actually trade at:
+ *   Dynasty = 40% model + 60% dynasty market value (DynastyProcess, from FantasyPros dynasty ECR; superflex values in SF leagues)
+ *   Redraft = 55% model + 45% FantasyPros rest-of-season consensus rank
+ * Players the market doesn't cover keep the model value. Rescaled so the league's top asset = 100.
+ */
+export function blendWithMarket(values: Map<string, PlayerValue>, players: PlayerLite[], cons: Record<string, Consensus>, superflex: boolean) {
+  const pos = new Map(players.map((p) => [p.id, p.pos]));
+  const mk = (id: string) => (superflex ? cons[id]?.v2 : cons[id]?.v1);
+  const maxMk = Math.max(1, ...players.map((p) => mk(p.id) ?? 0));
+  const roVal = (id: string) => {
+    const c = cons[id];
+    if (!c) return null;
+    // Superflex: QBs are far scarcer than a 1-QB overall rank says, so place them by positional rank.
+    if (superflex && pos.get(id) === "QB" && c.rp) return ecrToValue(c.rp * 2.2 - 1);
+    return c.ro ? ecrToValue(c.ro) : null;
+  };
+  for (const v of values.values()) {
+    const m = mk(v.id);
+    if (m) {
+      const blended = 0.4 * v.dynasty + 0.6 * (100 * m) / maxMk;
+      const f = v.dynasty > 0 ? blended / v.dynasty : 1;
+      v.dynastyNow = round1(v.dynastyNow * f);
+      v.dynastyFuture = round1(v.dynastyFuture * f);
+      if (v.dynasty <= 0) { v.dynastyNow = round1(blended * 0.3); v.dynastyFuture = round1(blended * 0.7); }
+      v.dynasty = round1(blended);
+    }
+    const r = roVal(v.id);
+    if (r !== null) v.redraft = round1(0.55 * v.redraft + 0.45 * r);
+  }
+  const maxD = Math.max(1e-9, ...[...values.values()].map((v) => v.dynasty));
+  const maxR = Math.max(1e-9, ...[...values.values()].map((v) => v.redraft));
+  for (const v of values.values()) {
+    v.dynasty = round1((100 * v.dynasty) / maxD); v.dynastyNow = round1((100 * v.dynastyNow) / maxD); v.dynastyFuture = round1((100 * v.dynastyFuture) / maxD);
+    v.redraft = round1((100 * v.redraft) / maxR);
+  }
+  const byPos = new Map<string, PlayerValue[]>();
+  for (const v of values.values()) (byPos.get(pos.get(v.id) ?? "") ?? byPos.set(pos.get(v.id) ?? "", []).get(pos.get(v.id) ?? "")!).push(v);
+  for (const arr of byPos.values()) {
+    [...arr].sort((a, b) => b.redraft - a.redraft).forEach((v, i) => (v.posRankRedraft = i + 1));
+    [...arr].sort((a, b) => b.dynasty - a.dynasty).forEach((v, i) => (v.posRankDynasty = i + 1));
+  }
+}

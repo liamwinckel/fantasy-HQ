@@ -21,6 +21,8 @@ export interface PlayerLite {
   injuryPart: string | null;
   gsis: string | null;
   draftRound: number | null;
+  /** Sleeper depth chart order (1 = starter). */
+  depth?: number | null;
 }
 
 export interface GameLog {
@@ -203,8 +205,10 @@ export function applySleeper(pr: Projection, weeks: Map<number, Map<string, numb
     if (v > 0) pts.push(v);
   }
   if (!any) return pr;
-  const median = byWeek[currentWeek] ?? 0;
   const rosAvg = pts.length ? mean(pts) : 0;
+  // Weeks Sleeper couldn't provide: use his Sleeper average when he has a game (never mix in the model).
+  for (const w of Object.keys(byWeek).map(Number)) if (!weeks.get(w)) byWeek[w] = pr.byWeek[w] > 0 ? round1(rosAvg) : 0;
+  const median = byWeek[currentWeek] ?? 0;
   // Healthy points per game: Sleeper's rest-of-season rate, steadied by actual production when both exist.
   const base = rosAvg > 0 && pr.games >= 3 ? 0.65 * rosAvg + 0.35 * pr.base : rosAvg > 0 ? rosAvg : pr.base * (injury && ["IR", "PUP", "NFI", "Out", "Sus"].includes(injury) ? 1 : 0.6);
   const ratio = pr.base > 0 ? median / pr.base : 0;

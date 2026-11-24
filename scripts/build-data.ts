@@ -10,7 +10,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { gunzipSync } from "node:zlib";
-import { parseContracts, parseInjuries, parsePlayers, parseSchedule, parseSnaps, parseWeekly } from "../src/lib/nflverse/parse";
+import { parseCsv, parseContracts, parseInjuries, parsePlayers, parseSchedule, parseSnaps, parseWeekly } from "../src/lib/nflverse/parse";
 
 const OUT = path.join(process.cwd(), "public", "data");
 const fxIdx = process.argv.indexOf("--fixtures");
@@ -99,6 +99,45 @@ async function main() {
       out[id] = slim;
     }
     write("sleeper-players.json", JSON.stringify(out));
+  }]);
+
+  // FantasyPros expert consensus rankings + dynasty market values, published openly by DynastyProcess
+  // (the same files nflverse's load_ff_rankings() uses). Mapped to Sleeper IDs with their ID crosswalk.
+  jobs.push(["consensus", async () => {
+    const DP = process.env.DP_DIR;
+    const get = async (f: string) => DP ? fs.readFileSync(path.join(DP, f), "utf8") : text(`https://github.com/dynastyprocess/data/raw/master/files/${f}`, f);
+    const [ecr, weekly, values, ids] = await Promise.all([get("db_fpecr_latest.csv"), get("fp_latest_weekly.csv"), get("values-players.csv"), get("db_playerids.csv")]);
+    const toSleeper = new Map<string, string>();
+    for (const r of parseCsv(ids)) if (r.fantasypros_id && r.fantasypros_id !== "NA" && r.sleeper_id && r.sleeper_id !== "NA") toSleeper.set(r.fantasypros_id, r.sleeper_id);
+    const teamFix = (t: string) => (t === "JAC" ? "JAX" : t === "LA" ? "LAR" : t);
+    const sid = (fpId: string, pos: string, team: string) => (pos === "DST" ? teamFix(team) : toSleeper.get(fpId));
+    const out: Record<string, Record<string, number>> = {};
+    const put = (id: string | undefined, k: string, v: string) => {
+      const n = Number(v);
+      if (!id || !Number.isFinite(n) || v === "" || v === "NA") return;
+      (out[id] ??= {})[k] = n;
+    };
+    let ecrDate = "";
+    for (const r of parseCsv(ecr)) {
+      ecrDate = r.scrape_date || ecrDate;
+      const id = sid(r.id, r.pos, r.team || r.tm);
+      const pt = r.page_type;
+      if (pt === "redraft-overall") put(id, "ro", r.ecr);
+      else if (pt === "dynasty-overall") put(id, "do", r.ecr);
+      else if (pt === "dynasty-op") put(id, "dsf", r.ecr);
+      else if (pt.startsWith("redraft-") && pt !== "redraft-idp") put(id, "rp", r.ecr);
+      else if (pt.startsWith("dynasty-") && !["dynasty-idp", "dynasty-rk"].includes(pt)) put(id, "dp", r.ecr);
+      else if (pt === "weekly-op") put(id, "wsf", r.ecr);
+    }
+    let weeklyDate = "";
+    for (const r of parseCsv(weekly)) {
+      weeklyDate = r.scrape_date || weeklyDate;
+      put(sid(r.fantasypros_id, r.pos, r.team), "w", r.ecr);
+      if (r.player_opponent) (out[sid(r.fantasypros_id, r.pos, r.team) ?? "_"] ??= {});
+    }
+    delete out._;
+    for (const r of parseCsv(values)) { const id = toSleeper.get(r.fp_id); put(id, "v1", r.value_1qb); put(id, "v2", r.value_2qb); }
+    write("consensus.json", JSON.stringify({ ecrDate, weeklyDate, source: "FantasyPros ECR via DynastyProcess", players: out }));
   }]);
 
   const failed: string[] = [];

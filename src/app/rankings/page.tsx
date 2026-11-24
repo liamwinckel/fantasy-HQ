@@ -37,14 +37,17 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
   const [own, setOwn] = useState<"all" | "fa" | "mine">("all");
   const [q, setQ] = useState("");
   const [limit, setLimit] = useState(75);
+  const [by, setBy] = useState<"sleeper" | "experts">("sleeper");
   const positions = ["ALL", ...["QB", "RB", "WR", "TE", "K", "DEF", "DL", "LB", "DB"].filter((p) => all.some((r) => r.pos === p))];
-  const rows = all.filter((r) => (pos === "ALL" || r.pos === pos) && (own === "all" || (own === "fa" ? r.owner === "Free agent" : r.mine)) && (!q || r.name.toLowerCase().includes(q.toLowerCase())));
+  const rows = all.filter((r) => (pos === "ALL" || r.pos === pos) && (own === "all" || (own === "fa" ? r.owner === "Free agent" : r.mine)) && (!q || r.name.toLowerCase().includes(q.toLowerCase())))
+    .sort((a, b) => (by === "experts" ? (a.ecr ?? 999) - (b.ecr ?? 999) || b.pts - a.pts : b.pts - a.pts));
+  const dates = ctx.consensusDates;
   const isQB = pos === "QB";
   const skill = ["RB", "WR", "TE"].includes(pos);
   return (
     <div className="flex flex-col gap-4">
       <PageHeader eyebrow={`${league.name} · ${formatLabel(league)} · ${ctx.scoring}`} title="Rankings"
-        info={<>Sleeper&apos;s projections, scored with your league&apos;s settings. <b>This week</b> = Week {w0}. <b>Rest of season</b> = Week {w0} through your fantasy final (Week {ctx.lastWeek}), byes and injuries included. Stats are projected totals for the same span. TD = rushing + receiving touchdowns.</>}>
+        info={<>Two independent sources side by side. <b>Pts</b> = Sleeper&apos;s projections, scored with your league&apos;s settings. <b>ECR</b> = FantasyPros expert consensus rank at the player&apos;s position (dozens of analysts averaged), via DynastyProcess{dates ? `, updated ${scope === "week" ? dates.weekly : dates.ecr}` : ""}. Weekly ECR uses PPR rankings. Big gaps between the two are worth a look. <b>This week</b> = Week {w0}. <b>Rest of season</b> = Week {w0} through your fantasy final (Week {ctx.lastWeek}), byes and injuries included. Stats are projected totals for the same span. TD = rushing + receiving touchdowns.</>}>
         <Segmented label="Span" size="lg" value={scope} onChange={(v) => set({ scope: v === "week" ? undefined : v }, true)}
           options={[{ value: "week", label: `Week ${w0}` }, { value: "ros", label: "Rest of season" }]} />
       </PageHeader>
@@ -56,6 +59,8 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
         </label>
         <div className="flex flex-wrap items-center gap-1">
           {positions.map((p) => <button key={p} type="button" onClick={() => setPos(p)} className={cx("rounded-full px-3 py-1 text-xs font-semibold", pos === p ? "bg-acc text-on-acc" : "bg-panel2 text-muted")}>{p === "ALL" ? "All" : p}</button>)}
+          <span className="mx-1 h-4 w-px bg-line" />
+          {([["sleeper", "Sort: projection"], ["experts", "Sort: experts"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => setBy(k)} className={cx("rounded-full px-3 py-1 text-xs font-semibold", by === k ? "bg-fg text-bg" : "bg-panel2 text-muted")}>{l}</button>)}
           <span className="mx-1 h-4 w-px bg-line" />
           {([["all", "Everyone"], ["fa", "Free agents"], ["mine", "My team"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => setOwn(k)} className={cx("rounded-full px-3 py-1 text-xs font-semibold", own === k ? "bg-fg text-bg" : "bg-panel2 text-muted")}>{l}</button>)}
         </div>
@@ -74,7 +79,7 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
           {rows.slice(0, limit).map((r) => (
             <li key={r.id} className={cx("grid items-center gap-2 px-3 py-2 sm:px-4", "grid-cols-[2rem_minmax(0,1fr)_3.5rem]",
               isQB ? "md:grid-cols-[2.5rem_minmax(0,1fr)_4.5rem_4rem_3.5rem_4.5rem_3.5rem_4.5rem]" : skill ? "md:grid-cols-[2.5rem_minmax(0,1fr)_4.5rem_4.5rem_3.5rem_4.5rem_3.5rem_4.5rem]" : "md:grid-cols-[2.5rem_minmax(0,1fr)_4.5rem_4.5rem]", r.mine && "bg-acc-soft")}>
-              <div className="text-center"><div className="num text-sm font-bold">{pos === "ALL" ? r.rank : r.posRank}</div>{pos === "ALL" && <div className="text-[9px] font-semibold text-muted">{r.pos}{r.posRank}</div>}</div>
+              <div className="text-center"><div className="num text-sm font-bold">{by === "experts" && pos !== "ALL" ? (r.ecrRank ?? "–") : pos === "ALL" ? r.rank : r.posRank}</div>{pos === "ALL" && <div className="text-[9px] font-semibold text-muted">{r.pos}{r.posRank}</div>}</div>
               <div className="flex min-w-0 items-center gap-2.5">
                 <PlayerImg id={r.id} name={r.name} pos={r.pos} size={34} />
                 <div className="min-w-0">
@@ -86,7 +91,7 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
               {isQB && <><Num v={n0(r.passYd)} /><Num v={n1(r.passTd)} /><Num v={n1(r.int)} /><Num v={n0(r.rushYd)} /><Num v={n1(r.td)} /></>}
               {skill && <><Num v={n0(r.rushYd)} /><Num v={n1(r.rec)} /><Num v={n0(r.recYd)} /><Num v={n1(r.td)} /></>}
               {(skill || (!isQB && !skill)) && <span className={cx("hidden truncate text-right text-xs md:block", r.mine ? "font-semibold text-acc-ink" : r.owner === "Free agent" ? "font-semibold text-pos" : "text-muted")}>{r.owner}</span>}
-              <div className="text-right"><div className="num font-[family-name:var(--font-display)] text-xl font-bold leading-none">{r.pts.toFixed(1)}</div>{scope === "ros" && <div className="text-[10px] text-muted">{r.games ? `${(r.pts / r.games).toFixed(1)}/g` : ""}</div>}</div>
+              <div className="text-right"><div className="num font-[family-name:var(--font-display)] text-xl font-bold leading-none">{r.pts.toFixed(1)}</div>{scope === "ros" && <div className="text-[10px] text-muted">{r.games ? `${(r.pts / r.games).toFixed(1)}/g` : ""}</div>}<div className={cx("text-[10px] font-semibold", r.ecrRank === null ? "text-muted" : Math.abs(r.ecrRank - r.posRank) >= 6 ? "text-warn" : "text-sky-400")}>{r.ecrRank !== null ? `ECR ${r.pos}${r.ecrRank}` : "no ECR"}</div></div>
             </li>
           ))}
         </ul>

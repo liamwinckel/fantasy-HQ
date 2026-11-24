@@ -80,24 +80,10 @@ function MatchupPageBody({ setup, league, ctx, sp }: LeagueData) {
 
       <Preview g={g} kind={kind} started={started} myTotal={myGame ? myTotal : null} oppStrength={oppStrength} myStrength={myStrength} rank={rankOf} />
 
-      {myGame && me && <MyLineup ctx={ctx} me={me} week={week} onTotal={setMyTotal} />}
+      {myGame && me && <MyLineup ctx={ctx} me={me} week={week} onTotal={setMyTotal} opponent={g.b} />}
 
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
         {!myGame && <Card title="Lineups" pad={false} className="xl:flex-[3]"><MatchupBoard g={g} /></Card>}
-        {myGame && g.b && (
-          <Card title={`${g.b.name}'s lineup`} pad={false} className="xl:flex-[3]">
-            <ul className="divide-y divide-line">
-              {g.b.starters.map((l, i) => (
-                <li key={i} className="flex items-center gap-2.5 px-3 py-2 sm:px-5">
-                  <span className="w-11 shrink-0 rounded bg-panel2 py-1 text-center text-[10px] font-extrabold">{l.slot.replace("SUPER_FLEX", "SFLX").replace("IDP_FLEX", "IDP").replace("WRRB_FLEX", "W/R").replace("REC_FLEX", "W/T")}</span>
-                  {l.playerId ? <PlayerImg id={l.playerId} name={l.name} pos={l.pos} size={30} /> : <span className="h-[30px] w-[30px] rounded-full border border-dashed border-line" />}
-                  <div className="min-w-0 flex-1"><div className="flex items-center gap-1.5 text-sm font-semibold">{l.playerId ? <PlayerLink id={l.playerId} name={l.name} /> : <span className="text-muted">{l.name}</span>}<InjuryChip status={l.injury} /></div><div className="flex items-center gap-1 truncate text-xs text-muted"><NflLogo team={l.team} size={12} />{l.team ?? l.pos}{l.note ? ` · ${l.note}` : ""}</div></div>
-                  <span className="num w-12 text-right text-sm font-bold">{(kind === "current" && started && l.actual ? l.actual : l.proj)?.toFixed(1) ?? "—"}</span>
-                </li>
-              ))}
-            </ul>
-          </Card>
-        )}
         <div className="flex min-w-0 flex-col gap-4 xl:flex-[2]">
           <Card title="Head to head by position" right={<span className="text-[11px] text-muted">{kind === "past" ? "actual pts" : "projected pts"}</span>}>
             <div className="flex flex-col gap-3">

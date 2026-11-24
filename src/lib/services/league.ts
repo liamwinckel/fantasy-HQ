@@ -1,10 +1,10 @@
 import { sleeper } from "../sleeper/client";
 import type { League, Matchup, Player, Roster, SleeperUser, Transaction } from "../sleeper/types";
-import { contracts, injuryReports, playerInfo, schedule, snapCounts, weeklyStats, type Contract, type Game, type WeekStat } from "../nflverse";
+import { consensus, contracts, injuryReports, playerInfo, schedule, snapCounts, weeklyStats, type Contract, type Game, type WeekStat } from "../nflverse";
 import { canFill, isSuperflex, playerPositions, primaryPosition, starterDemand, startingSlots } from "../engine/positions";
 import { scoreSleeperStats, scoreStatLine, scoringLabel } from "../engine/scoring";
 import { applySleeper, opportunityOf, priorFor, project, type GameLog, type PlayerLite, type Projection } from "../engine/projections";
-import { computeValues, replacementLevels, type PlayerValue } from "../engine/values";
+import { blendWithMarket, computeValues, replacementLevels, type Consensus, type PlayerValue } from "../engine/values";
 import { optimizeLineup, lineupTotal, scoreStarters, type SlotAssignment } from "../engine/lineup";
 import { simulateSeason, type SimResult, type TeamWeek } from "../engine/simulate";
 import { classifyTeams, type Classification, type TeamClass, type TeamMetrics } from "../engine/classify";
@@ -82,6 +82,9 @@ export interface LeagueContext {
   values: Map<string, PlayerValue>;
   replacement: Record<string, number>;
   waiverLevel: Record<string, number>;
+  /** FantasyPros expert consensus (ECR) by Sleeper ID, and its dates. */
+  consensus: Record<string, Consensus>;
+  consensusDates: { ecr: string; weekly: string } | null;
   /** Sleeper's projected stat lines: week → player → stats (Sleeper keys). */
   projStats: Map<number, Map<string, Record<string, number>>>;
   /** NFLverse weekly stat lines for this season (all players). */
@@ -159,7 +162,7 @@ async function buildLeagueContext(
 
   // NFLverse: failures degrade gracefully to Sleeper-only data.
   const prevSeason = String(Number(season) - 1);
-  const [statsR, schedR, infoR, snapsR, prevStatsR, contractsR, injNowR, injPrevR] = await Promise.all([
+  const [statsR, schedR, infoR, snapsR, prevStatsR, contractsR, injNowR, injPrevR, consR] = await Promise.all([
     weeklyStats(season).catch((e) => { warnings.push(`NFLverse stats unavailable: ${e.message}`); return null; }),
     schedule(season).catch((e) => { warnings.push(`NFL schedule unavailable: ${e.message}`); return null; }),
     playerInfo().catch(() => null),
@@ -168,6 +171,7 @@ async function buildLeagueContext(
     contracts().catch(() => null),
     injuryReports(season).catch(() => null),
     injuryReports(prevSeason).catch(() => null),
+    consensus().catch(() => null),
   ]);
   const stats: WeekStat[] = statsR?.data ?? [];
   const games: Game[] = schedR?.data ?? [];
@@ -412,6 +416,8 @@ async function buildLeagueContext(
     players: [...players.values()], projections, replacement,
     currentWeek: Math.min(currentWeek, lastWeek), playoffStart, lastWeek, dynastyAdjust,
   });
+  const cons: Record<string, Consensus> = consR?.data.players ?? {};
+  blendWithMarket(values, [...players.values()], cons, isSuperflex(league.roster_positions));
 
   // ---------- Teams ----------
   const sortedForRank = [...rosters].sort((a, b) => b.settings.wins - a.settings.wins || pts(b, "fpts") - pts(a, "fpts"));
@@ -591,7 +597,7 @@ async function buildLeagueContext(
   return {
     league, format, valuationMode, scoring: scoringLabel(league.scoring_settings), superflex: isSuperflex(league.roster_positions),
     teamsCount, currentWeek, playoffStart, lastWeek, inPlayoffs, seasonOver, teams, myRosterId, players, projections, values,
-    replacement, waiverLevel, projStats, stats, logs, lineups, weekStrength, sim, remainingSchedule: Object.fromEntries(remaining.map((r) => [r.week, r.games])), classifications, picks, matchupsThisWeek: thisWeekMatchups, matchupsByWeek: matchupWeeks, healthyStrength, showClasses, extras, nflOpponents: opponents, liveScore,
+    replacement, waiverLevel, consensus: cons, consensusDates: consR ? { ecr: consR.data.ecrDate, weekly: consR.data.weeklyDate } : null, projStats, stats, logs, lineups, weekStrength, sim, remainingSchedule: Object.fromEntries(remaining.map((r) => [r.week, r.games])), classifications, picks, matchupsThisWeek: thisWeekMatchups, matchupsByWeek: matchupWeeks, healthyStrength, showClasses, extras, nflOpponents: opponents, liveScore,
     fetchedAt: Math.min(rostersR.fetchedAt, leagueR.fetchedAt), stale, warnings,
   };
 }
@@ -618,6 +624,7 @@ function toLite(p: Player, pos: string, info: Map<string, { birthDate: string | 
   return {
     id: p.player_id, name, pos, positions: playerPositions(p), team: p.team ?? null, age: pos === "DEF" ? null : age,
     yearsExp: p.years_exp ?? null, injury, injuryPart: p.injury_body_part ?? null, gsis, draftRound: ni?.draftRound ?? null,
+    depth: p.depth_chart_order ?? null,
   };
 }
 

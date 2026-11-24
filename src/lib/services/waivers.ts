@@ -120,24 +120,51 @@ export function waiverReport(ctx: LeagueContext, rosterId: number): WaiverReport
     .filter((x) => x.proj.usageFactor >= 1.08 || (x.snapTrend && x.snapTrend.length >= 2 && x.snapTrend[x.snapTrend.length - 1] - x.snapTrend[0] >= 10))
     .sort((a, b) => b.proj.base - a.proj.base)
     .slice(0, 6);
-  // Handcuffs: healthy free-agent RBs on the same NFL team as your top RBs
-  const myRbTeams = mine.filter((id) => ctx.players.get(id)!.pos === "RB").sort((a, b) => value(b) - value(a)).slice(0, 3)
-    .map((id) => ({ team: ctx.players.get(id)!.team, name: ctx.players.get(id)!.name })).filter((x) => x.team);
-  const handcuffs = [...ctx.players.values()]
-    .filter((p) => !rostered.has(p.id) && p.pos === "RB" && !UNAVAILABLE.includes(p.injury ?? "") && myRbTeams.some((t) => t.team === p.team) && (ctx.projections.get(p.id)?.base ?? 0) > 0)
-    .sort((a, b) => (ctx.projections.get(b.id)!.base - ctx.projections.get(a.id)!.base))
-    .slice(0, 4)
-    .map((p) => {
-      const e = evalPlayer(p);
-      e.reasons.unshift(`Backup to your ${myRbTeams.find((t) => t.team === p.team)!.name}.`);
-      return e;
-    });
-  const drops = dropPool.slice(0, 5).map((id) => {
+  // Handcuffs: the real No. 2 running back on an NFL team (Sleeper depth chart), healthy and available.
+  // Backups to your own RBs come first, then the backups with the most valuable starter ahead of them.
+  const healthy = (p: PlayerLite) => !UNAVAILABLE.includes(p.injury ?? "");
+  const rbsByTeam = new Map<string, PlayerLite[]>();
+  for (const p of ctx.players.values()) if (p.pos === "RB" && p.team) (rbsByTeam.get(p.team) ?? rbsByTeam.set(p.team, []).get(p.team)!).push(p);
+  const depthOf = (p: PlayerLite) => p.depth ?? 99;
+  const myRbs = new Set(mine.filter((id) => ctx.players.get(id)!.pos === "RB"));
+  const hcCands: { p: PlayerLite; starter: PlayerLite; mineStarter: boolean; score: number }[] = [];
+  for (const [, rbs] of rbsByTeam) {
+    const sorted = [...rbs].sort((a, b) => depthOf(a) - depthOf(b) || (ctx.projections.get(b.id)?.base ?? 0) - (ctx.projections.get(a.id)?.base ?? 0));
+    const starter = sorted.find(healthy) ?? sorted[0];
+    if (!starter) continue;
+    // Next man up: first healthy RB behind the starter.
+    const next = sorted.filter((p) => p.id !== starter.id && healthy(p))[0];
+    if (!next || rostered.has(next.id) || (next.depth != null && next.depth > 3)) continue;
+    const starterBase = ctx.projections.get(starter.id)?.base ?? 0;
+    const mineStarter = myRbs.has(starter.id);
+    hcCands.push({ p: next, starter, mineStarter, score: (mineStarter ? 100 : 0) + starterBase + 0.5 * (ctx.projections.get(next.id)?.base ?? 0) });
+  }
+  const handcuffs = hcCands.sort((a, b) => b.score - a.score).slice(0, 5).map(({ p, starter, mineStarter }) => {
+    const e = evalPlayer(p);
+    e.reasons.unshift(mineStarter ? `Backs up your ${starter.name}.` : `Next up behind ${starter.name} (${(ctx.projections.get(starter.id)?.base ?? 0).toFixed(1)} pts/g) in ${p.team}.`);
+    return e;
+  });
+
+  // Drop candidates: players outside your best lineups who are no better than what's on waivers right now.
+  const bestFa = new Map<string, PlayerLite>();
+  for (const p of avail) {
+    const cur = bestFa.get(p.pos);
+    if (!cur || (ctx.projections.get(p.id)?.base ?? 0) > (ctx.projections.get(cur.id)?.base ?? 0)) bestFa.set(p.pos, p);
+  }
+  const dyn = ctx.valuationMode === "dynasty";
+  const drops = mine.filter((id) => !needed.has(id)).map((id) => {
     const p = ctx.players.get(id)!;
     const pr = ctx.projections.get(id)!;
-    const reason = p.injury && ["IR", "Out", "PUP"].includes(p.injury) ? `${p.injury}; not in any of your best lineups` : "Not in any of your best lineups for the rest of the season";
-    return { player: p, value: value(id), proj: pr.median, reason };
-  });
+    const fa = bestFa.get(p.pos);
+    const faBase = fa ? ctx.projections.get(fa.id)?.base ?? 0 : 0;
+    const longOut = ["IR", "PUP", "NFI", "Sus"].includes(p.injury ?? "");
+    // Dynasty keeps young upside: compare trade value too.
+    const gap = dyn ? (fa ? value(fa.id) - value(id) : -99) : faBase - (longOut ? 0 : pr.base);
+    const reason = fa && gap > 0
+      ? `${fa.name} (free agent) ${dyn ? `is worth more (${value(fa.id).toFixed(0)} vs ${value(id).toFixed(0)})` : `projects ${faBase.toFixed(1)} pts/g vs his ${longOut ? `0 (${p.injury})` : pr.base.toFixed(1)}`}.`
+      : longOut ? `${p.injury} and not in any of your best lineups.` : "";
+    return { player: p, value: value(id), proj: pr.median, reason, gap: longOut && !dyn ? Math.max(gap, 1) : gap };
+  }).filter((d) => d.gap > 0).sort((a, b) => b.gap - a.gap).slice(0, 5).map(({ gap: _g, ...d }) => { void _g; return d; });
   return { needs, holes, topAdds, streamers, rising, handcuffs, drops };
 }
 

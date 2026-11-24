@@ -54,10 +54,10 @@ function WaiverPageBody({ setup, league, ctx, sp }: LeagueData) {
       <div className="grid gap-4 lg:grid-cols-3">
         <ListCard title="Streamers this week" hint="Biggest boost to this week's lineup only." items={r.streamers} stat={(w) => signed(w.weekGain)} statLabel="pts this week" />
         <ListCard title="Rising usage" hint="Healthy free agents whose opportunity or snap share is trending up over the last 3 games." items={r.rising} stat={(w) => w.proj.base.toFixed(1)} statLabel="proj pts/g" />
-        <ListCard title="Handcuffs" hint="Free-agent backups to your top running backs." items={r.handcuffs} stat={(w) => w.proj.base.toFixed(1)} statLabel="pts/game" />
+        <ListCard title="Handcuffs" hint="Free-agent RBs who are next up on their NFL depth chart. Backups to your own RBs first." items={r.handcuffs} stat={(w) => w.proj.base.toFixed(1)} statLabel="pts/game" />
       </div>
 
-      <Card title="Drop candidates" right={<Tag kind="MODEL" />} pad={false}>
+      <Card title="Drop candidates" info={<>Bench players (not in any of your best lineups) who are worse than the best free agent at the same position right now{" "}— in redraft by rest-of-season points per game, in dynasty by trade value. Players out long-term (IR, PUP, suspended) are flagged too.</>} right={<Tag kind="MODEL" />} pad={false}>
         <ul className="divide-y divide-line">
           {r.drops.map((d) => (
             <li key={d.player.id} className="flex items-center gap-3 px-5 py-2.5 text-sm">
@@ -67,7 +67,7 @@ function WaiverPageBody({ setup, league, ctx, sp }: LeagueData) {
               <div className="w-20 text-right"><div className="num font-bold">{d.value.toFixed(1)}</div><div className="text-[10px] text-muted">{ctx.valuationMode === "dynasty" ? "dynasty value" : "value"}</div></div>
             </li>
           ))}
-          {r.drops.length === 0 && <li className="px-5 py-4 text-sm text-muted">Every player on your roster is in at least one of your best lineups.</li>}
+          {r.drops.length === 0 && <li className="px-5 py-4 text-sm text-muted">Nobody outside your best lineups is worse than the best free agent at his position.</li>}
         </ul>
       </Card>
       <Info className="">FAAB bid suggestions aren&apos;t shown: there&apos;s no reliable free data on what your league bids. Waiver claims are made in Sleeper.</Info>

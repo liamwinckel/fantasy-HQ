@@ -6,14 +6,14 @@ import { Lock, X } from "lucide-react";
 import { PlayerImg, Segmented } from "@/components/client";
 import { Card, InjuryChip, NflLogo, cx, signed } from "@/components/ui";
 import { PlayerLink } from "@/components/PlayerCard";
-import type { Swap } from "@/lib/services/views";
+import type { Swap, TeamWeek, WeekLine } from "@/lib/services/views";
 
 export interface LabPlayer {
   id: string; name: string; pos: string; team: string | null; injury: string | null;
   eligible: boolean[]; unavailable: string | null; locked: boolean;
   median: number; low: number; high: number; base: number; seasonAvg: number; last4: number; games: number;
   confidence: string; opp: string | null; onBye: boolean; matchup: number; usage: number; notes: string[];
-  snapL3: number[] | null; recent: { week: number; pts: number }[];
+  snapL3: number[] | null; recent: { week: number; pts: number }[]; actual?: number | null;
 }
 
 type View = "current" | "optimal";
@@ -48,8 +48,9 @@ function useFlip(deps: unknown[]) {
   return box;
 }
 
-export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots, week, onTotal }: {
+export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots, week, onTotal, opponent, live = false }: {
   slots: string[]; players: LabPlayer[]; current: (string | null)[]; optimal: (string | null)[]; swaps: Swap[]; rosterSlots: string; week: number; onTotal?: (t: number) => void;
+  opponent?: TeamWeek | null; live?: boolean;
 }) {
   const [view, setView] = useState<View>("current");
   const [mine, setMine] = useState<(string | null)[]>(current);
@@ -117,7 +118,7 @@ export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-        <Card pad={false} className="min-w-0 overflow-hidden lg:flex-[3]" title={`Your lineup · Week ${week}`}
+        <Card pad={false} className="min-w-0 overflow-hidden lg:flex-[3]" title={opponent ? `Lineups · Week ${week}` : `Your lineup · Week ${week}`}
           right={<Segmented label="Lineup view" value={view} onChange={(v) => setView(v)} options={[{ value: "current", label: edited ? "Yours" : "Current" }, { value: "optimal", label: "Optimal" }]} />}
           info={<>Tap a position (QB, RB…) to choose who plays there; the player you replace moves to the bench, or swaps slots if he can play the other one. <b>Proj</b> = Sleeper&apos;s projection in your scoring. <b>Range</b> = a bad week (1 in 5 is worse) · expected · a good week. Matchup % = how many more (+) or fewer (−) points this opponent allows to the position. Slots: {rosterSlots}. Nothing here changes Sleeper.</>}>
           <div className="flex items-center justify-between gap-2 border-b border-line px-3 py-2 text-xs sm:px-5">
@@ -126,6 +127,9 @@ export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots
             {view === "optimal" && <span className="font-semibold text-acc-ink">{signed(optTotal - curTotal)} vs current</span>}
             {edited && view === "current" && <button type="button" onClick={() => setMine(current)} className="font-semibold text-muted underline">Reset</button>}
           </div>
+          {opponent ? (
+            <Versus slots={slots} lineup={lineup} bench={bench} byId={byId} opponent={opponent} live={live} changed={changed} onSlot={setSlotOpen} boxRef={box} />
+          ) : (<>
           <div className={cx(GRID, "border-b border-line px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted sm:px-5")}>
             <span>Slot</span><span /><span>Player</span><span className="hidden sm:block">Range · low / exp / high</span><span className="text-right">Proj</span>
           </div>
@@ -141,6 +145,7 @@ export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots
             <div className="border-b border-line bg-panel2/50 px-5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted">Bench</div>
             {bench.map((b) => row(b.id, b, <span className="rounded-md bg-panel2 py-1.5 text-center text-[11px] font-bold text-muted">{b.unavailable === "IR slot" ? "IR" : b.unavailable === "Taxi" ? "TAXI" : "BN"}</span>, null))}
           </div>
+          </>)}
         </Card>
 
         <div className="flex min-w-0 flex-col gap-4 lg:flex-[2]">
@@ -260,5 +265,88 @@ function SlotSheet({ slot, index, lineup, players, byId, onPick, onClose }: {
       </div>
     </div>,
     document.body,
+  );
+}
+
+const shortName = (n: string) => { const [f, ...r] = n.split(" "); return r.length ? `${f[0]}. ${r.join(" ")}` : n; };
+
+/** Both rosters side by side, slot by slot (like Sleeper). Your side is editable: tap the slot badge. */
+function Versus({ slots, lineup, bench, byId, opponent, live, changed, onSlot, boxRef }: {
+  slots: string[]; lineup: (string | null)[]; bench: LabPlayer[]; byId: Map<string, LabPlayer>; opponent: TeamWeek; live: boolean;
+  changed: (i: number) => boolean; onSlot: (i: number) => void; boxRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  const [showBench, setShowBench] = useState(true);
+  const mineCell = (p: LabPlayer | undefined, key: string, isNew = false) => {
+    const started = live && p?.locked && p.actual !== null && p.actual !== undefined;
+    return (
+      <div data-flip={key} className={cx("flex min-w-0 flex-1 items-center gap-2 rounded-lg px-1 py-0.5", isNew && "bg-acc-soft")}>
+        <span className="hidden sm:block">{p ? <PlayerImg id={p.id} name={p.name} pos={p.pos} size={30} /> : <span className="block h-[30px] w-[30px] rounded-full border border-dashed border-neg" />}</span>
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 items-center gap-1 text-xs font-semibold sm:text-sm">
+            {p ? <><PlayerLink id={p.id} name={shortName(p.name)} className="sm:hidden" /><PlayerLink id={p.id} name={p.name} className="hidden sm:inline" /></> : <span className="text-muted">Empty</span>}
+            {p && <InjuryChip status={p.injury} />}
+          </div>
+          <div className="flex items-center gap-1 truncate text-[10px] text-muted sm:text-[11px]">{p && <NflLogo team={p.team} size={11} />}<span className="truncate">{p ? `${p.team ?? p.pos} ${p.onBye ? "BYE" : p.opp ? `v ${p.opp}` : ""}` : ""}</span></div>
+        </div>
+        <div className="w-10 shrink-0 text-right sm:w-12">
+          <div className={cx("num text-sm font-bold", !started && "text-muted")}>{p ? (started ? p.actual!.toFixed(1) : p.median.toFixed(1)) : "—"}</div>
+          {started && <div className="num text-[9px] text-muted">proj {p!.median.toFixed(1)}</div>}
+        </div>
+      </div>
+    );
+  };
+  const oppCell = (l: WeekLine | undefined) => {
+    if (!l) return <div className="flex-1" />;
+    const started = live && l.actual !== null && l.actual !== 0;
+    return (
+      <div className="flex min-w-0 flex-1 flex-row-reverse items-center gap-2 px-1 text-right">
+        <span className="hidden sm:block">{l.playerId ? <PlayerImg id={l.playerId} name={l.name} pos={l.pos} size={30} /> : <span className="block h-[30px] w-[30px] rounded-full border border-dashed border-line" />}</span>
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 flex-row-reverse items-center gap-1 text-xs font-semibold sm:text-sm">
+            {l.playerId ? <><PlayerLink id={l.playerId} name={shortName(l.name)} className="sm:hidden" /><PlayerLink id={l.playerId} name={l.name} className="hidden sm:inline" /></> : <span className="text-muted">{l.name}</span>}
+            <InjuryChip status={l.injury} />
+          </div>
+          <div className="flex flex-row-reverse items-center gap-1 truncate text-[10px] text-muted sm:text-[11px]"><NflLogo team={l.team} size={11} /><span className="truncate">{l.team ?? l.pos} {l.note}</span></div>
+        </div>
+        <div className="w-10 shrink-0 text-left sm:w-12">
+          <div className={cx("num text-sm font-bold", !started && "text-muted")}>{started ? l.actual!.toFixed(1) : l.proj !== null ? l.proj.toFixed(1) : "—"}</div>
+          {started && l.proj !== null && <div className="num text-[9px] text-muted">proj {l.proj.toFixed(1)}</div>}
+        </div>
+      </div>
+    );
+  };
+  const nb = Math.max(bench.length, opponent.bench.length);
+  return (
+    <div ref={boxRef}>
+      <div className="flex items-center justify-between border-b border-line px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted sm:px-5">
+        <span>You · tap a slot to swap</span><span className="truncate pl-2">{opponent.name}</span>
+      </div>
+      <ul className="divide-y divide-line">
+        {slots.map((slot, i) => {
+          const p = lineup[i] ? byId.get(lineup[i]!) : undefined;
+          const canEdit = !p?.locked;
+          return (
+            <li key={i} className="flex items-center gap-1 px-1.5 py-1.5 sm:gap-3 sm:px-4">
+              {mineCell(p, p ? p.id : `empty-${i}`, changed(i))}
+              <button type="button" disabled={!canEdit} onClick={() => onSlot(i)} aria-label={`Choose who plays ${slot}`}
+                className={cx("w-10 shrink-0 rounded-md py-1.5 text-center text-[10px] font-extrabold transition-transform sm:w-12 sm:text-[11px]", canEdit ? "bg-acc text-on-acc active:scale-90" : "bg-panel2 text-muted")}>{short(slot)}</button>
+              {oppCell(opponent.starters[i])}
+            </li>
+          );
+        })}
+      </ul>
+      <button type="button" onClick={() => setShowBench(!showBench)} className="w-full border-y border-line bg-panel2/50 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted">{showBench ? "Bench ▾" : "Bench ▸"}</button>
+      {showBench && (
+        <ul className="divide-y divide-line">
+          {Array.from({ length: nb }, (_, i) => (
+            <li key={i} className="flex items-center gap-1 px-1.5 py-1.5 sm:gap-3 sm:px-4">
+              {bench[i] ? mineCell(bench[i], bench[i].id) : <div className="flex-1" />}
+              <span className="w-10 shrink-0 text-center text-[10px] font-bold text-muted sm:w-12">{bench[i]?.unavailable === "IR slot" ? "IR" : "BN"}</span>
+              {oppCell(opponent.bench[i])}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }

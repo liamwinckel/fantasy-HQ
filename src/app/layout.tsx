@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   description: "Personal fantasy football command centre for Sleeper leagues.",
   manifest: `${BP}/manifest.webmanifest`,
   icons: { icon: `${BP}/favicon.png`, apple: `${BP}/apple-touch-icon.png` },
-  appleWebApp: { capable: true, title: "Fantasy HQ", statusBarStyle: "black-translucent" },
+  appleWebApp: { capable: true, title: "Fantasy HQ", statusBarStyle: "black" },
 };
 export const viewport: Viewport = { themeColor: "#0a0a0a", width: "device-width", initialScale: 1, viewportFit: "cover" };
 
