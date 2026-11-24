@@ -12,6 +12,8 @@ export interface BoardCell {
   originalRosterId: number; ownerRosterId: number;
   keeper: { playerId: string; name: string; pos: string; team: string | null; mine: boolean; predicted: boolean; costRound: number } | null;
 }
+/** A keeper anywhere in the league: what he produces, where he ranks, and what he costs to keep. */
+export interface MarketKeeper extends KeeperRow { rosterId: number; teamName: string; mine: boolean; posRank: number; ppg: number; healthyPpg: number; value: number; late: boolean }
 export interface KeeperSlot { key: string; label: string; via: string | null }
 export interface MyKeeperRow extends KeeperRow { slots: KeeperSlot[]; keptAt: string | null; planned: boolean; slotNote: string | null }
 
@@ -133,5 +135,22 @@ export async function loadKeeperPlan(settings: AppSettings, league: League, ctx:
     });
     others.push({ rosterId: t.rosterId, name: t.name, keepers });
   }
-  return { rules, rounds, teams, draftType, sleeperMax, rows: myRows, note, board, order, season, others, hasPlan };
+  // ---- league-wide keeper market: the best-value keepers on every team (late keeps first) ----
+  const posRank = new Map<string, number>();
+  const byPos = new Map<string, string[]>();
+  for (const p of ctx.players.values()) if (["QB", "RB", "WR", "TE"].includes(p.pos) && p.team) (byPos.get(p.pos) ?? byPos.set(p.pos, []).get(p.pos)!).push(p.id);
+  for (const ids of byPos.values()) ids.sort((a, b) => (ctx.projections.get(b)?.base ?? 0) - (ctx.projections.get(a)?.base ?? 0)).forEach((id, i) => posRank.set(id, i + 1));
+  const market: MarketKeeper[] = [];
+  for (const t of ctx.teams) {
+    const list = t.rosterId === mine ? rows : keeperPlan(ctx, t.rosterId, picks, rules, rounds, extra);
+    for (const r of list) {
+      if (r.costRound === null || r.roundsSaved === null || !posRank.has(r.playerId)) continue;
+      const pr = ctx.projections.get(r.playerId);
+      const late = Math.max(0, r.costRound - rounds / 2);
+      market.push({ ...r, rosterId: t.rosterId, teamName: t.name, mine: t.rosterId === mine, posRank: posRank.get(r.playerId)!, ppg: pr?.seasonAvg ?? 0, healthyPpg: pr?.base ?? 0,
+        value: Math.round((r.roundsSaved + 0.35 * late) * 10) / 10, late: r.costRound > rounds / 2 });
+    }
+  }
+  market.sort((a, b) => b.value - a.value || a.posRank - b.posRank);
+  return { rules, rounds, teams, draftType, sleeperMax, rows: myRows, note, board, order, season, others, hasPlan, market: market.slice(0, 60) };
 }

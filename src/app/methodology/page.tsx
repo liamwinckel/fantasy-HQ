@@ -109,6 +109,16 @@ export default function Methodology() {
           </ul>
         </Card>
 
+        <Card title="Start / Sit, Waiver planner, Mock draft, Ask SHS, News">
+          <ul className="flex list-disc flex-col gap-1.5 pl-5 text-sm leading-relaxed">
+            <li><b>Start / Sit:</b> each player&apos;s week is a gamma-shaped range around his projection (his own swings shrunk toward his position&apos;s, betting lines when posted); 20,000 simulated weeks count how often each scores the most.</li>
+            <li><b>Waiver planner:</b> your best lineup is rebuilt for each of the next four weeks (byes, injuries, matchups) and every top free agent is tried in it; the gain per week shows when to add him. Injured players good enough to start when healthy are flagged as stashes.</li>
+            <li><b>Mock draft:</b> your league&apos;s rounds, roster spots and order (keeper drafts: keepers placed in their cost picks and traded picks applied; rookie drafts: next season&apos;s rookie picks and owners). Computer teams pick near expert ADP with randomness, fill starters, and leave K/DEF late. Grades: best starting lineup (redraft/keeper) or total value (dynasty).</li>
+            <li><b>Ask SHS:</b> recognises the question type and the players named, then runs the same tools as the rest of the app. No AI service; nothing leaves your device.</li>
+            <li><b>News:</b> every data refresh compares Sleeper&apos;s player database with the previous one (injury designations, IR, team changes, depth-chart starters) and adds the most-added players and your league&apos;s transactions.</li>
+          </ul>
+        </Card>
+
         <Card title="Rookie Report">
           <p className="text-sm leading-relaxed">This season&apos;s rookies (first NFL season this year). Draft-capital-first model, scored within each position: 35% draft capital (overall pick, steep at the top) · 25% role (snap share; QBs: share of team dropbacks) · 25% opportunity &amp; production (expected points from touches and targets, plus points per game) · 10% age · 5% landing spot. Grade A 70+, B 50+, C 30+. College prospects arrive once NFLverse publishes combine and draft data.</p>
         </Card>

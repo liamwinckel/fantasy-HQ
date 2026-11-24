@@ -14,6 +14,9 @@ import { ord } from "@/lib/engine/classify";
 import { Logo, Bar, Card, ClassBadge, InjuryChip, Notice, PageHeader, Stat, Tag, cx, signed, Info, WinBar } from "@/components/ui";
 import { PlayerImg } from "@/components/client";
 import { PlayerLink } from "@/components/PlayerCard";
+import { NewsCard } from "@/components/News";
+import { DynastyWindowCard } from "@/components/DynastyWindow";
+import { TrackRecord } from "@/components/TrackRecord";
 import { SeasonChart } from "@/components/charts";
 import { Sheet } from "@/components/Sheet";
 import { DashDetail, type DashKey } from "./DashDetails";
@@ -118,6 +121,11 @@ function DashboardBody({ setup, league, ctx, sp }: LeagueData) {
         </Card>
       </div>
 
+      <div className="grid gap-4 xl:grid-cols-[3fr_2fr]">
+        <NewsCard ctx={ctx} />
+        <TrackRecord ctx={ctx} />
+      </div>
+
       <Card title="Season at a glance" onOpen={() => setOpen("season")}><SeasonChart ctx={ctx} rosterId={me.rosterId} selectedWeek={week} /></Card>
 
       {/* Format-specific section */}
@@ -138,6 +146,7 @@ function DashboardBody({ setup, league, ctx, sp }: LeagueData) {
           <Info className="mt-3">Rules: keep {keeper.rules.maxKeepers}, cost = this year&apos;s round {keeper.rules.modifier === "same" ? "(same round)" : `${keeper.rules.modifier} (${keeper.rules.direction})`}. Undrafted players cost R{keeper.rules.undraftedRound}.</Info>
         </Card>
       )}
+      {fmt === "dynasty" && <DynastyWindowCard ctx={ctx} />}
       {fmt === "dynasty" && (
         <div className="grid gap-4 lg:grid-cols-2">
           <Card title="Dynasty outlook" right={<Tag kind="MODEL" />}>

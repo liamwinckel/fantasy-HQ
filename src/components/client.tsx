@@ -3,7 +3,7 @@
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeftRight, BarChart3, FlaskConical, Newspaper, Check, ChevronDown, ChevronLeft, ChevronRight, Home, ListOrdered, Moon, RefreshCw, Scale, Sparkles, Sun, TrendingUp, Trophy, UserPlus, X } from "lucide-react";
+import { ArrowLeftRight, BarChart3, ClipboardList, MessageCircle, Newspaper, Users, Check, ChevronDown, ChevronLeft, ChevronRight, Home, ListOrdered, Moon, RefreshCw, Scale, Sparkles, Sun, TrendingUp, Trophy, UserPlus, X } from "lucide-react";
 import { BASE_PATH } from "@/lib/net";
 import { cx, Logo } from "./ui";
 import { usePlayerCard } from "./PlayerCard";
@@ -89,15 +89,17 @@ const TABS = [
 ];
 
 export const QUICK_ACTIONS = [
-  { href: "/trade", label: "Trade Analyzer", sub: "Evaluate and compare trades", icon: Scale },
-  { href: "/trade-finder", label: "Trade Finder", sub: "Find trade opportunities", icon: ArrowLeftRight },
-  { href: "/waivers", label: "Waiver Assistant", sub: "Best pickups for your team", icon: UserPlus },
-  { href: "/breakouts", label: "Breakout Finder", sub: "Emerging young players", icon: TrendingUp },
-  { href: "/rookies", label: "Rookie Report", sub: "Evaluate this year's rookies", icon: Sparkles },
-  { href: "/stats", label: "Stats & Schedule", sub: "Stats, schedules, matchups", icon: BarChart3 },
-  { href: "/brief", label: "Weekly Brief", sub: "Recap, model scorecard, preview", icon: Newspaper },
-  { href: "/shs", label: "SHS AI Lab", sub: "Backtest and how it works", icon: FlaskConical },
+  { href: "/start-sit", label: "Start / Sit", sub: "Compare 2–4 players", icon: Users },
+  { href: "/waivers", label: "Waivers", sub: "Pickups + 4-week plan", icon: UserPlus },
+  { href: "/trade", label: "Trade Analyzer", sub: "Evaluate a trade", icon: Scale },
+  { href: "/trade-finder", label: "Trade Finder", sub: "Deals they'd accept", icon: ArrowLeftRight },
+  { href: "/mock-draft", label: "Mock Draft", sub: "Your league's format", icon: ClipboardList },
+  { href: "/brief", label: "Weekly Brief", sub: "Recap and preview", icon: Newspaper },
+  { href: "/breakouts", label: "Breakouts", sub: "Emerging players", icon: TrendingUp },
+  { href: "/rookies", label: "Rookies", sub: "This year's class", icon: Sparkles },
+  { href: "/stats", label: "Stats", sub: "Stats and schedule", icon: BarChart3 },
 ];
+export const ASK = { href: "/ask", label: "Ask SHS", sub: "Ask anything about your league", icon: MessageCircle };
 
 /** Matchup tab: a scoreboard (7 : 3), drawn in the same stroke style as the other tab icons. */
 export function ScoreboardIcon({ size = 24, className, strokeWidth = 2 }: { size?: number; className?: string; strokeWidth?: number }) {
@@ -160,19 +162,24 @@ export function MobileTabs({ keeper }: { keeper: boolean }) {
       {open && <div className={cx("qa-scrim fixed inset-0 z-40 bg-black/55 backdrop-blur-[2px] md:hidden", closing && "qa-closing")} onClick={close} />}
       {open && (
         <div ref={card} role="dialog" aria-label="Quick actions" className={cx("qa-card fixed inset-x-3 bottom-[calc(max(env(safe-area-inset-bottom),8px)+74px)] z-50 rounded-3xl border border-line bg-panel p-3 shadow-2xl md:hidden", closing && "qa-closing")}>
-          <div className="grid grid-cols-2 gap-2">
+          <Link href={ASK.href} style={{ animationDelay: "60ms" }} className="qa-tile mb-2 flex items-center gap-3 rounded-2xl border border-acc/60 bg-acc-soft px-4 py-3 active:scale-[0.98]">
+            <MessageCircle size={22} className="shrink-0 text-acc-ink" aria-hidden />
+            <span className="min-w-0 flex-1"><span className="block text-sm font-bold">{ASK.label}</span><span className="block truncate text-[11px] text-muted">&ldquo;Should I start Nacua or Wilson?&rdquo;</span></span>
+            <ChevronRight size={18} className="text-muted" aria-hidden />
+          </Link>
+          <div className="grid grid-cols-3 gap-2">
             {QUICK_ACTIONS.map((a, i) => (
-              <Link key={a.href} href={a.href} style={{ animationDelay: `${90 + i * 35}ms` }}
-                className={cx("qa-tile flex min-h-24 flex-col justify-between rounded-2xl border p-3 active:scale-[0.97]", isOn(a.href) ? "border-acc bg-acc-soft" : "border-line bg-panel2")}>
-                <a.icon size={22} className="text-acc-ink" aria-hidden />
-                <span><span className="block text-sm font-bold leading-tight">{a.label}</span><span className="block text-[11px] leading-snug text-muted">{a.sub}</span></span>
+              <Link key={a.href} href={a.href} style={{ animationDelay: `${90 + i * 30}ms` }}
+                className={cx("qa-tile flex min-h-[5.5rem] flex-col justify-between rounded-2xl border p-2.5 active:scale-[0.97]", isOn(a.href) ? "border-acc bg-acc-soft" : "border-line bg-panel2")}>
+                <a.icon size={20} className="text-acc-ink" aria-hidden />
+                <span><span className="block text-[13px] font-bold leading-tight">{a.label}</span><span className="block text-[10px] leading-snug text-muted">{a.sub}</span></span>
               </Link>
             ))}
           </div>
           <div className="qa-tile mt-2 flex justify-center gap-4 text-xs font-semibold text-muted" style={{ animationDelay: "320ms" }}>
             {keeper && <Link href="/keepers" className="py-1.5 hover:text-fg">Keeper Planner</Link>}
             <Link href="/methodology" className="py-1.5 hover:text-fg">How it&apos;s calculated</Link>
-            <Link href="/settings" className="py-1.5 hover:text-fg">Settings</Link>
+            <Link href="/shs" className="py-1.5 hover:text-fg">SHS AI Lab</Link>
           </div>
         </div>
       )}

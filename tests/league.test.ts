@@ -351,4 +351,35 @@ describe.skipIf(!have)("league context on fixtures", () => {
       for (const f of made) fs.rmSync(f);
     }
   }, 60_000);
+
+  it("new tools: start/sit, waiver planner, mock drafts, ask", async () => {
+    const ctx = await mod.getLeagueContext("fx3", { userId: "389682598735060992" });
+    const me = ctx.teams.find((t) => t.rosterId === ctx.myRosterId)!;
+    const { startSit } = await import("@/lib/services/startSit");
+    const ids = me.players.filter((id) => ["WR"].includes(ctx.players.get(id)?.pos ?? "")).slice(0, 3);
+    const ss = startSit(ctx, ids, Math.min(ctx.currentWeek, ctx.lastWeek));
+    expect(ss.reduce((a, r) => a + r.best, 0)).toBeCloseTo(100, 0);
+    const { waiverPlan } = await import("@/lib/services/waiverPlan");
+    const wp = waiverPlan(ctx, me.rosterId);
+    expect(wp.weeks.length).toBeGreaterThan(0);
+    const md = await import("@/lib/services/mockDraft");
+    const st = md.buildMock(ctx, "redraft", { slot: 3 });
+    expect(st.picks.filter((p) => p.round === 1)[2].owner).toBe(st.me);
+    let r = 0.3; const rand = () => (r = (r * 9301 + 49297) % 233280 / 233280);
+    for (let i = 0; i < st.picks.length; i++) { const pk = md.nextPick(st)!; pk.playerId = pk.owner === st.me ? md.suggestions(st, 1)[0].p.id : md.botPick(st, rand); }
+    expect(new Set(st.picks.map((p) => p.playerId)).size).toBe(st.picks.length);
+    // nobody drafts a kicker in round 1, every team ends with its starting QB
+    expect(st.picks.filter((p) => p.round <= 3).every((p) => !["K", "DEF"].includes(st.pool.get(p.playerId!)!.pos))).toBe(true);
+    const g = md.gradeDraft(ctx, st);
+    expect(g[0].grade).toBe("A");
+    const dy = await mod.getLeagueContext("fx1", { userId: "389682598735060992" });
+    const rk = md.buildMock(dy, "rookie", { rookies: [{ n: "Test Prospect", p: "WR", t: "OSU", e: 1, s: null }] });
+    expect(rk.picks.length).toBeGreaterThan(0);
+    const { ask, findPlayers } = await import("@/lib/services/ask");
+    const a = ctx.players.get(ids[0])!, b = ctx.players.get(ids[1])!;
+    expect(findPlayers(ctx, `start ${a.name} or ${b.name}?`)).toEqual([a.id, b.id]);
+    expect(ask(ctx, `Should I start ${a.name} or ${b.name}?`).text).toMatch(/^Start /);
+    expect(ask(ctx, "what are my playoff odds").text).toMatch(/playoffs/);
+    expect(ask(ctx, "hello").bullets!.length).toBeGreaterThan(3);
+  });
 });

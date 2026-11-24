@@ -5,6 +5,9 @@ import Link from "next/link";
 import { formatLabel } from "@/lib/services/portfolio";
 import { rosterSpace, waiverReport, type WaiverPlayer } from "@/lib/services/waivers";
 import { WaiverBoard } from "./WaiverBoard";
+import { cx } from "@/components/ui";
+import { useMemo } from "react";
+import { waiverPlan } from "@/lib/services/waiverPlan";
 import { Card, InjuryChip, NflLogo, Notice, PageHeader, Tag, signed, Info } from "@/components/ui";
 import { PlayerImg } from "@/components/client";
 import { PlayerLink } from "@/components/PlayerCard";
@@ -63,6 +66,8 @@ function WaiverPageBody({ setup, league, ctx, sp }: LeagueData) {
         <ListCard title="Handcuffs" hint="Free-agent RBs who are next up on their NFL depth chart. Backups to your own RBs first." items={r.handcuffs} stat={(w) => w.proj.base.toFixed(1)} statLabel="pts/game" ai={aiRos} />
       </div>
 
+      <WaiverPlanner ctx={ctx} rosterId={ctx.myRosterId} />
+
       <Card title="Drop candidates" info={<>Bench players (not in any of your best lineups) who are worse than the best free agent at the same position right now{" "}— in redraft by rest-of-season points per game, in dynasty by trade value. Players out long-term (IR, PUP, suspended) are flagged too.</>} right={<Tag kind="MODEL" />} pad={false}>
         <ul className="divide-y divide-line">
           {r.drops.map((d) => (
@@ -95,6 +100,46 @@ function ListCard({ title, hint, items, stat, statLabel, ai }: { title: string; 
           </li>
         ))}
       </ul>
+    </Card>
+  );
+}
+
+/** The next four weeks: where your lineup has holes, and who fills them (add early) or is worth stashing. */
+function WaiverPlanner({ ctx, rosterId }: { ctx: LeagueData["ctx"]; rosterId: number | null }) {
+  const plan = useMemo(() => (rosterId === null || ctx.seasonOver ? null : waiverPlan(ctx, rosterId)), [ctx, rosterId]);
+  if (!plan) return null;
+  const KIND = { fill: ["Bye/hole fill", "bg-acc text-on-acc"], upgrade: ["Upgrade", "bg-pos/20 text-pos"], stash: ["Stash", "border border-line text-muted"] } as const;
+  return (
+    <Card title="Waiver planner · next 4 weeks" info={<>Looks ahead, not just at this week. Each week we build your best lineup from projections (byes, injuries and matchups included) and flag the spots that will be empty or weak. Then every free agent is tried in your lineup for each week: the bars show how many points he adds each week. Grab bye-week fills a week early, before other teams do; stash injured players who&apos;ll start for you when they&apos;re back.</>}>
+      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {plan.weeks.map((w) => (
+          <div key={w.week} className={cx("rounded-xl border p-2.5", w.holes.length ? "border-warn/60 bg-warn/5" : "border-line bg-panel2/40")}>
+            <div className="flex items-center justify-between text-xs"><b>Week {w.week}</b><span className="num text-muted">{w.total.toFixed(0)} pts</span></div>
+            {w.holes.length ? <ul className="mt-1 flex flex-col gap-0.5 text-[11px]">{w.holes.slice(0, 3).map((h, i) => <li key={i} className="truncate"><b className="text-warn">{h.slot}</b> {h.name} · {h.why}</li>)}</ul>
+              : <div className="mt-1 text-[11px] text-pos">Lineup set</div>}
+          </div>
+        ))}
+      </div>
+      <ul className="flex flex-col divide-y divide-line">
+        {plan.targets.map((t) => {
+          const mx = Math.max(1, ...plan.targets.flatMap((x) => Object.values(x.gains)));
+          return (
+            <li key={t.id} className="flex items-center gap-3 py-2.5">
+              <PlayerImg id={t.id} name={t.name} pos={t.pos} size={34} />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5"><PlayerLink id={t.id} name={t.name} className="truncate text-sm font-semibold" /><span className="text-xs text-muted">{t.pos} · {t.team}</span><InjuryChip status={t.injury} /><span className={cx("ml-auto shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase", KIND[t.kind][1])}>{KIND[t.kind][0]}</span></div>
+                <div className="truncate text-xs text-muted">{t.why}</div>
+              </div>
+              <div className="flex h-8 shrink-0 items-end gap-1" aria-label="Points added each week">
+                {plan.weeks.map((w) => <div key={w.week} title={`Week ${w.week}: +${t.gains[w.week]}`} className="flex w-3 flex-col items-center"><div className="w-3 rounded-sm bg-acc" style={{ height: `${Math.max(2, (t.gains[w.week] / mx) * 26)}px`, opacity: t.gains[w.week] > 0 ? 1 : 0.2 }} /></div>)}
+              </div>
+            </li>
+          );
+        })}
+        {!plan.targets.length && <li className="py-3 text-sm text-muted">No free agent improves your lineup over the next four weeks.</li>}
+      </ul>
+      {plan.drop && plan.targets.length > 0 && <p className="mt-2 text-xs text-muted">Roster full? Your least valuable bench player is <b className="text-fg">{plan.drop.name}</b>.</p>}
+      <p className="mt-1 text-[11px] text-muted">Bars = points added to your best lineup, weeks {plan.weeks[0]?.week}–{plan.weeks.at(-1)?.week}.</p>
     </Card>
   );
 }

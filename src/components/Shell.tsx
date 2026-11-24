@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Settings } from "lucide-react";
 import { AppProvider, useApp } from "./AppData";
-import { LeagueSelect, MobileTabs, QUICK_ACTIONS, RefreshButton, SideNavLink } from "./client";
+import { ASK, LeagueSelect, MobileTabs, QUICK_ACTIONS, RefreshButton, SideNavLink } from "./client";
 import { PlayerCardProvider } from "./PlayerCard";
 import { TeamPeekProvider } from "./TeamPeek";
 import { formatLabel } from "@/lib/services/portfolio";
@@ -55,7 +55,7 @@ function Frame({ children }: { children: ReactNode }) {
   }, []);
   const leagues = (setup?.leagues ?? []).map((l) => ({ id: l.league_id, name: l.name, format: formatLabel(l), avatar: l.avatar ? `https://sleepercdn.com/avatars/thumbs/${l.avatar}` : null }));
   const isKeeper = setup?.leagues.find((l) => l.league_id === leagueId)?.settings.type === 1;
-  const tools = [...QUICK_ACTIONS.map((a) => ({ href: a.href, label: a.label })), ...(isKeeper ? [{ href: "/keepers", label: "Keeper Planner" }] : [])];
+  const tools = [{ href: ASK.href, label: ASK.label }, ...QUICK_ACTIONS.map((a) => ({ href: a.href, label: a.label })), ...(isKeeper ? [{ href: "/keepers", label: "Keeper Planner" }] : []), { href: "/shs", label: "SHS AI Lab" }];
   return (
     <>
       {/* App shell: the header never moves; only the content area scrolls (no page bounce on iPhone). */}

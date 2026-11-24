@@ -157,8 +157,11 @@ async function main() {
       (out[id] ??= {})[k] = n;
     };
     let ecrDate = "";
+    // Dynasty rookie rankings (next rookie class, before and after the NFL draft): for rookie mock drafts.
+    const rookies: { n: string; p: string; t: string; e: number; s: string | null }[] = [];
     for (const r of parseCsv(ecr)) {
       ecrDate = r.scrape_date || ecrDate;
+      if (r.page_type === "dynasty-rk" && ["QB", "RB", "WR", "TE"].includes(r.pos) && Number(r.ecr)) rookies.push({ n: r.player, p: r.pos, t: r.team || r.tm || "", e: Number(r.ecr), s: toSleeper.get(r.id) ?? null });
       const id = sid(r.id, r.pos, r.team || r.tm);
       const pt = r.page_type;
       if (pt === "redraft-overall") put(id, "ro", r.ecr);
@@ -176,7 +179,7 @@ async function main() {
     }
     delete out._;
     for (const r of parseCsv(values)) { const id = toSleeper.get(r.fp_id); put(id, "v1", r.value_1qb); put(id, "v2", r.value_2qb); }
-    write("consensus.json", JSON.stringify({ ecrDate, weeklyDate, source: "FantasyPros ECR via DynastyProcess", players: out }));
+    write("consensus.json", JSON.stringify({ ecrDate, weeklyDate, source: "FantasyPros ECR via DynastyProcess", players: out, rookies: rookies.sort((a, b) => a.e - b.e) }));
   }]);
 
   // Weekly expert rankings as they stood before each week's Sunday games, rebuilt from the public git history of
@@ -250,6 +253,54 @@ async function main() {
     const pfrToGsis = new Map(players.filter((p) => p.pfr).map((p) => [p.pfr!, p.gsis]));
     const [rec, rush, pass] = await Promise.all(["rec", "rush", "pass"].map((t) => opt(`${REL}/pfr_advstats/advstats_week_${t}_${s}.csv`, `advstats_week_${t}_${s}.csv`)));
     write(`pfr-${s}.json`, columns(parsePfrAdv(rec, rush, pass, pfrToGsis, s)));
+  }]);
+  // News feed: what changed for fantasy-relevant players since the last refresh (injury designations, IR, team
+  // changes, signings/releases, depth-chart starters), plus who's being added most on Sleeper. Built from the
+  // Sleeper player database we already download; previous state is kept on the history branch.
+  jobs.push(["news", async () => {
+    const OFF = new Set(["QB", "RB", "WR", "TE", "K"]);
+    const dir = path.join(process.cwd(), "history", "news");
+    fs.mkdirSync(dir, { recursive: true });
+    const stateF = path.join(dir, "state.json"), feedF = path.join(dir, "feed.json");
+    const prev: Record<string, [string | null, string | null, string | null, number | null]> = fs.existsSync(stateF) ? JSON.parse(fs.readFileSync(stateF, "utf8")) : {};
+    let feed: { at: string; id: string; kind: string; text: string; pos: string; team: string | null }[] = fs.existsSync(feedF) ? JSON.parse(fs.readFileSync(feedF, "utf8")) : [];
+    const now = new Date().toISOString();
+    const state: typeof prev = {};
+    const first = !Object.keys(prev).length;
+    for (const [id, p] of Object.entries(sleeperAll)) {
+      const pos = String(p.position ?? "");
+      if (!OFF.has(pos)) continue;
+      const rank = Number(p.search_rank ?? 9999);
+      const team = (p.team as string) || null, inj = (p.injury_status as string) || null, st = (p.status as string) || null, dc = (p.depth_chart_order as number) ?? null;
+      if (!team && !prev[id]) continue;
+      state[id] = [team, inj, st, dc];
+      const o = prev[id];
+      if (first || !o || rank > 400) continue;
+      const name = String(p.full_name ?? `${p.first_name} ${p.last_name}`);
+      const part = p.injury_body_part ? ` (${p.injury_body_part})` : "";
+      const add = (kind: string, text: string) => feed.push({ at: now, id, kind, text, pos, team });
+      if (o[0] !== team) add("team", !team ? `${name} released by ${o[0]}` : !o[0] ? `${name} signs with ${team}` : `${name} moves from ${o[0]} to ${team}`);
+      if (st !== o[2] && st === "Injured Reserve") add("ir", `${name} placed on injured reserve${part}`);
+      else if (o[2] === "Injured Reserve" && st === "Active") add("return", `${name} activated from injured reserve`);
+      if (inj !== o[1] && st !== "Injured Reserve") {
+        if (inj && !o[1]) add("injury", `${name} listed ${inj}${part}`);
+        else if (inj && o[1]) add("injury", `${name} now ${inj} (was ${o[1]})${part}`);
+        else if (!inj && o[1]) add("healthy", `${name} no longer on the injury report`);
+      }
+      if (team && o[0] === team && dc !== o[3] && (dc === 1 || o[3] === 1) && pos !== "K") add("depth", dc === 1 ? `${name} moves to the top of the ${team} depth chart` : `${name} no longer listed as the ${team} starter`);
+    }
+    // Sleeper trending adds (last 24h)
+    try {
+      const tr = await (await fetch("https://api.sleeper.app/v1/players/nfl/trending/add?lookback_hours=24&limit=15")).json() as { player_id: string; count: number }[];
+      feed = feed.filter((x) => x.kind !== "trending");
+      for (const t of tr) { const p = sleeperAll[t.player_id]; if (p && OFF.has(String(p.position))) feed.push({ at: now, id: t.player_id, kind: "trending", text: `${p.full_name} added in ${t.count.toLocaleString()} Sleeper leagues in the last day`, pos: String(p.position), team: (p.team as string) || null }); }
+    } catch { /* optional */ }
+    const cut = Date.now() - 10 * 864e5;
+    feed = feed.filter((x) => Date.parse(x.at) >= cut).slice(-800);
+    fs.writeFileSync(stateF, JSON.stringify(state));
+    fs.writeFileSync(feedF, JSON.stringify(feed));
+    write("news.json", JSON.stringify({ builtAt: now, items: [...feed].reverse() }));
+    console.log(`news: ${feed.length} items`);
   }]);
   // Prediction-market player lines (public, no key): Kalshi and Polymarket. Open markets only = this week's games.
   jobs.push(["markets", async () => {
