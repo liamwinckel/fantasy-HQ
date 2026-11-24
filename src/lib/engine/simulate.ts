@@ -2,7 +2,8 @@
  * Monte Carlo season simulation (default 5,000 runs).
  * Each remaining game: each team scores Normal(mean, sd) from its best projected lineup that week.
  * Standings: wins, then points for (Sleeper's default tiebreak). Divisions are not modelled.
- * Playoffs: top N seeds; top seeds get byes up to the next power of two; higher seed plays lowest remaining seed.
+ * Playoffs: top N seeds; top seeds get byes up to the next power of two. Fixed bracket like Sleeper's default
+ * (1 v 8, 4 v 5, 2 v 7, 3 v 6 …, winners meet in bracket order), or re-seeded each round when the league re-seeds.
  */
 
 export interface TeamWeek { mean: number; sd: number }
@@ -20,6 +21,8 @@ export interface SimInput {
   playoffWeeks: number[];
   runs?: number;
   seed?: number;
+  /** Re-seed each round (highest seed plays lowest remaining) instead of a fixed bracket. */
+  reseed?: boolean;
 }
 
 export interface SimResult {
@@ -32,6 +35,19 @@ export interface SimResult {
   seedDist: Record<number, number[]>;
   /** % of simulations reaching each playoff round (index 0 = made playoffs … last = won title). */
   roundOdds: Record<number, number[]>;
+  /**
+   * Playoff weeks: who each team plays, as % of simulations. Keys: opponent roster id, "bye", or "out"
+   * (missed the playoffs or already eliminated). Also the most common pairings each week.
+   */
+  playoffOpp: Record<number, Record<number, Record<string, number>>>;
+  playoffPairs: Record<number, { a: number; b: number; pct: number }[]>;
+}
+
+/** Standard bracket slot order for a power-of-two field: 1,8,4,5,2,7,3,6 for 8. */
+export function bracketOrder(size: number): number[] {
+  let order = [1];
+  while (order.length < size) { const n = order.length * 2 + 1; order = order.flatMap((x) => [x, n - x]); }
+  return order;
 }
 
 function rng(seed: number) {
@@ -62,6 +78,10 @@ export function simulateSeason(inp: SimInput): SimResult {
   const seedCount: Record<number, number[]> = {};
   const roundCount: Record<number, number[]> = {};
   for (const id of ids) { playoff[id] = 0; title[id] = 0; seedSum[id] = 0; winSum[id] = 0; seedCount[id] = ids.map(() => 0); roundCount[id] = []; }
+  const oppCount: Record<number, Record<number, Record<string, number>>> = {};
+  const pairCount: Record<number, Record<string, number>> = {};
+  for (const wk of inp.playoffWeeks) { oppCount[wk] = {}; pairCount[wk] = {}; for (const id of ids) oppCount[wk][id] = {}; }
+  const note = (wk: number, id: number, k: string) => { if (oppCount[wk]) oppCount[wk][id][k] = (oppCount[wk][id][k] ?? 0) + 1; };
   const draw = (id: number, week: number) => {
     const s = inp.strength(id, week);
     return s.mean + s.sd * normal(r);
@@ -84,33 +104,55 @@ export function simulateSeason(inp: SimInput): SimResult {
     const seeds = standings.slice(0, inp.playoffTeams);
     seeds.forEach((id) => playoff[id]++);
     // Bracket
-    let alive = seeds.map((id, i) => ({ id, seed: i + 1 }));
     let size = 1;
-    while (size < alive.length) size *= 2;
-    let byes = size - alive.length;
-    let round = 0;
+    while (size < seeds.length) size *= 2;
     const reach = (list: { id: number }[], r: number) => { for (const t of list) roundCount[t.id][r] = (roundCount[t.id][r] ?? 0) + 1; };
+    // slots: fixed bracket positions (null = bye); re-seeding rebuilds them each round.
+    let slots: ({ id: number; seed: number } | null)[] = bracketOrder(size).map((sd) => (sd <= seeds.length ? { id: seeds[sd - 1], seed: sd } : null));
+    let alive = seeds.map((id, i) => ({ id, seed: i + 1 }));
     reach(alive, 0);
+    let round = 0;
     while (alive.length > 1) {
       const week = inp.playoffWeeks[Math.min(round, inp.playoffWeeks.length - 1)] ?? 0;
-      const sorted = [...alive].sort((a, b) => a.seed - b.seed);
-      const byeTeams = sorted.slice(0, byes);
-      const playing = sorted.slice(byes);
-      const next = [...byeTeams];
-      for (let i = 0; i < playing.length / 2; i++) {
-        const hi = playing[i];
-        const lo = playing[playing.length - 1 - i];
-        next.push(draw(hi.id, week) >= draw(lo.id, week) ? hi : lo);
+      if (inp.reseed && round > 0) {
+        const sorted = [...alive].sort((x, y) => x.seed - y.seed);
+        let sz = 1; while (sz < sorted.length) sz *= 2;
+        slots = bracketOrder(sz).map((k) => sorted[k - 1] ?? null);
       }
-      alive = next;
-      byes = 0;
+      const aliveIds = new Set(alive.map((t) => t.id));
+      if (round < inp.playoffWeeks.length) for (const id of ids) if (!aliveIds.has(id)) note(week, id, "out");
+      const next: typeof slots = [];
+      for (let i = 0; i < slots.length; i += 2) {
+        const x = slots[i], y = slots[i + 1];
+        if (x && y) {
+          if (round < inp.playoffWeeks.length) {
+            note(week, x.id, String(y.id)); note(week, y.id, String(x.id));
+            const k = x.id < y.id ? `${x.id}-${y.id}` : `${y.id}-${x.id}`;
+            pairCount[week][k] = (pairCount[week][k] ?? 0) + 1;
+          }
+          next.push(draw(x.id, week) >= draw(y.id, week) ? x : y);
+        } else {
+          const t = x ?? y;
+          if (t && round < inp.playoffWeeks.length) note(week, t.id, "bye");
+          next.push(t);
+        }
+      }
+      slots = next;
+      alive = next.filter((t): t is { id: number; seed: number } => !!t);
       round++;
       reach(alive, round);
     }
+    // Weeks after the title game is decided (or a shorter bracket): everyone is out.
+    for (let k = round; k < inp.playoffWeeks.length; k++) for (const id of ids) note(inp.playoffWeeks[k], id, "out");
     if (alive[0]) title[alive[0].id]++;
   }
   const pct = (x: number) => Math.round((1000 * x) / runs) / 10;
-  const o: SimResult = { playoffOdds: {}, titleOdds: {}, avgSeed: {}, projectedWins: {}, runs, seedDist: {}, roundOdds: {} };
+  const o: SimResult = { playoffOdds: {}, titleOdds: {}, avgSeed: {}, projectedWins: {}, runs, seedDist: {}, roundOdds: {}, playoffOpp: {}, playoffPairs: {} };
+  for (const wk of inp.playoffWeeks) {
+    o.playoffOpp[wk] = {};
+    for (const id of ids) o.playoffOpp[wk][id] = Object.fromEntries(Object.entries(oppCount[wk][id]).map(([k, v]) => [k, pct(v)]));
+    o.playoffPairs[wk] = Object.entries(pairCount[wk]).map(([k, v]) => { const [a, b] = k.split("-").map(Number); return { a, b, pct: pct(v) }; }).sort((x, y) => y.pct - x.pct);
+  }
   for (const id of ids) {
     o.playoffOdds[id] = pct(playoff[id]);
     o.titleOdds[id] = pct(title[id]);

@@ -194,3 +194,20 @@ describe("four quarters for a dollar", () => {
     expect(packageValue([])).toBe(0);
   });
 });
+
+describe("playoff bracket estimate", () => {
+  it("uses Sleeper's fixed bracket and records likely opponents", async () => {
+    const { bracketOrder, simulateSeason } = await import("@/lib/engine/simulate");
+    expect(bracketOrder(8)).toEqual([1, 8, 4, 5, 2, 7, 3, 6]);
+    const ids = [1, 2, 3, 4, 5, 6, 7, 8];
+    const r = simulateSeason({ rosterIds: ids, wins: { 1: 9, 2: 8, 3: 7, 4: 6, 5: 5, 6: 4, 7: 3, 8: 2 }, losses: {}, ties: {}, pointsFor: {}, schedule: [],
+      strength: (id) => ({ mean: 100 + (8 - id) * 3, sd: 15 }), playoffTeams: 6, playoffWeeks: [15, 16, 17], runs: 2000 });
+    // Round 1: seeds 1 and 2 on bye, 3 v 6, 4 v 5; 7 and 8 out.
+    expect(r.playoffOpp[15][1].bye).toBe(100);
+    expect(r.playoffOpp[15][3]["6"]).toBe(100);
+    expect(r.playoffOpp[15][7].out).toBe(100);
+    // Round 2: seed 1 meets the 4/5 winner, never 3 or 6.
+    expect((r.playoffOpp[16][1]["4"] ?? 0) + (r.playoffOpp[16][1]["5"] ?? 0)).toBeCloseTo(100, 0);
+    expect(r.playoffPairs[15][0].pct).toBe(100);
+  });
+});

@@ -83,6 +83,7 @@ function MatchupPageBody({ setup, league, ctx, sp }: LeagueData) {
       <WeekSwipe week={week} min={1} max={ctx.lastWeek} onWeek={(w) => set({ week: String(w) }, true)}>
       <p className="-mb-2 text-center text-[11px] text-muted md:hidden">Swipe left or right to change week</p>
       <Preview g={g} kind={kind} started={started} myTotal={myGame ? myTotal : null} oppStrength={oppStrength} myStrength={myStrength} rank={rankOf} />
+      {!g.b && kind !== "past" && week >= ctx.playoffStart && ctx.sim.playoffOpp?.[week] && <PlayoffEstimate ctx={ctx} rid={focus} week={week} />}
 
       {myGame && me && <MyLineup ctx={ctx} me={me} week={week} onTotal={setMyTotal} opponent={g.b} />}
 
@@ -146,7 +147,20 @@ function MatchupPageBody({ setup, league, ctx, sp }: LeagueData) {
               </li>
             );
           })}
-          {games.length === 0 && <li className="px-5 py-4 text-sm text-muted">Playoff matchups are set by the bracket. Check back once seeds are final.</li>}
+          {games.length === 0 && (ctx.sim.playoffPairs?.[week]?.length ? (
+            <li className="px-5 py-3 md:col-span-2">
+              <div className="mb-2 flex items-center gap-2 text-xs"><span className="rounded border border-dashed border-acc-ink px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-acc-ink">Estimate</span><span className="text-muted">Most likely matchups, from {ctx.sim.runs.toLocaleString()} simulated seasons</span></div>
+              <ul className="flex flex-col gap-1.5">
+                {ctx.sim.playoffPairs[week].slice(0, 6).map((pr) => (
+                  <li key={`${pr.a}-${pr.b}`} className={cx("flex items-center gap-2 text-sm", (pr.a === ctx.myRosterId || pr.b === ctx.myRosterId) && "font-semibold text-acc-ink")}>
+                    <span className="flex min-w-0 flex-1 items-center gap-1.5"><Logo src={av(pr.a)} name={name(pr.a)} size={18} /><span className="truncate">{name(pr.a)}</span><span className="text-muted">vs</span><Logo src={av(pr.b)} name={name(pr.b)} size={18} /><span className="truncate">{name(pr.b)}</span></span>
+                    <span className="num shrink-0 text-xs text-muted">{pr.pct.toFixed(0)}%</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 text-[11px] text-muted">Real matchups appear once the bracket is set.</p>
+            </li>
+          ) : <li className="px-5 py-4 text-sm text-muted">Playoff matchups are set by the bracket. Check back once seeds are final.</li>)}
         </ul>
       </Card>
       </WeekSwipe>
@@ -181,5 +195,41 @@ function Preview({ g, kind, started, myTotal, oppStrength, myStrength, rank }: {
         <div className="mt-4 flex items-center gap-3"><span className="shrink-0 text-xs text-muted">Win chance</span><WinBar pct={wp} /><span className="num w-12 text-right text-xl font-bold">{wp.toFixed(0)}%</span></div>
       )}
     </section>
+  );
+}
+
+/** Playoff week with no bracket yet: who this team most likely plays, from the season simulations. Clearly an estimate. */
+function PlayoffEstimate({ ctx, rid, week }: { ctx: LeagueData["ctx"]; rid: number; week: number }) {
+  const m = ctx.sim.playoffOpp[week]?.[rid] ?? {};
+  const out = m.out ?? 0, bye = m.bye ?? 0;
+  const opps = Object.entries(m).filter(([k]) => k !== "out" && k !== "bye").map(([k, v]) => ({ id: Number(k), pct: v })).sort((a, b) => b.pct - a.pct);
+  const playing = opps.reduce((a, o) => a + o.pct, 0);
+  const team = (id: number) => ctx.teams.find((t) => t.rosterId === id);
+  const round = week - ctx.playoffStart + 1;
+  const me = team(rid);
+  const mine = rid === ctx.myRosterId;
+  const ws = (id: number) => ctx.weekStrength.get(id)?.get(week);
+  return (
+    <Card title={`Playoff round ${round} · likely opponent`} right={<span className="rounded border border-dashed border-acc-ink px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-acc-ink">Estimate</span>}
+      info={<>The bracket isn&apos;t set yet, so this comes from {ctx.sim.runs.toLocaleString()} simulated finishes to the season: every remaining game is played out from each team&apos;s projected lineups, seeds are set by record then points, and the bracket is played round by round{(ctx.league.settings as Record<string, unknown>).playoff_seed_type === 1 ? " (re-seeded each round, like your league)" : " (fixed bracket, like Sleeper's default)"}. Percentages are how often each pairing came up.</>}>
+      <div className="mb-3 grid grid-cols-3 gap-2 text-center">
+        <div className="rounded-lg bg-panel2 p-2"><div className="num text-lg font-bold">{playing.toFixed(0)}%</div><div className="text-[10px] text-muted">{mine ? "you" : me?.name ?? "team"} play this week</div></div>
+        <div className="rounded-lg bg-panel2 p-2"><div className="num text-lg font-bold">{bye.toFixed(0)}%</div><div className="text-[10px] text-muted">on a bye</div></div>
+        <div className="rounded-lg bg-panel2 p-2"><div className="num text-lg font-bold">{out.toFixed(0)}%</div><div className="text-[10px] text-muted">{round === 1 ? "miss the playoffs" : "already out"}</div></div>
+      </div>
+      {opps.length ? (
+        <ul className="flex flex-col gap-2">
+          {opps.slice(0, 5).map((o) => { const t = team(o.id); const a = ws(rid), b = ws(o.id); const wp = a && b ? winProbability(a, b) : null; const share = playing ? (100 * o.pct) / playing : 0; return (
+            <li key={o.id} className="text-sm">
+              <div className="flex items-center justify-between gap-2">
+                <TeamLink rosterId={o.id} name={t?.name ?? "—"} avatar={t?.avatar ?? null} size={20} className="min-w-0 truncate font-semibold" />
+                <span className="num shrink-0 text-xs"><b>{share.toFixed(0)}%</b><span className="text-muted"> if {mine ? "you play" : "they play"}</span></span>
+              </div>
+              <div className="mt-1 h-1.5 rounded-full bg-panel2"><div className="h-1.5 rounded-full bg-acc" style={{ width: `${share}%` }} /></div>
+              {wp !== null && <div className="mt-0.5 text-[11px] text-muted">{mine ? "Your" : "Their"} win chance vs them: {wp.toFixed(0)}% (projected lineups)</div>}
+            </li>); })}
+        </ul>
+      ) : <p className="text-sm text-muted">{out >= 99 ? "Doesn't reach this round in any simulation." : "Has a bye in every simulation that reaches this round."}</p>}
+    </Card>
   );
 }

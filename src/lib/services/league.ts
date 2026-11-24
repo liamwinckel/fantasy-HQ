@@ -548,6 +548,7 @@ async function buildLeagueContext(
     },
     playoffTeams,
     playoffWeeks: Array.from({ length: rounds }, (_, i) => playoffStart + i),
+    reseed: (league.settings as Record<string, unknown>).playoff_seed_type === 1,
     runs: 4000,
     seed: Number(leagueId.slice(-6)) || 7,
   });
