@@ -1,0 +1,16 @@
+name: Diagnostic
+on: workflow_dispatch
+permissions: { contents: write }
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run data
+      - run: DIAG=1 npx vitest run tests/diag/rookies.test.ts || true
+      - run: |
+          git config user.name "fhq-bot"; git config user.email "bot@users.noreply.github.com"
+          git checkout --orphan diag-out; git rm -rq --cached .; git add -f diag-out.txt; git commit -qm diag; git push -f origin diag-out
