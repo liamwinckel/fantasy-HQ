@@ -6,7 +6,7 @@ import { LeaguePage, useQuery, type LeagueData } from "@/components/AppData";
 import { PlayerImg, TabSwitch } from "@/components/client";
 import { PlayerLink } from "@/components/PlayerCard";
 import { InfoButton, InjuryChip, NflLogo, PageHeader, cx } from "@/components/ui";
-import { AiChip, label, ShsExplainer, shsVerdict, useCollege, useShsWeights } from "@/components/ShsAiParts";
+import { AiChip, label, MovePill, rankMove, ShsExplainer, shsVerdict, useCollege, useShsWeights } from "@/components/ShsAiParts";
 import { accuracy, snapshotWeek } from "@/lib/services/accuracy";
 import { BacktestCard } from "@/components/Backtest";
 import { playerDist } from "@/lib/engine/ranges";
@@ -188,7 +188,7 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
             {open === r.id && (
               <li className="fhq-in bg-panel2/40 px-3 py-3 sm:px-4">
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs">
-                  <span><b>SHS AI: {shsVerdict(ai.get(r.id)?.pct)?.word ?? "no view"}</b> <span className="text-muted">· experts {r.pos}{r.ecrPos ?? "–"} → SHS AI {r.pos}{ai.get(r.id)!.rank}. {shsVerdict(ai.get(r.id)?.pct)?.long ?? ""}</span></span>
+                  <span className="flex items-center gap-2"><b>Experts {r.pos}{r.ecrPos ?? "–"} → SHS AI {r.pos}{ai.get(r.id)!.rank}</b><MovePill move={rankMove(ai.get(r.id))} /></span>
                   <span className="text-muted">bars: − worse than his rank · + better</span>
                 </div>
                 <Factors a={ai.get(r.id)!} />

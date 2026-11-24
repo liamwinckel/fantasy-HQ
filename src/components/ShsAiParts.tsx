@@ -47,7 +47,7 @@ export function ShsExplainer({ scope }: { scope: RankScope }) {
         </p>
       </>}
       <p className="mt-1.5">{scope === "dynasty" ? "Dynasty uses only long-term data (age, situation, draft profile, usage)." : "Week and rest of season use only redraft data; nothing dynasty-specific."} Each factor compares him with players ranked near him at his position, from −1 (points to worse) to +1 (better).</p>
-      <p className="mt-1.5"><b className="text-fg">=</b> means it agrees with the experts. Up ticks mean SHS AI values him higher than his expert rank, down ticks lower: one tick = leans (4–7%), two = clear (8–14%), three = strong (15%+). Tap the mark for the exact number and the reasons.</p>
+      <p className="mt-1.5">The pill next to each player is <b className="text-fg">where SHS AI would rank him vs the experts at his position</b>: <b className="text-pos">▲2</b> = two spots higher, <b className="text-neg">▼1</b> = one spot lower, <b className="text-fg">=</b> = same spot. Tap it for both ranks, the value difference and the reasons.</p>
       <p className="mt-2 font-semibold text-fg">What it looks at{scope === "week" ? " this week" : scope === "ros" ? " for the rest of the season" : " in dynasty"}:</p>
       <ul className="mt-1 list-disc space-y-0.5 pl-4">{list.map((m) => <li key={m}>{m}</li>)}</ul>
       <p className="mt-2">The research and season-by-season results are in the SHS AI Lab. Settings → SHS AI switches to your own mix.</p>
@@ -75,38 +75,45 @@ export function shsVerdict(pct: number | null | undefined): { word: string; arro
   return { word: "Agree", arrow: "=", tone: "flat", long: "SHS AI agrees with the experts on him." };
 }
 
-/** How many ticks: 1 = leans (4–7%), 2 = clear (8–14%), 3 = strong (15%+). */
-export const shsTicks = (pct: number) => (Math.abs(pct) < 4 ? 0 : Math.abs(pct) < 8 ? 1 : Math.abs(pct) < 15 ? 2 : 3);
+/** Spots SHS AI moves him vs the experts at his position: + = ranks him higher, − = lower, 0 = same spot. */
+export const rankMove = (ai: ShsAiT | null | undefined): number | null => (ai && ai.ecrRank !== null && ai.rank ? ai.ecrRank - ai.rank : null);
 
-function Ticks({ pct }: { pct: number }) {
-  const n = shsTicks(pct);
-  if (!n) return <span className="text-sm font-bold leading-none text-muted">=</span>;
-  const up = pct > 0;
+function Chevron({ up }: { up: boolean }) {
+  return <svg width="8" height="6" viewBox="0 0 8 6" aria-hidden><path d={up ? "M0.8 5.2 4 1.2l3.2 4" : "M0.8 0.8 4 4.8l3.2-4"} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+}
+
+/** The pill: ▲2 = SHS AI ranks him two spots higher than the experts, ▼3 = three lower, = = same spot. */
+export function MovePill({ move, pct, big }: { move: number | null; pct?: number | null; big?: boolean }) {
+  const val = move ?? (pct !== null && pct !== undefined ? (Math.abs(pct) < 4 ? 0 : pct) : null);
+  if (val === null) return null;
+  const up = val > 0, flat = val === 0;
+  const text = flat ? "=" : move !== null ? String(Math.abs(val)) : `${Math.abs(val)}%`;
   return (
-    <span className={cx("inline-flex items-center", up ? "text-pos" : "text-neg")} aria-hidden>
-      {Array.from({ length: n }, (_, i) => (
-        <svg key={i} width="9" height="10" viewBox="0 0 9 10" className="-mx-[1px]"><path d={up ? "M1 7.5 4.5 3 8 7.5" : "M1 2.5 4.5 7 8 2.5"} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-      ))}
+    <span className={cx("inline-flex items-center justify-center gap-0.5 rounded-full font-bold tabular-nums leading-none",
+      big ? "h-9 min-w-14 px-3 text-lg" : "h-[22px] min-w-[2.6rem] px-2 text-[11px]",
+      flat ? "bg-panel2 text-muted" : up ? "bg-pos/15 text-pos" : "bg-neg/15 text-neg")}>
+      {!flat && <Chevron up={up} />}{text}
     </span>
   );
 }
 
 /**
- * SHS AI's view as a small mark: "=" when it agrees with the experts, up/down ticks when it doesn't.
- * Tap for the exact number and why.
+ * SHS AI's view as a small pill: where it ranks him vs the experts at his position (▲2, ▼1, =).
+ * Tap for the exact ranks, the value difference and why.
  */
 export function AiChip({ v, ai, name, className }: { v: number | null | undefined; ai?: ShsAiT | null; name?: string; className?: string; label?: boolean }) {
   const [open, setOpen] = useState(false);
-  if (v === null || v === undefined) return null;
-  const d = shsVerdict(v)!;
+  const move = rankMove(ai);
+  if ((v === null || v === undefined) && move === null) return null;
   return (
     <>
-      <button type="button" onClick={(e) => { e.stopPropagation(); setOpen(true); }} aria-label={`SHS AI: ${d.word}. Tap for why.`}
-        className={cx("inline-flex h-6 min-w-6 shrink-0 items-center justify-center rounded-md px-1 transition-colors hover:bg-panel2", className)}>
-        <Ticks pct={v} />
+      <button type="button" onClick={(e) => { e.stopPropagation(); setOpen(true); }}
+        aria-label={move !== null ? (move === 0 ? "SHS AI ranks him where the experts do. Tap for why." : `SHS AI ranks him ${Math.abs(move)} spot${Math.abs(move) === 1 ? "" : "s"} ${move > 0 ? "higher" : "lower"} than the experts. Tap for why.`) : "SHS AI. Tap for why."}
+        className={cx("inline-flex shrink-0 items-center rounded-full transition-transform active:scale-95", className)}>
+        <MovePill move={move} pct={v} />
       </button>
       <Sheet open={open} onClose={() => setOpen(false)} title="SHS AI" sub={name}>
-        <ShsWhy pct={v} ai={ai ?? null} />
+        <ShsWhy pct={v ?? 0} ai={ai ?? null} />
       </Sheet>
     </>
   );
@@ -115,8 +122,10 @@ export function AiChip({ v, ai, name, className }: { v: number | null | undefine
 const sp = (x: number) => `${x > 0 ? "+" : x < 0 ? "−" : ""}${Math.abs(Math.round(x * 1000) / 10)}%`;
 
 /** The exact number, what it means, and the biggest reasons. */
-export function ShsWhy({ pct, ai }: { pct: number; ai: ShsAiT | null }) {
+export function ShsWhy({ pct, ai, pos }: { pct: number; ai: ShsAiT | null; pos?: string }) {
   const d = shsVerdict(pct)!;
+  const move = rankMove(ai);
+  const posLabel = pos ?? ai?.pos ?? "#";
   const custom = ai?.mode === "custom";
   const detail = (k: string) => k === "lines" ? (ai?.market ? `Lines imply ${ai.market.pts.toFixed(1)} pts in your scoring (${ai.market.covered.join(", ")})` : "")
     : k === "gap" ? "Sleeper's projection vs what his expert rank is usually worth" : ai?.factors.find((f) => f.key === k)?.detail ?? "";
@@ -128,11 +137,16 @@ export function ShsWhy({ pct, ai }: { pct: number; ai: ShsAiT | null }) {
   ].filter((r) => Math.abs(r.value) >= 0.1).sort((a, b) => Math.abs(b.value * b.w) - Math.abs(a.value * a.w)).slice(0, 4) : [];
   return (
     <div className="flex flex-col gap-4 pb-4">
-      <div className="flex items-center gap-4 rounded-xl bg-panel2/70 p-4">
-        <span className="scale-150"><Ticks pct={pct} /></span>
-        <div><div className={cx("num text-2xl font-bold", d.tone === "pos" ? "text-pos" : d.tone === "neg" ? "text-neg" : "")}>{pct > 0 ? "+" : ""}{pct}%</div><div className="text-xs text-muted">vs the value of his expert rank</div></div>
-      </div>
-      <p className="text-sm">{d.long}</p>
+      {move !== null ? (
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 rounded-xl bg-panel2/70 p-4 text-center">
+          <div><div className="text-[10px] font-bold uppercase tracking-widest text-muted">Experts</div><div className="num font-[family-name:var(--font-display)] text-3xl font-bold">{posLabel}{ai!.ecrRank}</div></div>
+          <MovePill move={move} big />
+          <div><div className="text-[10px] font-bold uppercase tracking-widest text-acc-ink">SHS AI</div><div className="num font-[family-name:var(--font-display)] text-3xl font-bold">{posLabel}{ai!.rank}</div></div>
+        </div>
+      ) : (
+        <div className="rounded-xl bg-panel2/70 p-4"><div className={cx("num text-2xl font-bold", d.tone === "pos" ? "text-pos" : d.tone === "neg" ? "text-neg" : "")}>{pct > 0 ? "+" : ""}{pct}%</div><div className="text-xs text-muted">vs the value of his expert rank</div></div>
+      )}
+      <p className="text-sm">{move === null ? d.long : move === 0 ? "SHS AI ranks him in the same spot as the experts." : `SHS AI ranks him ${Math.abs(move)} spot${Math.abs(move) === 1 ? "" : "s"} ${move > 0 ? "higher" : "lower"} than the expert consensus at his position.`}{move !== null && pct !== 0 ? ` In value terms: ${pct > 0 ? "+" : ""}${pct}% vs what a ${posLabel}${ai!.ecrRank} is usually worth${pct > 0 && ai!.ecrRank === 1 ? " — already the top spot, so he can't climb higher, but the gap to the next player widens" : ""}.` : ""}</p>
       {custom && ai && <p className="text-xs text-muted">Custom mix: {Math.round(ai.blend.expert * 100)}% expert consensus{ai.blend.sleeper ? ` · ${Math.round(ai.blend.sleeper * 100)}% Sleeper projection` : ""}{ai.blend.market ? ` · ${Math.round(ai.blend.market * 100)}% betting lines` : ""} · {Math.round(ai.blend.factors * 100)}% SHS factors.</p>}
       {moving.length > 0 && (
         <div>
@@ -167,7 +181,7 @@ export function ShsWhy({ pct, ai }: { pct: number; ai: ShsAiT | null }) {
           <ul className="mt-2 flex flex-col gap-1.5 text-muted">{tracked.map((f) => <li key={f.key}><b className="text-fg">{f.label}</b> <span className={f.value > 0.1 ? "text-pos" : f.value < -0.1 ? "text-neg" : ""}>({f.value > 0 ? "+" : ""}{f.value.toFixed(2)})</span> · {f.detail}</li>)}</ul>
         </details>
       )}
-      <p className="text-[11px] text-muted">One tick = leans (4–7%), two = clear (8–14%), three = strong (15%+). “=” = agrees with the experts.</p>
+      <p className="text-[11px] text-muted">The pill shows how many spots SHS AI moves him vs the experts at his position: ▲ higher, ▼ lower, = same spot.</p>
     </div>
   );
 }

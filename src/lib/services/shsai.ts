@@ -30,6 +30,9 @@ export const RESEARCH = RESEARCH_JSON as unknown as { summary: Record<string, nu
 export interface Factor { key: string; label: string; value: number; detail: string; weight: number }
 export interface ShsAi {
   pct: number | null; rating: number; rank: number; factors: Factor[];
+  /** His expert (consensus) rank at his position; SHS AI's own is `rank`. */
+  ecrRank: number | null;
+  pos: string;
   /** Weekly: points the prediction markets imply in this league's scoring, and which stats they covered. */
   market?: { pts: number; value: number; covered: string[] } | null;
   /** The mix used: shares of expert consensus / second opinion (Sleeper or dynasty model) / betting lines / SHS factors (sums to 1). */
@@ -337,7 +340,7 @@ export function shsAi(ctx: LeagueContext, rows: RankRow[], scope: RankScope, wea
     }
     out.set(r.id, {
       pct: r.ecrPos !== null && ecrRating > 0.5 && (factors.length || market || second !== null) ? Math.round(100 * (rating / ecrRating - 1)) : null,
-      rating, rank: 0, factors, market, blend, mode: cfg.mode === "custom" ? "custom" : "shs", parts,
+      rating, rank: 0, ecrRank: r.ecrPos, pos: r.pos, factors, market, blend, mode: cfg.mode === "custom" ? "custom" : "shs", parts,
     });
   }
   // SHS AI rank at each position (players with an expert rank first)
