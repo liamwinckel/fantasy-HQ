@@ -36,13 +36,30 @@ function Frame({ children }: { children: ReactNode }) {
   const scroller = useRef<HTMLDivElement>(null);
   const path = usePathname();
   useEffect(() => { scroller.current?.scrollTo({ top: 0 }); }, [path]);
+  // Belt and braces: if iOS ever scrolls the document (keyboard, tab restore), snap it back so the header stays visible.
+  useEffect(() => {
+    const reset = () => { if (window.scrollY !== 0 || document.documentElement.scrollTop !== 0) window.scrollTo(0, 0); };
+    window.addEventListener("scroll", reset, { passive: true });
+    document.addEventListener("focusout", reset);
+    window.visualViewport?.addEventListener("resize", reset);
+    window.addEventListener("pageshow", reset);
+    document.addEventListener("visibilitychange", reset);
+    reset();
+    return () => {
+      window.removeEventListener("scroll", reset);
+      document.removeEventListener("focusout", reset);
+      window.visualViewport?.removeEventListener("resize", reset);
+      window.removeEventListener("pageshow", reset);
+      document.removeEventListener("visibilitychange", reset);
+    };
+  }, []);
   const leagues = (setup?.leagues ?? []).map((l) => ({ id: l.league_id, name: l.name, format: formatLabel(l), avatar: l.avatar ? `https://sleepercdn.com/avatars/thumbs/${l.avatar}` : null }));
   const isKeeper = setup?.leagues.find((l) => l.league_id === leagueId)?.settings.type === 1;
   const tools = [...QUICK_ACTIONS.map((a) => ({ href: a.href, label: a.label })), ...(isKeeper ? [{ href: "/keepers", label: "Keeper Planner" }] : [])];
   return (
     <>
       {/* App shell: the header never moves; only the content area scrolls (no page bounce on iPhone). */}
-      <div className="flex h-[100dvh] overflow-hidden">
+      <div className="flex h-full overflow-hidden">
         <aside className="hidden h-full w-64 shrink-0 flex-col gap-5 overflow-y-auto border-r border-line bg-panel px-3 py-5 md:flex">
           <Link href="/" className="flex items-center gap-2.5 px-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}

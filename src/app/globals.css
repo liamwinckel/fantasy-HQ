@@ -45,7 +45,10 @@ main > div > *:nth-child(2) { animation-delay: 0.03s; }
 main > div > *:nth-child(3) { animation-delay: 0.06s; }
 main > div > *:nth-child(4) { animation-delay: 0.09s; }
 button, a, select, input { transition: background-color 0.15s, color 0.15s, border-color 0.15s, opacity 0.15s, transform 0.1s; }
+/* App shell: the document itself never scrolls. iOS likes to nudge the page when it shows the keyboard or
+   restores a tab, which slid the header under the status bar (blurred) or off screen; pinning body stops that. */
 html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+body { position: fixed; inset: 0; width: 100%; }
 #fhq-scroll { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
