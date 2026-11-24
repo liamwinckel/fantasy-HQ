@@ -21,19 +21,20 @@ const PALETTE = ["#b7791f", "#2f855a", "#3557c4", "#7c3aed", "#c2410c", "#0e7490
 const colourOf = (id: string) => PALETTE[[...id].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7) % PALETTE.length];
 
 type Slot = { ctx: LeagueContext | null; error: string | null };
+// Survives leaving and coming back to Home, so returning shows the widgets at once instead of loading skeletons.
+const seen: Record<string, Slot> = {};
 
 export default function Home() {
   const app = useApp();
   const { setup } = app;
-  const [slots, setSlots] = useState<Record<string, Slot>>({});
+  const [slots, setSlots] = useState<Record<string, Slot>>(() => ({ ...seen }));
 
   useEffect(() => {
     if (!setup?.settings.userId) return;
     let live = true;
-    setSlots({});
     for (const l of setup.leagues) {
       getLeagueContext(l.league_id, { userId: setup.settings.userId, mode: effectiveMode(setup.settings, l.league_id, l.settings.type) })
-        .then((ctx) => live && setSlots((s) => ({ ...s, [l.league_id]: { ctx, error: null } })))
+        .then((ctx) => { seen[l.league_id] = { ctx, error: null }; if (live) setSlots((s) => (s[l.league_id]?.ctx === ctx ? s : { ...s, [l.league_id]: seen[l.league_id] })); })
         .catch((e) => live && setSlots((s) => ({ ...s, [l.league_id]: { ctx: null, error: (e as Error).message } })));
     }
     return () => { live = false; };

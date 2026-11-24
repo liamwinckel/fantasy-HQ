@@ -43,7 +43,9 @@ export function WeekSwipe({ week, min, max, onWeek, children }: { week: number; 
     let samples: { x: number; t: number }[] = [];
     const interactive = (t: EventTarget | null) => !!(t as HTMLElement | null)?.closest("input,select,textarea,[data-no-swipe],[role=dialog]");
     const start = (e: TouchEvent) => {
-      if (e.touches.length !== 1 || interactive(e.target)) { mode = "v"; return; }
+      // Ignore drags that start at the screen edges: those are "go back" gestures (ours or the browser's).
+      const ex = e.touches[0]?.clientX ?? 0;
+      if (e.touches.length !== 1 || interactive(e.target) || ex < 28 || ex > window.innerWidth - 28) { mode = "v"; return; }
       x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; dx = 0; mode = "idle";
       width = node.parentElement?.clientWidth || window.innerWidth;
       samples = [{ x: x0, t: performance.now() }];

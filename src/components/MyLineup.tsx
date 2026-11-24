@@ -3,7 +3,7 @@
 /** Your lineup for a week: the interactive lineup tool used on the Matchup screen. */
 import { useMemo } from "react";
 import type { LeagueContext, TeamInfo } from "@/lib/services/league";
-import { lineupSwaps, projectionFor, weekKind, type TeamWeek } from "@/lib/services/views";
+import { lineupSwaps, projectionFor, teamWeekBest, weekKind, type TeamWeek } from "@/lib/services/views";
 import { canFill } from "@/lib/engine/positions";
 import { optimizeLineup } from "@/lib/engine/lineup";
 import { LineupLab, type LabPlayer } from "./LineupLab";
@@ -51,11 +51,12 @@ export function MyLineup({ ctx, me, week, onTotal, opponent }: { ctx: LeagueCont
     return { slots, players, current, optimal, swaps };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ctx, me, week]);
+  const oppBest = useMemo(() => (opponent && weekKind(ctx, week) === "current" ? teamWeekBest(ctx, opponent.rosterId, week) : null), [ctx, opponent, week]);
   return (
-    <LineupLab key={`${week}:${me.rosterId}`} {...data} rosterSlots={ctx.league.roster_positions.filter((s) => s !== "BN").join(" · ")} week={week} onTotal={onTotal} opponent={opponent} myName={me.name} live={weekKind(ctx, week) === "current"}
-      sim={opponent ? (l, apply) => {
+    <LineupLab key={`${week}:${me.rosterId}`} {...data} rosterSlots={ctx.league.roster_positions.filter((s) => s !== "BN").join(" · ")} week={week} onTotal={onTotal} opponent={opponent} opponentBest={oppBest} myName={me.name} live={weekKind(ctx, week) === "current"}
+      sim={opponent ? (l, apply, opp) => {
         const by = new Map(data.players.map((p) => [p.id, p]));
-        return <MatchupSim ctx={ctx} week={week} slots={data.slots} lineup={l} opponent={opponent} myName={me.name} onApply={apply}
+        return <MatchupSim ctx={ctx} week={week} slots={data.slots} lineup={l} opponent={opp ?? opponent} myName={me.name} onApply={apply}
           eligible={(id, i) => !!by.get(id)?.eligible[i] && !by.get(id)?.unavailable} locked={(id) => !!by.get(id)?.locked} actual={(id) => by.get(id)?.actual ?? null} />;
       } : undefined} />
   );

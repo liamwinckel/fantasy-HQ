@@ -188,6 +188,31 @@ export function teamWeek(ctx: LeagueContext, rosterId: number, w: number): TeamW
   };
 }
 
+/**
+ * A team's best projected lineup for a week, built the same way as yours: same weekly projections, anyone whose
+ * game has started stays where he is, IR / taxi left out. Future weeks already assume the best lineup.
+ */
+export function teamWeekBest(ctx: LeagueContext, rosterId: number, w: number): TeamWeek | null {
+  const kind = weekKind(ctx, w);
+  if (kind === "past") return null;
+  if (kind === "future") return teamWeek(ctx, rosterId, w);
+  const t = ctx.teams.find((x) => x.rosterId === rosterId);
+  const lu = ctx.lineups.get(rosterId);
+  if (!t || !lu) return null;
+  const m = ctx.matchupsByWeek[w - 1]?.find((x) => x.roster_id === rosterId);
+  const ids = t.players.filter((pid) => !t.taxi.includes(pid) && !t.reserve.includes(pid) && ctx.players.has(pid));
+  const best = optimizeLineup(ctx.league.roster_positions,
+    ids.map((pid) => ({ id: pid, positions: ctx.players.get(pid)!.positions, points: projectionFor(ctx, pid, w).median, locked: lu.locked.includes(pid) })),
+    lu.current.map((s) => s.playerId));
+  const starterSet = new Set(best.map((s) => s.playerId));
+  const starters = best.map((s) => line(ctx, s.slot, s.playerId, w, kind, m));
+  return {
+    rosterId, name: t.name, avatar: t.avatar, starters,
+    bench: t.players.filter((pid) => !starterSet.has(pid) && ctx.players.has(pid)).map((pid) => line(ctx, "BN", pid, w, kind, m)).sort((a, b) => (b.proj ?? 0) - (a.proj ?? 0)),
+    actual: m?.points ?? null, projected: starters.reduce((a, l) => a + (l.proj ?? 0), 0), bestPossible: null,
+  };
+}
+
 export function opponentOf(ctx: LeagueContext, rosterId: number, w: number): number | null {
   const ms = ctx.matchupsByWeek[w - 1];
   const me = ms?.find((m) => m.roster_id === rosterId);

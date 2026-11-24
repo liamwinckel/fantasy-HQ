@@ -64,13 +64,20 @@ function useFlip(deps: unknown[], armed: React.MutableRefObject<boolean>) {
   return box;
 }
 
-export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots, week, onTotal, opponent, live = false, myName = "You", sim }: {
+export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots, week, onTotal, opponent, opponentBest, live = false, myName = "You", sim }: {
   slots: string[]; players: LabPlayer[]; current: (string | null)[]; optimal: (string | null)[]; swaps: Swap[]; rosterSlots: string; week: number; onTotal?: (t: number) => void;
   opponent?: TeamWeek | null; live?: boolean; myName?: string;
+  /** Opponent's own best lineup this week (null when it can't differ, e.g. future weeks already assume it). */
+  opponentBest?: TeamWeek | null;
   /** Matchup simulator for the lineup on screen; `apply` puts a lineup on screen. */
-  sim?: (lineup: (string | null)[], apply: (l: (string | null)[]) => void) => React.ReactNode;
+  sim?: (lineup: (string | null)[], apply: (l: (string | null)[]) => void, opponent: TeamWeek | null) => React.ReactNode;
 }) {
   const [view, setView] = useState<View>("current");
+  const [oppView, setOppView] = useState<View>("current");
+  const oppTotal = (t: TeamWeek | null | undefined) => (t ? Math.round(t.starters.reduce((a, l) => a + (l.proj ?? 0), 0) * 10) / 10 : 0);
+  const oppGain = opponent && opponentBest ? oppTotal(opponentBest) - oppTotal(opponent) : 0;
+  const oppShown = oppView === "optimal" && opponentBest ? opponentBest : opponent ?? null;
+  const oppChanged = (i: number) => oppView === "optimal" && !!opponent && !!oppShown?.starters[i]?.playerId && !opponent.starters.some((l) => l.playerId === oppShown.starters[i].playerId);
   const [mine, setMine] = useState<(string | null)[]>(current);
   const byId = useMemo(() => new Map(players.map((p) => [p.id, p])), [players]);
   const lineup = view === "current" ? mine : optimal;
@@ -147,8 +154,14 @@ export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots
             {view === "optimal" && <span className="font-semibold text-acc-ink">{signed(optTotal - curTotal)} vs current</span>}
             {edited && view === "current" && <button type="button" onClick={() => setMine(current)} className="font-semibold text-muted underline">Reset</button>}
           </div>
+          {opponent && opponentBest && (
+            <div className="flex items-center justify-between gap-2 border-b border-line px-3 py-2 text-xs sm:px-5">
+              <span className="min-w-0 truncate text-muted">{opponent.name} {oppView === "optimal" ? "optimal" : "as set"}: <b className="num text-fg">{oppTotal(oppShown).toFixed(1)}</b> pts{oppView === "current" && oppGain > 0.05 && <span className="font-semibold text-acc-ink"> · optimal is {signed(oppGain)}</span>}</span>
+              <Segmented label="Opponent lineup view" value={oppView} onChange={(v) => setOppView(v)} options={[{ value: "current", label: "Set" }, { value: "optimal", label: "Optimal" }]} />
+            </div>
+          )}
           {opponent ? (
-            <div key={view} className="qa-fade-in"><Versus slots={slots} lineup={lineup} bench={bench} byId={byId} opponent={opponent} live={live} changed={changed} onSlot={setSlotOpen} boxRef={box} myName={myName} /></div>
+            <div key={`${view}:${oppView}`} className="qa-fade-in"><Versus slots={slots} lineup={lineup} bench={bench} byId={byId} opponent={oppShown ?? opponent} oppChanged={oppChanged} live={live} changed={changed} onSlot={setSlotOpen} boxRef={box} myName={myName} /></div>
           ) : (<>
           <div className={cx(GRID, "border-b border-line px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted sm:px-5")}>
             <span>Slot</span><span /><span>Player</span><span className="hidden sm:block">Floor · proj · ceiling</span><span className="text-right">Proj</span>
@@ -169,7 +182,7 @@ export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots
         </Card>
 
         <div className="flex min-w-0 flex-col gap-4 lg:flex-[2]">
-          {sim?.(lineup, (l) => { armed.current = true; setMine(l); setView("current"); })}
+          {sim?.(lineup, (l) => { armed.current = true; setMine(l); setView("current"); }, oppShown)}
           <Card title="Start / sit">
             <div className="grid grid-cols-2 gap-2">
               <label className="flex flex-col gap-1 text-[11px] text-muted">Starter
@@ -293,8 +306,8 @@ function SlotSheet({ slot, index, lineup, players, byId, onPick, onClose }: {
 const shortName = (n: string) => { const [f, ...r] = n.split(" "); return r.length ? `${f[0]}. ${r.join(" ")}` : n; };
 
 /** Both rosters side by side, slot by slot (like Sleeper). Your side is editable: tap the slot badge. */
-function Versus({ slots, lineup, bench, byId, opponent, live, changed, onSlot, boxRef, myName }: {
-  slots: string[]; lineup: (string | null)[]; bench: LabPlayer[]; byId: Map<string, LabPlayer>; opponent: TeamWeek; live: boolean; myName: string;
+function Versus({ slots, lineup, bench, byId, opponent, oppChanged, live, changed, onSlot, boxRef, myName }: {
+  slots: string[]; lineup: (string | null)[]; bench: LabPlayer[]; byId: Map<string, LabPlayer>; opponent: TeamWeek; oppChanged: (i: number) => boolean; live: boolean; myName: string;
   changed: (i: number) => boolean; onSlot: (i: number) => void; boxRef: React.RefObject<HTMLDivElement | null>;
 }) {
   const [showBench, setShowBench] = useState(true);
@@ -317,11 +330,11 @@ function Versus({ slots, lineup, bench, byId, opponent, live, changed, onSlot, b
       </div>
     );
   };
-  const oppCell = (l: WeekLine | undefined) => {
+  const oppCell = (l: WeekLine | undefined, isNew = false) => {
     if (!l) return <div className="flex-1" />;
     const started = live && l.actual !== null && l.actual !== 0;
     return (
-      <div className="flex min-w-0 flex-1 flex-row-reverse items-center gap-2 px-1 text-right">
+      <div className={cx("flex min-w-0 flex-1 flex-row-reverse items-center gap-2 rounded-lg px-1 py-0.5 text-right", isNew && "bg-acc-soft")}>
         <span className="hidden sm:block">{l.playerId ? <PlayerImg id={l.playerId} name={l.name} pos={l.pos} size={30} /> : <span className="block h-[30px] w-[30px] rounded-full border border-dashed border-line" />}</span>
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 flex-row-reverse items-center gap-1 text-xs font-semibold sm:text-sm">
@@ -352,7 +365,7 @@ function Versus({ slots, lineup, bench, byId, opponent, live, changed, onSlot, b
               {mineCell(p, p ? p.id : `empty-${i}`, changed(i))}
               <button type="button" disabled={!canEdit} onClick={() => onSlot(i)} aria-label={`Choose who plays ${slot}`}
                 className={cx("w-10 shrink-0 rounded-md py-1.5 text-center text-[10px] font-extrabold transition-transform sm:w-12 sm:text-[11px]", canEdit ? "bg-acc text-on-acc active:scale-90" : "bg-panel2 text-muted")}>{short(slot)}</button>
-              {oppCell(opponent.starters[i])}
+              {oppCell(opponent.starters[i], oppChanged(i))}
             </li>
           );
         })}
