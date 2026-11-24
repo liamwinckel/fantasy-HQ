@@ -145,7 +145,8 @@ export function MobileTabs({ keeper }: { keeper: boolean }) {
             className={cx("qa-btn -mt-6 flex h-16 w-16 items-center justify-center rounded-full border-4 border-bg shadow-lg", open && !closing ? "rotate-90 bg-acc" : "bg-panel2")}>
             {open && !closing
               ? <X size={28} className="text-on-acc" strokeWidth={2.5} />
-              : <FootballIcon size={32} strokeWidth={1.9} className="text-acc" />}
+              // eslint-disable-next-line @next/next/no-img-element
+              : <img src={`${BASE_PATH}/shs-h.png`} alt="" width={40} height={40} className="h-10 w-10 object-contain" />}
           </button>
         </div>
         {TABS.slice(2).map(tab)}
