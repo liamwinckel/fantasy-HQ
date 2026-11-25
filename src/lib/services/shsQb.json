@@ -1,23 +1,23 @@
 {
  "version": 1,
- "projSource": "fantasypros",
+ "projSource": "sleeper",
  "keys": [
+  "total",
   "wind",
-  "rushPg",
-  "short",
-  "home"
+  "ownDef",
+  "short"
  ],
  "head": [
-  0.6186,
-  0.1557,
-  0.3796,
-  0.1168,
-  -0.003,
-  0.0407,
-  -0.0984,
-  0.0359,
-  0.0435,
-  0.0121
+  0.1933,
+  0.2216,
+  0.3147,
+  0.0251,
+  0.0476,
+  0.0052,
+  0.044,
+  -0.0964,
+  -0.0307,
+  0.0366
  ],
  "use": false,
  "report": {
@@ -31,194 +31,192 @@
    "Experts": {
     "all": 64.7,
     "near": 53.9,
-    "mae": 5.9,
+    "mae": 5.94,
     "rho": 0.41,
     "n": 1895,
     "nearPairs": 5122
    },
    "v2 base": {
-    "all": 64.9,
-    "near": 54.6,
-    "mae": 5.89,
-    "rho": 0.414,
+    "all": 64.7,
+    "near": 54.3,
+    "mae": 5.92,
+    "rho": 0.411,
     "n": 1895,
     "nearPairs": 5122
    },
    "v2 + QB inputs (selected)": {
-    "all": 64.8,
-    "near": 54.8,
-    "mae": 5.9,
-    "rho": 0.415,
+    "all": 64.7,
+    "near": 54.1,
+    "mae": 5.95,
+    "rho": 0.411,
     "n": 1895,
     "nearPairs": 5122
    }
   },
   "singles": {
    "passD": {
-    "all": 64.8,
-    "near": 54.3,
-    "mae": 5.89,
-    "rho": 0.412,
+    "all": 64.7,
+    "near": 54.2,
+    "mae": 5.92,
+    "rho": 0.411,
     "n": 1895,
     "nearPairs": 5122
    },
    "rushD": {
-    "all": 64.8,
-    "near": 54.4,
-    "mae": 5.88,
-    "rho": 0.413,
+    "all": 64.6,
+    "near": 54.1,
+    "mae": 5.92,
+    "rho": 0.41,
     "n": 1895,
     "nearPairs": 5122
    },
    "rushPg": {
-    "all": 64.9,
-    "near": 54.8,
-    "mae": 5.89,
-    "rho": 0.414,
+    "all": 64.7,
+    "near": 54.2,
+    "mae": 5.92,
+    "rho": 0.41,
     "n": 1895,
     "nearPairs": 5122
    },
    "rushX": {
-    "all": 64.9,
-    "near": 54.7,
-    "mae": 5.88,
-    "rho": 0.414,
+    "all": 64.7,
+    "near": 54.1,
+    "mae": 5.91,
+    "rho": 0.41,
     "n": 1895,
     "nearPairs": 5122
    },
    "wrOut": {
-    "all": 64.8,
-    "near": 54.6,
-    "mae": 5.89,
-    "rho": 0.412,
+    "all": 64.6,
+    "near": 54.1,
+    "mae": 5.92,
+    "rho": 0.408,
     "n": 1895,
     "nearPairs": 5122
    },
    "olOut": {
     "all": 64.8,
     "near": 54.4,
-    "mae": 5.89,
-    "rho": 0.413,
+    "mae": 5.92,
+    "rho": 0.411,
     "n": 1895,
     "nearPairs": 5122
    },
    "ownDef": {
-    "all": 64.9,
+    "all": 64.7,
     "near": 54.5,
-    "mae": 5.89,
-    "rho": 0.415,
+    "mae": 5.92,
+    "rho": 0.411,
     "n": 1895,
     "nearPairs": 5122
    },
    "defOut": {
     "all": 64.8,
     "near": 54.6,
-    "mae": 5.89,
-    "rho": 0.413,
-    "n": 1895,
-    "nearPairs": 5122
-   },
-   "passRt": {
-    "all": 64.9,
-    "near": 54.9,
-    "mae": 5.89,
-    "rho": 0.413,
-    "n": 1895,
-    "nearPairs": 5122
-   },
-   "pace": {
-    "all": 64.8,
-    "near": 54.2,
-    "mae": 5.89,
+    "mae": 5.92,
     "rho": 0.412,
     "n": 1895,
     "nearPairs": 5122
    },
+   "passRt": {
+    "all": 64.7,
+    "near": 54.3,
+    "mae": 5.92,
+    "rho": 0.41,
+    "n": 1895,
+    "nearPairs": 5122
+   },
+   "pace": {
+    "all": 64.7,
+    "near": 54.2,
+    "mae": 5.92,
+    "rho": 0.411,
+    "n": 1895,
+    "nearPairs": 5122
+   },
    "oppPace": {
-    "all": 64.8,
-    "near": 54.5,
-    "mae": 5.89,
-    "rho": 0.413,
+    "all": 64.7,
+    "near": 54.4,
+    "mae": 5.92,
+    "rho": 0.41,
     "n": 1895,
     "nearPairs": 5122
    },
    "press": {
-    "all": 64.8,
-    "near": 54.4,
-    "mae": 5.89,
-    "rho": 0.413,
+    "all": 64.6,
+    "near": 53.9,
+    "mae": 5.92,
+    "rho": 0.41,
     "n": 1895,
     "nearPairs": 5122
    },
    "oppDbOut": {
-    "all": 64.9,
-    "near": 54.6,
-    "mae": 5.89,
-    "rho": 0.414,
+    "all": 64.7,
+    "near": 54.3,
+    "mae": 5.92,
+    "rho": 0.411,
     "n": 1895,
     "nearPairs": 5122
    },
    "total": {
-    "all": 65,
-    "near": 55.2,
-    "mae": 5.88,
-    "rho": 0.415,
+    "all": 64.7,
+    "near": 54.3,
+    "mae": 5.91,
+    "rho": 0.41,
     "n": 1895,
     "nearPairs": 5122
    },
    "trend": {
     "all": 64.7,
-    "near": 53.9,
-    "mae": 5.89,
+    "near": 54.2,
+    "mae": 5.92,
     "rho": 0.411,
     "n": 1895,
     "nearPairs": 5122
    },
    "wind": {
-    "all": 65,
-    "near": 55.4,
-    "mae": 5.87,
-    "rho": 0.418,
-    "n": 1895,
-    "nearPairs": 5122
-   },
-   "short": {
     "all": 64.9,
     "near": 54.9,
-    "mae": 5.88,
+    "mae": 5.91,
     "rho": 0.416,
     "n": 1895,
     "nearPairs": 5122
    },
-   "home": {
+   "short": {
     "all": 64.8,
-    "near": 54.3,
-    "mae": 5.89,
-    "rho": 0.413,
+    "near": 54.5,
+    "mae": 5.91,
+    "rho": 0.414,
+    "n": 1895,
+    "nearPairs": 5122
+   },
+   "home": {
+    "all": 64.7,
+    "near": 54,
+    "mae": 5.92,
+    "rho": 0.411,
     "n": 1895,
     "nearPairs": 5122
    }
   },
   "chosen": {
    "2023": [
-    "total"
+    "press",
+    "trend",
+    "defOut"
    ],
    "2024": [
-    "total",
-    "defOut",
     "wind",
-    "pace",
-    "passD",
-    "oppPace"
+    "defOut",
+    "total",
+    "passRt"
    ],
    "2025": [
     "wind",
-    "pace",
     "total"
    ],
    "2026": [
-    "wind",
-    "defOut"
+    "wind"
    ]
   }
  }
