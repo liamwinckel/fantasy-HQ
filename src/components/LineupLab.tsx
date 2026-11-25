@@ -4,7 +4,8 @@ import { Sparkline, TREND_MAX } from "./charts";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Lock, X } from "lucide-react";
-import { PlayerImg, Segmented } from "@/components/client";
+import { PlayerImg, PlayerPhoto, Segmented } from "@/components/client";
+import { Roll } from "./motion";
 import { Card, InjuryChip, NflLogo, cx, signed } from "@/components/ui";
 import { PlayerLink } from "@/components/PlayerCard";
 import type { Swap, TeamWeek, WeekLine } from "@/lib/services/views";
@@ -123,6 +124,7 @@ export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots
   const A = aId ? byId.get(aId) : undefined;
   const B = bId ? byId.get(bId) : undefined;
   const better = A && B ? (B.median > A.median ? B : A) : undefined;
+  const [pickSide, setPickSide] = useState<"a" | "b" | null>(null);
 
   const row = (key: string, p: LabPlayer | undefined, slotLabel: React.ReactNode, i: number | null, isNew = false) => (
     <div key={key} data-flip={key} className={cx(GRID, "relative border-b border-line bg-panel px-3 py-2 transition-colors duration-300 sm:px-5", isNew && "bg-acc-soft")}>
@@ -190,33 +192,69 @@ export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots
 
         <div className="flex min-w-0 flex-col gap-4 lg:flex-[2]">
           {sim?.(lineup, (l) => { armed.current = true; setMine(l); setView("current"); }, oppShown)}
-          <Card title="Start / sit">
-            <div className="grid grid-cols-2 gap-2">
-              <label className="flex flex-col gap-1 text-[11px] text-muted">Starter
-                <select value={aId ?? ""} onChange={(e) => { setAId(e.target.value || null); setBPick(null); }} className="rounded-md border border-line bg-panel2 px-2 py-2 text-sm font-semibold text-fg">
-                  {slots.map((slot, i) => lineup[i] ? <option key={i} value={lineup[i]!}>{short(slot)} · {byId.get(lineup[i]!)?.name}</option> : null)}
-                </select>
-              </label>
-              <label className="flex flex-col gap-1 text-[11px] text-muted">vs anyone who can play {aSlot >= 0 ? short(slots[aSlot]) : "there"}
-                <select value={bId ?? ""} onChange={(e) => setBPick(e.target.value || null)} className="rounded-md border border-line bg-panel2 px-2 py-2 text-sm font-semibold text-fg">
-                  {bOptions.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.pos}) · {p.median.toFixed(1)}</option>)}
-                </select>
-              </label>
-            </div>
-            {A && B && (
-              <>
-                <div className="mt-3"><Compare a={A} b={B} /></div>
-                <div className="mt-3 rounded-lg bg-acc-soft px-3 py-2.5 text-sm leading-relaxed">
-                  <strong className="text-acc-ink">Start {better!.name}</strong> ({signed(Math.abs(B.median - A.median))} projected).{" "}
-                  {better!.notes.slice(0, 2).join(" ")}
-                  {B.id === better!.id && !lineup.includes(B.id) && aSlot >= 0 && <button type="button" className="ml-1 font-semibold text-acc-ink underline" onClick={() => place(aSlot, B.id)}>Put him in</button>}
-                </div>
-              </>
-            )}
+          <Card title="Who should I start?" info={<>Pick any starter and anyone who could play his slot. Each player&apos;s week is a range: floor (1 week in 10 worse), projection, ceiling (1 in 10 better). <b>% to outscore</b> = how often he beats the other one, from those ranges. Tap a player to swap him for someone else.</>}>
+            {(() => {
+              // Chance B outscores A, treating each week as a normal range (floor/ceiling ≈ 10th/90th percentiles).
+              const sd = (p: LabPlayer) => Math.max(1, (p.high - p.low) / 2.563);
+              const pB = A && B ? phi((B.median - A.median) / Math.sqrt(sd(A) ** 2 + sd(B) ** 2)) * 100 : 50;
+              const maxC = Math.max(25, A?.high ?? 0, B?.high ?? 0);
+              const card = (p: LabPlayer | undefined, pct: number, win: boolean, onTap: () => void, label: string) => (
+                <button type="button" onClick={onTap} aria-label={`${label}: ${p?.name ?? "choose"}. Tap to change`}
+                  className={cx("relative flex flex-col items-center gap-1.5 rounded-2xl border p-3 text-center transition-transform active:scale-[0.98]", win ? "border-acc bg-acc-soft" : "border-line bg-panel2/40")}>
+                  <span className="absolute left-2 top-2 text-[9px] font-bold uppercase tracking-wider text-muted">{label}</span>
+                  {win && <span className="absolute right-2 top-2 rounded-full bg-acc px-2 py-0.5 text-[10px] font-extrabold uppercase text-on-acc">Start</span>}
+                  {p ? <>
+                    <span className="mt-4"><PlayerPhoto id={p.id} name={p.name} pos={p.pos} size={64} /></span>
+                    <span className="flex max-w-full items-center justify-center gap-1 truncate text-sm font-bold">{p.name}<InjuryChip status={p.injury} /></span>
+                    <span className="flex items-center gap-1 text-[11px] text-muted"><NflLogo team={p.team} size={12} />{p.pos} · {p.onBye ? "BYE" : p.opp ? `vs ${p.opp}` : "no game"}</span>
+                    <span className={cx("num h-display text-3xl leading-none", win && "text-acc-ink")}><Roll text={`${Math.round(pct)}%`} /></span>
+                    <span className="text-[10px] text-muted">to outscore · proj <b className="num text-fg">{p.median.toFixed(1)}</b></span>
+                  </> : <span className="py-10 text-sm text-muted">Choose a player</span>}
+                </button>
+              );
+              return (
+                <>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {card(A, 100 - pB, !!A && !!B && pB < 50, () => setPickSide("a"), "Starter")}
+                    {card(B, pB, !!A && !!B && pB >= 50, () => setPickSide("b"), `vs · ${aSlot >= 0 ? short(slots[aSlot]) : "slot"}`)}
+                  </div>
+                  {A && B && (
+                    <>
+                      <div className="mt-4 flex flex-col gap-3">
+                        {[A, B].map((p) => (
+                          <div key={p.id}>
+                            <div className="mb-1 flex items-center justify-between text-xs"><span className="flex min-w-0 items-center gap-1.5"><PlayerPhoto id={p.id} name={p.name} pos={p.pos} size={20} /><b className="truncate">{p.name}</b></span><span className="num text-muted">Boom {p.boom ?? "—"}% · Bust {p.bust ?? "—"}%</span></div>
+                            <div className="relative h-3 rounded-full bg-panel2">
+                              <div className={cx("absolute inset-y-0 rounded-full", p.id === better!.id ? "bg-acc/50" : "bg-muted/40")} style={{ left: `${(p.low / maxC) * 100}%`, width: `${((p.high - p.low) / maxC) * 100}%` }} />
+                              <div className={cx("absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-bg", p.id === better!.id ? "bg-acc" : "bg-fg")} style={{ left: `${(p.median / maxC) * 100}%` }} />
+                            </div>
+                            <div className="num mt-0.5 flex justify-between text-[10px] text-muted"><span>Floor {p.low.toFixed(1)}</span><span>Ceiling {p.high.toFixed(1)}</span></div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-3 rounded-lg bg-acc-soft px-3 py-2.5 text-sm leading-relaxed">
+                        <strong className="text-acc-ink">Start {better!.name}</strong> ({signed(Math.abs(B.median - A.median))} projected{Math.abs(pB - 50) < 8 ? "; close call" : ""}).{" "}
+                        {better!.notes.slice(0, 2).join(" ")}
+                        {B.id === better!.id && !lineup.includes(B.id) && aSlot >= 0 && <button type="button" className="ml-1 font-semibold text-acc-ink underline" onClick={() => place(aSlot, B.id)}>Put him in</button>}
+                      </div>
+                      <details className="mt-3 text-sm">
+                        <summary className="cursor-pointer text-xs font-semibold text-muted">Full comparison</summary>
+                        <div className="mt-2"><Compare a={A} b={B} /></div>
+                      </details>
+                    </>
+                  )}
+                </>
+              );
+            })()}
           </Card>
         </div>
       </div>
 
+      {pickSide && (
+        <PickSheet title={pickSide === "a" ? "Pick a starter" : `Who could play ${aSlot >= 0 ? short(slots[aSlot]) : "there"}?`}
+          options={pickSide === "a" ? (lineup.filter(Boolean) as string[]).map((id) => byId.get(id)!).filter(Boolean) : [...bOptions].sort((x, y) => y.median - x.median)}
+          onPick={(id) => { if (pickSide === "a") { setAId(id); setBPick(null); } else setBPick(id); setPickSide(null); }} onClose={() => setPickSide(null)} />
+      )}
       {slotOpen !== null && (
         <SlotSheet slot={slots[slotOpen]} index={slotOpen} lineup={lineup} players={players} byId={byId} onPick={(pid) => place(slotOpen, pid)} onClose={() => setSlotOpen(null)} />
       )}
@@ -418,5 +456,37 @@ function SideToggle({ name, value, onChange, gain, edited = false, onReset, disa
         {btn("optimal", "Optimal")}
       </div>
     </div>
+  );
+}
+
+// Standard normal CDF.
+function phi(z: number) {
+  const t = 1 / (1 + 0.2316419 * Math.abs(z));
+  const d = 0.3989423 * Math.exp((-z * z) / 2);
+  const p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+  return z > 0 ? 1 - p : p;
+}
+
+/** Player chooser with faces, for the start/sit cards. */
+function PickSheet({ title, options, onPick, onClose }: { title: string; options: LabPlayer[]; onPick: (id: string) => void; onClose: () => void }) {
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <div className="fixed inset-0 z-[65] flex items-end justify-center md:items-center" role="dialog" aria-modal="true" aria-label={title}>
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+      <div className="fhq-in relative w-full max-w-md rounded-t-2xl border border-line bg-bg p-4 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] shadow-2xl md:rounded-2xl">
+        <div className="mb-3 flex items-center gap-3"><div className="h-display min-w-0 flex-1 text-2xl">{title}</div><button type="button" onClick={onClose} aria-label="Close" className="rounded-full bg-panel2 p-2"><X size={16} /></button></div>
+        <div className="grid max-h-[60dvh] grid-cols-3 gap-2 overflow-y-auto pb-2">
+          {options.map((p) => (
+            <button key={p.id} type="button" onClick={() => onPick(p.id)} className="flex flex-col items-center gap-1.5 rounded-xl border border-line bg-panel p-2.5 text-center transition-transform active:scale-95 hover:border-acc">
+              <PlayerPhoto id={p.id} name={p.name} pos={p.pos} size={48} />
+              <span className="w-full truncate text-xs font-bold">{p.name}</span>
+              <span className="text-[10px] text-muted">{p.pos} · {p.onBye ? "BYE" : p.opp ? `vs ${p.opp}` : "—"} · {p.median.toFixed(1)}</span>
+            </button>
+          ))}
+          {!options.length && <p className="col-span-full text-sm text-muted">Nobody else can play there.</p>}
+        </div>
+      </div>
+    </div>,
+    document.body,
   );
 }

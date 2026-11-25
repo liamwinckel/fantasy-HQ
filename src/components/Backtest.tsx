@@ -1,6 +1,7 @@
 "use client";
 
 /** SHS AI backtest summary card (tap for every week, positions and factor diagnostics). */
+import { ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { useApp, useAsync } from "./AppData";
 import { Sheet } from "./Sheet";
@@ -30,10 +31,36 @@ function Trio({ s, e, p, fmt, better }: { s: number; e: number; p: number; fmt: 
   return <div className="grid grid-cols-3 gap-2">{cell("SHS AI", s)}{cell("Experts", e)}{cell("Sleeper proj", p)}</div>;
 }
 
-export function BacktestCard({ ctx }: { ctx: LeagueContext }) {
+export function BacktestCard({ ctx, compact = false }: { ctx: LeagueContext; compact?: boolean }) {
   const { data, loading, error, prog } = useBacktest(ctx);
   const [open, setOpen] = useState(false);
   if (error) return null;
+  if (compact) {
+    // One row: how SHS AI did on close calls this season vs the experts; tap for everything else.
+    const d = data ? Math.round((data.total.shs.near - data.total.ecr.near) * 10) / 10 : 0;
+    return (
+      <>
+        <button type="button" onClick={() => data && setOpen(true)} disabled={!data} className="flex w-full items-center gap-3 px-3 py-2.5 text-left active:bg-panel2 disabled:opacity-70">
+          <span className={cx("h-2.5 w-2.5 shrink-0 rounded-full", !data ? "bg-muted" : d > 0.2 ? "bg-pos" : d < -0.2 ? "bg-neg" : "bg-acc")} />
+          <span className="min-w-0 flex-1"><span className="block text-sm font-semibold">SHS AI backtest</span>
+            <span className="block truncate text-[11px] text-muted">{data ? `Close calls ${data.total.shs.near.toFixed(1)}% vs experts ${data.total.ecr.near.toFixed(1)}% · ${data.weeks.length} weeks` : loading ? `Replaying past weeks${prog ? ` · ${prog[0]}/${prog[1]}` : ""}…` : "Appears after the next data refresh"}</span></span>
+          {data && <span className={cx("num shrink-0 text-sm font-bold", d > 0.2 ? "text-pos" : d < -0.2 ? "text-neg" : "text-muted")}>{d > 0 ? `+${d}` : d}</span>}
+          {data && <ChevronRight size={16} className="shrink-0 text-muted" />}
+        </button>
+        <Sheet open={open} onClose={() => setOpen(false)} full title="SHS AI backtest" sub={`${ctx.league.name} · weeks ${data?.weeks.map((w) => w.week).join(", ")}`}>
+          {data && <>
+            <p className="mb-3 text-sm">{verdict(data.total.shs, data.total.ecr)}</p>
+            <div className="mb-5 grid grid-cols-3 gap-2 text-center text-[11px] text-muted">
+              <span>All pairs<b className="num block text-sm text-fg">{data.total.shs.pairAcc.toFixed(1)}% <span className="font-normal text-muted">vs {data.total.ecr.pairAcc.toFixed(1)}%</span></b></span>
+              <span>Avg miss<b className="num block text-sm text-fg">{data.total.shs.mae.toFixed(2)} <span className="font-normal text-muted">vs {data.total.ecr.mae.toFixed(2)}</span></b></span>
+              <span>Rank corr.<b className="num block text-sm text-fg">{data.total.shs.rho.toFixed(3)} <span className="font-normal text-muted">vs {data.total.ecr.rho.toFixed(3)}</span></b></span>
+            </div>
+            <BacktestDetail r={data} />
+          </>}
+        </Sheet>
+      </>
+    );
+  }
   return (
     <>
       <Card title="SHS AI backtest" onOpen={data ? () => setOpen(true) : undefined}

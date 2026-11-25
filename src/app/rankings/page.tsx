@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { ChevronRight, Search } from "lucide-react";
+import { Sheet } from "@/components/Sheet";
 import { LeaguePage, useQuery, type LeagueData } from "@/components/AppData";
 import { PlayerImg, TabSwitch } from "@/components/client";
 import { PlayerLink } from "@/components/PlayerCard";
@@ -112,6 +113,7 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
   const [desc, setDesc] = useState(false);
   const sortBy = (k: typeof by) => { if (k === by) setDesc(!desc); else { setBy(k); setDesc(false); } };
   const [q, setQ] = useState("");
+  const [about, setAbout] = useState(false);
   const [limit, setLimit] = useState(75);
   const dynScope = scope === "dynasty";
   const IDP = ["DL", "LB", "DB"];
@@ -152,21 +154,24 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
           options={[{ value: "week", label: "Week", sub: `Week ${w0}` }, { value: "ros", label: "Season", sub: `Weeks ${w0}–${ctx.lastWeek}` }, { value: "dynasty", label: "Dynasty", sub: "Long term" }]} />
       </PageHeader>
 
-      <div className="flex flex-col gap-2 rounded-xl border border-line bg-panel p-3">
-        <label className="relative">
+      {/* SHS AI results in one compact strip; tap a row for the full detail. */}
+      {(scope === "week" || acc.data) && (
+        <div className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-panel">
+          {scope === "week" && <BacktestCard ctx={ctx} compact />}
+          {acc.data && <TrackRow a={acc.data} />}
+        </div>
+      )}
+
+      <div className="sticky top-0 z-20 -mx-3 flex flex-col gap-2 border-b border-line bg-bg/95 px-3 py-2.5 backdrop-blur sm:mx-0 sm:rounded-xl sm:border sm:bg-panel sm:p-3">
+        <div className="flex items-center gap-2">
+        <label className="relative min-w-0 flex-1">
           <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted" />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search players" className="w-full rounded-lg border border-line bg-panel2 py-2 pl-8 pr-2 text-sm" />
         </label>
-        <div className="flex flex-wrap items-center gap-1">
-          {positions.map((p) => <button key={p} type="button" onClick={() => setPos(p)} className={cx("rounded-full px-3 py-1 text-xs font-semibold", pos === p ? "bg-acc text-on-acc" : "bg-panel2 text-muted")}>{p === "ALL" ? "All" : p === "DEF" ? "DST" : p}</button>)}
+        <button type="button" onClick={() => setAbout(!about)} aria-expanded={about} aria-label="About these rankings"
+          className={cx("flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-sm font-bold", about ? "border-acc bg-acc text-on-acc" : "border-line bg-panel2 text-muted")}>i</button>
         </div>
-        <div className="flex flex-wrap items-center gap-1">
-          {!dyn && <>
-            {([["experts", "Expert order"], ["pts", "Your scoring"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => { setBy(k); setDesc(false); }} className={cx("rounded-full px-3 py-1 text-xs font-semibold", by === k ? "bg-fg text-bg" : "bg-panel2 text-muted")}>{l}</button>)}
-            <span className="mx-1 h-4 w-px bg-line" aria-hidden />
-          </>}
-          {([["all", "Everyone"], ["fa", "Free agents"], ["mine", "My team"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => setOwn(k)} className={cx("rounded-full px-3 py-1 text-xs font-semibold", own === k ? "bg-fg text-bg" : "bg-panel2 text-muted")}>{l}</button>)}
-        </div>
+        {about && <div className="fhq-in flex flex-col gap-1.5 rounded-lg bg-panel2/60 p-2.5">
         {dates && (
           <p className="text-[11px] text-muted">Expert ranks as of <b className="text-fg">{scope === "week" ? dates.weekly : dates.ecr}</b> (FantasyPros via DynastyProcess, refreshed weekly{dyn ? "; dynasty order = FantasyPros dynasty " + (isSuperflex(ctx.league.roster_positions) ? "superflex" : "overall") + " list" : ""}). FantasyPros&apos; own site updates daily, so recent moves can lag a few days.</p>
         )}
@@ -177,10 +182,19 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
             {" "}Trend lines = his last 6 games on the same scale for every player at his position; dashed = the startable line at that position in this league; end dot green if his latest game cleared it.
           </p>
         )}
+        </div>}
+        <div className="flex flex-wrap items-center gap-1">
+          {positions.map((p) => <button key={p} type="button" onClick={() => setPos(p)} className={cx("rounded-full px-3 py-1 text-xs font-semibold", pos === p ? "bg-acc text-on-acc" : "bg-panel2 text-muted")}>{p === "ALL" ? "All" : p === "DEF" ? "DST" : p}</button>)}
+        </div>
+        <div className="flex flex-wrap items-center gap-1">
+          {!dyn && <>
+            {([["experts", "Expert order"], ["pts", "Your scoring"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => { setBy(k); setDesc(false); }} className={cx("rounded-full px-3 py-1 text-xs font-semibold", by === k ? "bg-fg text-bg" : "bg-panel2 text-muted")}>{l}</button>)}
+            <span className="mx-1 h-4 w-px bg-line" aria-hidden />
+          </>}
+          {([["all", "Everyone"], ["fa", "Free agents"], ["mine", "My team"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => setOwn(k)} className={cx("rounded-full px-3 py-1 text-xs font-semibold", own === k ? "bg-fg text-bg" : "bg-panel2 text-muted")}>{l}</button>)}
+        </div>
       </div>
 
-      {scope === "week" && <BacktestCard ctx={ctx} />}
-      {acc.data && <TrackRecord a={acc.data} />}
 
       <section className="overflow-hidden rounded-xl border border-line bg-panel">
         <div className="grid grid-cols-[2.5rem_minmax(0,1fr)_3.75rem_3.5rem] items-center gap-2 border-b border-line px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted sm:grid-cols-[2.5rem_minmax(0,1fr)_minmax(0,14rem)_4.5rem_4.5rem] sm:px-4">
@@ -231,6 +245,25 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
         {rows.length === 0 && <p className="p-5 text-sm text-muted">No players match.</p>}
       </section>
     </div>
+  );
+}
+
+/** Live track record as one row; tap for the numbers. */
+function TrackRow({ a }: { a: NonNullable<Awaited<ReturnType<typeof accuracy>>> }) {
+  const [open, setOpen] = useState(false);
+  const d = Math.round((a.shs - a.experts) * 10) / 10;
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)} className="flex w-full items-center gap-3 px-3 py-2.5 text-left active:bg-panel2">
+        <span className={cx("h-2.5 w-2.5 shrink-0 rounded-full", d > 0 ? "bg-pos" : d < 0 ? "bg-neg" : "bg-muted")} />
+        <span className="min-w-0 flex-1"><span className="block text-sm font-semibold">Live track record</span><span className="block truncate text-[11px] text-muted">{a.weeks.length} week{a.weeks.length === 1 ? "" : "s"} · SHS AI {a.shs.toFixed(1)}% vs experts {a.experts.toFixed(1)}%</span></span>
+        <span className={cx("num shrink-0 text-sm font-bold", d > 0 ? "text-pos" : d < 0 ? "text-neg" : "text-muted")}>{d > 0 ? `+${d}` : d}</span>
+        <ChevronRight size={16} className="shrink-0 text-muted" />
+      </button>
+      <Sheet open={open} onClose={() => setOpen(false)} title="Live track record" sub="Saved on this device before kickoff each week">
+        <TrackRecord a={a} />
+      </Sheet>
+    </>
   );
 }
 

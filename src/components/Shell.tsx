@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Settings } from "lucide-react";
+import { ChevronDown, Settings } from "lucide-react";
 import { AppProvider, useApp } from "./AppData";
 import { LeagueSelect, MobileTabs, QUICK_ACTIONS, RefreshButton, SideNavLink } from "./client";
 import { PlayerCardProvider } from "./PlayerCard";
@@ -11,8 +11,8 @@ import { ago } from "@/lib/time";
 import { BASE_PATH } from "@/lib/net";
 import { Component, useEffect, useRef, useState, type ReactNode } from "react";
 import { sleeper } from "@/lib/sleeper/client";
-import { Logo } from "./ui";
-import { usePathname } from "next/navigation";
+import { Logo, cx } from "./ui";
+import { usePathname, useRouter } from "next/navigation";
 import { EdgeBackStage } from "./EdgeBack";
 import Home from "@/app/page";
 
@@ -72,7 +72,7 @@ function Frame({ children }: { children: ReactNode }) {
             <span className="h-display text-[22px] leading-none">Fantasy HQ</span>
           </Link>
           <div className="px-1">
-            {home ? <UserChip name={setup?.settings.username ?? null} userId={setup?.settings.userId ?? null} count={leagues.length} /> : <LeagueSelect leagues={leagues} current={leagueId} />}
+            {home ? <UserChip name={setup?.settings.username ?? null} userId={setup?.settings.userId ?? null} leagues={leagues} /> : <LeagueSelect leagues={leagues} current={leagueId} />}
           </div>
           <nav aria-label="Main" className="flex flex-col gap-0.5">
             {MAIN.map((i) => <SideNavLink key={i.href} {...i} />)}
@@ -95,7 +95,7 @@ function Frame({ children }: { children: ReactNode }) {
               <img src={`${BASE_PATH}/shs-logo.png`} alt="SHS" width={34} height={34} />
             </Link>
             <div className="min-w-0 flex-1 md:hidden">
-              {home ? <UserChip name={setup?.settings.username ?? null} userId={setup?.settings.userId ?? null} count={leagues.length} /> : <LeagueSelect leagues={leagues} current={leagueId} compact />}
+              {home ? <UserChip name={setup?.settings.username ?? null} userId={setup?.settings.userId ?? null} leagues={leagues} /> : <LeagueSelect leagues={leagues} current={leagueId} compact />}
             </div>
             <div className="hidden items-center gap-2 text-xs text-muted md:flex">
               <span className={synced ? "h-2 w-2 rounded-full bg-pos" : "h-2 w-2 rounded-full bg-muted"} aria-hidden />
@@ -134,9 +134,17 @@ class Boundary extends Component<{ children: ReactNode }, { error: Error | null 
   }
 }
 
-/** On the all-leagues home there's no single league to pick, so show who's signed in instead. */
-function UserChip({ name, userId, count }: { name: string | null; userId: string | null; count: number }) {
+/**
+ * On the all-leagues home there's no single league to pick, so this shows who's signed in, with a faded stack of the
+ * league logos filling the spare room (spread out when the name is short, overlapping when it's long). Tap it to pick
+ * a league and jump straight into that league's matchup.
+ */
+function UserChip({ name, userId, leagues }: { name: string | null; userId: string | null; leagues: { id: string; name: string; format: string; avatar: string | null }[] }) {
   const [avatar, setAvatar] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const { selectLeague } = useApp();
+  const router = useRouter();
   useEffect(() => {
     if (!userId) return;
     let live = true;
@@ -146,10 +154,43 @@ function UserChip({ name, userId, count }: { name: string | null; userId: string
     }).catch(() => {});
     return () => { live = false; };
   }, [userId]);
+  useEffect(() => {
+    const close = (e: MouseEvent | TouchEvent) => ref.current && !ref.current.contains(e.target as Node) && setOpen(false);
+    document.addEventListener("mousedown", close);
+    document.addEventListener("touchstart", close);
+    return () => { document.removeEventListener("mousedown", close); document.removeEventListener("touchstart", close); };
+  }, []);
+  const n = leagues.length;
+  const pick = (id: string) => { setOpen(false); selectLeague(id); router.push(`/matchup/?league=${id}`); };
   return (
-    <Link href="/settings" className="flex min-w-0 items-center gap-2 rounded-full border border-line bg-panel py-1 pl-1 pr-3" aria-label="Sleeper account">
-      <Logo src={avatar} name={name ?? "?"} size={32} />
-      <span className="min-w-0 leading-tight"><span className="block truncate text-sm font-bold">@{name ?? "Sleeper"}</span><span className="block text-[10px] text-muted">{count} league{count === 1 ? "" : "s"}</span></span>
-    </Link>
+    <div ref={ref} className="relative min-w-0 flex-1">
+      <button type="button" onClick={() => setOpen(!open)} aria-haspopup="listbox" aria-expanded={open} aria-label="Choose a league"
+        className="flex w-full min-w-0 items-center gap-2 rounded-full border border-line bg-panel py-1 pl-1 pr-2.5 text-left">
+        <Logo src={avatar} name={name ?? "?"} size={32} />
+        <span className="min-w-0 shrink leading-tight"><span className="block truncate text-sm font-bold">@{name ?? "Sleeper"}</span><span className="block text-[10px] text-muted">{n} league{n === 1 ? "" : "s"}</span></span>
+        {/* Faded league logos: spacing adapts to the room left (container query units). */}
+        <span aria-hidden className="flex min-w-0 flex-1 items-center justify-end overflow-hidden pl-1 opacity-45 [container-type:inline-size]">
+          {leagues.map((l, i) => (
+            <span key={l.id} className="shrink-0 rounded-full ring-2 ring-panel" style={{ marginLeft: i === 0 ? 0 : `clamp(-14px, calc((100cqw - ${n * 22}px) / ${Math.max(1, n - 1)}), 6px)`, zIndex: n - i }}>
+              <Logo src={l.avatar} name={l.name} size={22} />
+            </span>
+          ))}
+        </span>
+        <ChevronDown size={15} className={cx("shrink-0 text-muted transition-transform", open && "rotate-180")} />
+      </button>
+      {open && (
+        <ul role="listbox" className="fhq-in absolute left-0 right-0 z-50 mt-1 min-w-64 overflow-hidden rounded-xl border border-line bg-panel shadow-2xl">
+          <li className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-widest text-muted">Open a league&apos;s matchup</li>
+          {leagues.map((l) => (
+            <li key={l.id}>
+              <button type="button" role="option" aria-selected={false} onClick={() => pick(l.id)} className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm hover:bg-panel2 active:bg-panel2">
+                <Logo src={l.avatar} name={l.name} size={30} />
+                <span className="min-w-0 flex-1"><span className="block truncate font-semibold">{l.name}</span><span className="block text-[11px] text-muted">{l.format}</span></span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
