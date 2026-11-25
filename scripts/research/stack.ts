@@ -17,7 +17,7 @@ import type { Row } from "./shs-history";
 import { BASE, BASE_KEYS, STACK_POS, basePreds, deltas, dot, metaFeatures, stackPredict, withBias, type BaseKey, type PosStack, type StackJson, type StackX } from "../../src/lib/services/shsStack";
 import { shsFormula, rankMoveLimit } from "../../src/lib/services/shsModel";
 
-type R = Row & { x: StackX };
+export type R = Row & { x: StackX };
 const NEAR = 3;
 const ALPHA = 0.02;
 
@@ -43,9 +43,9 @@ function ridge(X: number[][], y: number[], alpha = ALPHA) {
 }
 
 // ---------------- grading ----------------
-type Scored = { g: string; ecrPos: number; score: number; pred: number; actual: number };
+export type Scored = { g: string; ecrPos: number; score: number; pred: number; actual: number };
 export interface Metrics { all: number; near: number; mae: number; rho: number; n: number; nearPairs: number }
-function grade(list: Scored[]): Metrics {
+export function grade(list: Scored[]): Metrics {
   const groups = new Map<string, Scored[]>();
   for (const s of list) (groups.get(s.g) ?? groups.set(s.g, []).get(s.g)!).push(s);
   let ga = 0, na = 0, gn = 0, nn = 0, rhoSum = 0, rhoN = 0, err = 0;
@@ -70,7 +70,7 @@ function spearman(a: number[], b: number[]) {
   let s = 0, sa = 0, sb = 0; for (let i = 0; i < n; i++) { s += (ra[i] - ma) * (rb[i] - ma); sa += (ra[i] - ma) ** 2; sb += (rb[i] - ma) ** 2; }
   return sa && sb ? s / Math.sqrt(sa * sb) : 0;
 }
-const key = (r: R) => `${r.season}:${r.week}:${r.pos}`;
+export const key = (r: R) => `${r.season}:${r.week}:${r.pos}`;
 
 // ---------------- fitting ----------------
 function fitBases(rows: R[]) {
@@ -79,7 +79,7 @@ function fitBases(rows: R[]) {
   return base;
 }
 /** Out-of-fold base predictions inside the training set, so the meta model learns trust from honest numbers. */
-function oof(rows: R[]) {
+export function oof(rows: R[]) {
   const seasons = [...new Set(rows.map((r) => r.season))];
   const fold = (r: R) => (seasons.length >= 3 ? String(r.season) : `${r.season}:${r.week % 4}`);
   const folds = [...new Set(rows.map(fold))];
@@ -128,7 +128,7 @@ function nearPairs(rows: R[], within: number) {
   return out;
 }
 /** score = E + β·Δ, β from pairwise logistic regression (Newton, ridge λ) on near pairs. */
-function fitRank(rows: R[], D: number[][], lambda: number) {
+export function fitRank(rows: R[], D: number[][], lambda: number) {
   const P = nearPairs(rows, 6), k = D[0]?.length ?? 0;
   let beta = new Array(k).fill(0);
   for (let it = 0; it < 10; it++) {

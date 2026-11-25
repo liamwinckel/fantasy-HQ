@@ -58,6 +58,9 @@ export function ShsExplainer({ scope }: { scope: RankScope }) {
 const LABELS: Record<string, string> = {
   gap: "Sleeper projection", lines: "Betting lines", ppg: "Points per game", snap: "Snap share", adv: "Advanced metrics", xfp: "Expected points", track: "Player tracking", chart: "Film charting",
   weather: "Weather", inj: "Injuries", matchup: "Matchup", vegas: "Vegas team total", script: "Game script", sched: "Schedule", age: "Age", team: "Team situation", coach: "Coaching",
+  qb_passD: "Pass defence faced", qb_rushD: "QB run defence faced", qb_rushPg: "His rushing", qb_rushX: "Rushing vs this defence", qb_wrOut: "Receivers out", qb_olOut: "Linemen out",
+  qb_ownDef: "His own defence", qb_defOut: "His defence's injuries", qb_passRt: "Team pass rate", qb_pace: "Team pace", qb_oppPace: "Opponent pace", qb_press: "Pass rush faced",
+  qb_oppDbOut: "Opposing DBs out", qb_total: "Game total", qb_trend: "Volume trend", qb_wind: "Wind 15+ mph", qb_short: "Short week", qb_home: "Home game",
   v2proj: "Sleeper projection (v2)", v2opp: "Usage model (v2)", v2ctx: "Vegas & matchup (v2)", v2early: "Early-season projection pull", v2small: "Small-sample usage", v2range: "Boom/bust range",
   usage: "Usage", games: "Durability", form: "Recent form", luck: "Scoring vs expected", missed: "Games missed", share: "Opportunity share", sd: "Expert disagreement", rookie: "Rookie", draft: "Draft & combine", college: "College production",
 };
@@ -138,7 +141,7 @@ export function ShsWhy({ pct, ai, pos }: { pct: number; ai: ShsAiT | null; pos?:
   const custom = ai?.mode === "custom";
   const detail = (k: string) => k === "lines" ? (ai?.market ? `Lines imply ${ai.market.pts.toFixed(1)} pts in your scoring (${ai.market.covered.join(", ")})` : "")
     : k === "gap" ? "Sleeper's projection vs what his expert rank is usually worth"
-    : k.startsWith("v2") ? V2_DETAIL[k] ?? "" : ai?.factors.find((f) => f.key === k)?.detail ?? "";
+    : k.startsWith("v2") ? V2_DETAIL[k] ?? "" : k.startsWith("qb_") ? "Learned QB model input (see How it's calculated)" : ai?.factors.find((f) => f.key === k)?.detail ?? "";
   const moving = !custom && ai ? [...ai.parts].filter((x) => Math.abs(x.effect) >= 0.005).sort((a, b) => Math.abs(b.effect) - Math.abs(a.effect)) : [];
   const tracked = !custom && ai ? ai.factors.filter((f) => !ai.parts.some((x) => x.key === f.key)) : [];
   const reasons = custom && ai ? [

@@ -20,14 +20,15 @@ import { rankings } from "./rankings";
 import { shsAi } from "./shsai";
 import { shsFormula } from "./shsModel";
 import { buildSignals } from "./signals";
-import { stackInputs, stackModel, stackPredict, type StackX } from "./shsStack";
+import { basePreds, deltas, stackInputs, stackModel, stackPredict, type StackX } from "./shsStack";
+import { qbFeat, qbInputs, qbModel, type QbX } from "./shsQb";
 import { DEFAULT_SHS, getSettings, type ShsWeights } from "../settings";
 
 const POS_CUT: Record<string, number> = { QB: 24, RB: 40, WR: 50, TE: 20 };
-const VERSION = 7;
+const VERSION = 8;
 
 /** One player in one replayed week. f = factor key → [value −1…1, base weight]. */
-export interface BtRow { id: string; pos: string; ecrPos: number; ecrPts: number; proj: number; expert: number | null; actual: number; f: Record<string, [number, number]>; mkt?: number | null; x?: StackX }
+export interface BtRow { id: string; pos: string; ecrPos: number; ecrPts: number; proj: number; expert: number | null; actual: number; f: Record<string, [number, number]>; mkt?: number | null; x?: StackX; qx?: QbX }
 export interface BtWeek { week: number; at: string; rows: BtRow[] }
 
 /** pairAcc = all pairs; near = close calls (within 3 expert-rank spots); rho = Spearman rank correlation. */
@@ -91,6 +92,7 @@ async function replayWeek(ctx: LeagueContext, w: number, snap: { at: string; row
   for (const a of curve.values()) a.sort((x, y) => y - x);
   const atRank = (pos: string, k: number) => { const c = curve.get(pos) ?? []; return c[Math.min(k, c.length) - 1] ?? 0; };
   const sx = stackInputs(cw, rows.filter((r) => r.ecrPos !== null).map((r) => ({ id: r.id, pos: r.pos, E: atRank(r.pos, r.ecrPos!), proj: r.pts })), w);
+  const qx = qbInputs(cw, rows.filter((r) => r.pos === "QB" && r.ecrPos !== null).map((r) => r.id), w);
   const out: BtRow[] = [];
   for (const r of rows) {
     if (r.ecrPos === null || !POS_CUT[r.pos] || r.ecrPos > POS_CUT[r.pos] * 1.5) continue;
@@ -103,7 +105,7 @@ async function replayWeek(ctx: LeagueContext, w: number, snap: { at: string; row
       mkt: mk ? Math.round(mk.pts * 10) / 10 : null,
       id: r.id, pos: r.pos, ecrPos: r.ecrPos, ecrPts: Math.round(atRank(r.pos, r.ecrPos) * 10) / 10, proj: r.pts, expert: expertProj.get(r.id) ?? null, actual: g.pts,
       f: Object.fromEntries((a?.factors ?? []).map((f) => [f.key, [Math.round(f.value * 1000) / 1000, f.weight]])),
-      x: sx.get(r.id),
+      x: sx.get(r.id), qx: qx.get(r.id),
     });
   }
   const res: BtWeek = { week: w, at: snap.at, rows: out };
@@ -116,9 +118,10 @@ type Cfg = Pick<ShsWeights, "mode" | "lines" | "mix" | "mixLines">;
 export function shsPoints(r: BtRow, cfg: Cfg, mult: Record<string, number>, withLines = false) {
   const hasM = withLines && r.mkt !== null && r.mkt !== undefined;
   const sm = stackModel(r.pos);
-  if (cfg.mode !== "custom" && sm?.use && sm.head && r.x && r.ecrPts > 0.5) {
+  const qm = r.pos === "QB" && r.qx ? qbModel() : null;
+  if (cfg.mode !== "custom" && sm && r.x && r.ecrPts > 0.5 && (qm || (sm.use && sm.head))) {
     // SHS AI v2 where it's switched on (same as the live app), lines blended on top when saved.
-    const v = stackPredict(sm, r.x).score;
+    const v = qm ? r.x.E + [...deltas(basePreds(sm, r.x), r.x), ...qm.keys.map((k) => qbFeat(r.x!.E, r.qx!, k))].reduce((a, d, i) => a + d * (qm.head[i] ?? 0), 0) : stackPredict(sm, r.x).score;
     const tilt = Math.max(-0.2, Math.min(0.2, v / r.ecrPts - 1));
     const lineShare = hasM ? Math.max(0, Math.min(60, cfg.lines)) / 100 : 0;
     const eff = lineShare ? Math.max(-0.15, Math.min(0.15, lineShare * (r.mkt! / r.ecrPts - 1 - tilt))) : 0;

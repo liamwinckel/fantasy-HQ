@@ -31,6 +31,9 @@ export interface Game {
   awayCoach?: string | null;
   spread?: number | null; // home team favoured by this many points (negative = away favoured)
   total?: number | null; // Vegas over/under
+  wind?: number | null; // mph, when known
+  homeRest?: number | null; // days since each team's last game
+  awayRest?: number | null;
 }
 
 export interface NflPlayerInfo {
@@ -59,5 +62,5 @@ export interface Contract {
   capPct: number; // APY as share of the cap
 }
 
-export interface InjuryReport { gsis: string; season: number; week: number; status: string; injury: string; practice?: string }
+export interface InjuryReport { gsis: string; season: number; week: number; status: string; injury: string; practice?: string; team?: string; position?: string }
 

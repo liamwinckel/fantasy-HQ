@@ -24,6 +24,7 @@ import { DOMINATOR_AVG, type CollegeProfile } from "../cfbd";
 import RESEARCH_JSON from "./shsResearch.json";
 import { MAX_TILT, rankMoveLimit, shsFormula } from "./shsModel";
 import { basePreds, deltas, stackInputs, stackModel } from "./shsStack";
+import { qbFeat, qbInputs, qbModel } from "./shsQb";
 
 /** Weekly research summary (scripts/research). */
 export const RESEARCH = RESEARCH_JSON as unknown as { summary: Record<string, number>; generatedAt: string; weeks: number; rows: number; seasons: number[]; projSource: string };
@@ -103,9 +104,13 @@ export function shsAi(ctx: LeagueContext, rows: RankRow[], scope: RankScope, wea
   const atRank = (pos: string, k: number) => curve.get(pos)?.[Math.min(k, curve.get(pos)!.length) - 1] ?? 0;
 
   // ---- SHS AI v2 (stacked model), weekly, only at positions where it beat the experts out of sample ----
+  const qbm = scope === "week" && !opts.neutral ? qbModel() : null;
+  const v2on = (pos: string) => !!stackModel(pos)?.use || (pos === "QB" && !!qbm);
   const v2 = scope === "week" && !opts.neutral
-    ? stackInputs(ctx, rows.filter((r) => r.ecrPos !== null && stackModel(r.pos)?.use).map((r) => ({ id: r.id, pos: r.pos, E: atRank(r.pos, r.ecrPos!), proj: r.pts })), w0)
+    ? stackInputs(ctx, rows.filter((r) => r.ecrPos !== null && v2on(r.pos)).map((r) => ({ id: r.id, pos: r.pos, E: atRank(r.pos, r.ecrPos!), proj: r.pts })), w0)
     : null;
+  const qbx = qbm ? qbInputs(ctx, rows.filter((r) => r.pos === "QB" && r.ecrPos !== null).map((r) => r.id), w0,
+    weather ? new Map([...weather].map(([t, x]) => [t, x.indoor ? 0 : x.windMph])) : undefined) : null;
   // ---- weekly inputs ----
   const def = scope === "week" ? new Map(defenseTable(ctx).map((d) => [d.team, d])) : null;
   const wkGames = ctx.games.filter((g) => g.week === w0);
@@ -332,11 +337,14 @@ export function shsAi(ctx: LeagueContext, rows: RankRow[], scope: RankScope, wea
       for (const f of factors) f.weight = Math.round(Math.abs(fx.get(f.key) ?? 0) * 1000) / 1000;
       rating = calc.rating; parts = calc.parts;
       const sx = v2?.get(r.id), sm = stackModel(r.pos);
-      if (sx && sm?.use && sm.head && ecrRating > 0.5) {
+      const qx = r.pos === "QB" ? qbx?.get(r.id) : undefined;
+      if (sx && sm && ecrRating > 0.5 && ((qx && qbm) || (sm.use && sm.head))) {
         // v2: the learned ranking head replaces the formula's tilt; betting lines (live only) still blend on top.
-        const d = deltas(basePreds(sm, sx), sx);
-        const keys = ["v2proj", "v2opp", "v2ctx", "v2early", "v2small", "v2range"];
-        const v2parts = keys.map((key, i) => ({ key, effect: (sm.head![i] * d[i]) / ecrRating })).filter((x) => Math.abs(x.effect) >= 0.001);
+        // Quarterbacks use their own head with QB-specific inputs when that one proved itself.
+        const head = qx && qbm ? qbm.head : sm.head!;
+        const d = [...deltas(basePreds(sm, sx), sx), ...(qx && qbm ? qbm.keys.map((k) => qbFeat(sx.E, qx, k)) : [])];
+        const keys = ["v2proj", "v2opp", "v2ctx", "v2early", "v2small", "v2range", ...(qx && qbm ? qbm.keys.map((k) => `qb_${k}`) : [])];
+        const v2parts = keys.map((key, i) => ({ key, effect: ((head[i] ?? 0) * d[i]) / ecrRating })).filter((x) => Math.abs(x.effect) >= 0.001);
         const tilt = Math.max(-MAX_TILT, Math.min(MAX_TILT, v2parts.reduce((a, x) => a + x.effect, 0)));
         const lines = calc.parts.find((x) => x.key === "lines");
         parts = [...v2parts, ...(lines ? [lines] : [])];

@@ -46,6 +46,9 @@ export const parseSchedule = (body: string, season: string): Game[] =>
           awayCoach: r.away_coach && r.away_coach !== "NA" ? r.away_coach : null,
           spread: r.spread_line && r.spread_line !== "NA" ? n(r.spread_line) : null,
           total: r.total_line && r.total_line !== "NA" ? n(r.total_line) : null,
+          wind: r.wind && r.wind !== "NA" ? n(r.wind) : null,
+          homeRest: r.home_rest && r.home_rest !== "NA" ? n(r.home_rest) : null,
+          awayRest: r.away_rest && r.away_rest !== "NA" ? n(r.away_rest) : null,
         }));
 
 export interface CombineRow { gsis: string; forty: number | null; wt: number | null; vertical: number | null; broad: number | null; cone: number | null; shuttle: number | null; draftYear: number | null }
@@ -102,7 +105,8 @@ export const parseInjuries = (body: string): InjuryReport[] =>
   parseCsv(body)
         .filter((r) => r.game_type === "REG" && r.gsis_id && ((r.report_status && r.report_status !== "NA") || (r.practice_status && r.practice_status !== "NA")))
         .map((r) => ({ gsis: r.gsis_id, season: n(r.season), week: n(r.week), status: r.report_status && r.report_status !== "NA" ? r.report_status : "",
-          injury: r.report_primary_injury || r.practice_primary_injury || "", practice: practiceCode(r.practice_status, r.practice_primary_injury) }));
+          injury: r.report_primary_injury || r.practice_primary_injury || "", practice: practiceCode(r.practice_status, r.practice_primary_injury),
+          team: r.team ? toSleeperTeam(r.team) : undefined, position: r.position || undefined }));
 
 /** Practice participation: DNP / LP (limited) / FP (full); "" when not listed or a rest day. */
 export function practiceCode(status: string | undefined, injury: string | undefined): string {

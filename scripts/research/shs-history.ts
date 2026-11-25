@@ -26,6 +26,7 @@ import { rankings } from "../../src/lib/services/rankings";
 import { shsAi } from "../../src/lib/services/shsai";
 import type { LeagueContext } from "../../src/lib/services/league";
 import { stackInputs, type StackX } from "../../src/lib/services/shsStack";
+import { qbInputs, type QbX } from "../../src/lib/services/shsQb";
 import type { Game, WeekStat } from "../../src/lib/nflverse/types";
 
 const ROOT = process.cwd();
@@ -104,7 +105,7 @@ async function sleeperProj(season: number, week: number): Promise<Map<string, Re
 
 const etMs = (k: string) => { const m = Number(k.slice(5, 7)); return Date.parse(`${k.replace(" ", "T").slice(0, 16)}:00${m >= 4 && m <= 10 ? "-04:00" : "-05:00"}`); };
 
-export interface Row { season: number; week: number; id: string; pos: string; ecrPos: number; ecrPts: number; proj: number; fpProj: number | null; actual: number; f: Record<string, [number, number]>; x?: StackX }
+export interface Row { season: number; week: number; id: string; pos: string; ecrPos: number; ecrPts: number; proj: number; fpProj: number | null; actual: number; f: Record<string, [number, number]>; x?: StackX; qx?: QbX }
 
 async function main() {
   const [playersCsv, idsCsv, gamesCsv] = await Promise.all([
@@ -226,6 +227,7 @@ async function main() {
       const atRank = (pos: string, k: number) => { const c = curve.get(pos) ?? []; return c[Math.min(k, c.length) - 1] ?? 0; };
       let n = 0;
       const sx = stackInputs(ctx, rk.filter((r) => r.ecrPos !== null).map((r) => ({ id: r.id, pos: r.pos, E: atRank(r.pos, r.ecrPos!), proj: r.pts })), w);
+      const qx = qbInputs(ctx, rk.filter((r) => r.pos === "QB" && r.ecrPos !== null).map((r) => r.id), w);
       for (const r of rk) {
         if (r.ecrPos === null || !CUT[r.pos] || r.ecrPos > CUT[r.pos] * 1.5) continue;
         const st = (byPlayer.get(r.id) ?? []).find((s) => s.week === w);
@@ -235,7 +237,7 @@ async function main() {
           season, week: w, id: r.id, pos: r.pos, ecrPos: r.ecrPos, ecrPts: Math.round(atRank(r.pos, r.ecrPos) * 10) / 10, proj: r.pts, fpProj: ecr.get(r.id)?.fp ?? null,
           actual: Math.round(scoreStatLine(st, PPR, r.pos) * 10) / 10,
           f: Object.fromEntries((a?.factors ?? []).map((x) => [x.key, [Math.round(x.value * 1000) / 1000, x.weight]])),
-          x: sx.get(r.id),
+          x: sx.get(r.id), qx: qx.get(r.id),
         });
         n++;
       }
@@ -248,6 +250,8 @@ async function main() {
   analyse(rows, projSource);
   const { stackResearch } = await import("./stack");
   stackResearch(rows, projSource);
+  const { qbResearch } = await import("./qb");
+  qbResearch(rows, projSource);
 }
 
 
