@@ -18,6 +18,12 @@ import { QB_KEYS, qbFeat, type QbKey, type QbX } from "../../src/lib/services/sh
 
 type Q = R & { qx: QbX };
 const LAMS = [100, 300, 1000, 3000];
+/**
+ * Live trial chosen by the user (Nov 2026): v2 + wind for QBs. Wind was the strongest single input with both
+ * Sleeper and FantasyPros projections, but it was picked after seeing these results, so it ships as a trial and
+ * is judged by the live track record. Empty = use the automatic selection and its out-of-sample gate.
+ */
+const TRIAL: QbKey[] = ["wind"];
 // Inputs enter the head scaled by his expert-rank points (a 10% softer defence matters more for a QB1).
 const feat = (r: Q, k: QbKey) => qbFeat(r.x.E, r.qx, k);
 
@@ -84,13 +90,13 @@ export function qbResearch(all: Row[], projSource: string) {
   const total = Object.fromEntries(Object.entries(pool).map(([k, v]) => [k, grade(v)]));
   const singles = Object.fromEntries(Object.entries(single).map(([k, v]) => [k, grade(v)]));
   // Final: select on every season, fit, and decide whether the app should use it.
-  const fin = select(rows);
+  const fin = TRIAL.length ? { keys: TRIAL, lam: innerCv(rows, TRIAL).lam } : select(rows);
   const { tr, D } = design(rows, fin.keys);
   const head = fitRank(tr, D, fin.lam);
   const t = total["v2 + QB inputs (selected)"];
-  const use = t.near >= Math.max(total.Experts.near, total["v2 base"].near) + 0.2 && t.all >= total.Experts.all - 0.05;
+  const use = TRIAL.length ? true : t.near >= Math.max(total.Experts.near, total["v2 base"].near) + 0.2 && t.all >= total.Experts.all - 0.05;
   const r4 = (v: number) => Math.round(v * 1e4) / 1e4;
-  const json = { version: 1, projSource, keys: fin.keys, head: head.map(r4), use, report: { tests, total, singles, chosen } };
+  const json = { version: 1, projSource, keys: fin.keys, head: head.map(r4), use, trial: TRIAL.length > 0, report: { tests, total, singles, chosen } };
   fs.writeFileSync(path.join(process.cwd(), "src/lib/services/shsQb.json"), JSON.stringify(json, null, 1));
   const tbl = (t: Record<string, { near: number; all: number; mae: number; rho: number }>) => ["| | Close calls | All pairs | Rank corr. |", "|---|---|---|---|", ...Object.entries(t).map(([k, m]) => `| ${k} | ${m.near}% | ${m.all}% | ${m.rho} |`)].join("\n");
   fs.writeFileSync(path.join(process.cwd(), "docs/shs-qb.md"), `# SHS AI: quarterback inputs
@@ -103,7 +109,7 @@ ${tbl(total)}
 
 Inputs chosen inside each training window: ${Object.entries(chosen).map(([s, k]) => `${s}: ${k.join(", ") || "none"}`).join("; ")}.
 
-Final model (every season): **${fin.keys.join(", ") || "no inputs"}**, ${use ? "**used by the app**" : "**not used** (didn't beat the experts and base v2 out of sample by 0.2+)"}.
+Final model (every season): **${fin.keys.join(", ") || "no inputs"}**, ${TRIAL.length ? "**live trial** (picked by hand after these results; judged by the live track record)" : use ? "**used by the app**" : "**not used** (didn't beat the experts and base v2 out of sample by 0.2+)"}.
 
 ## Each input on its own (added to v2 base)
 

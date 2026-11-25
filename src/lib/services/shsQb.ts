@@ -125,7 +125,8 @@ export function qbInputs(ctx: Pick<LeagueContext, "stats" | "games" | "players" 
  *  more for a QB1); counts and rushing points per game enter as they are. */
 export const qbFeat = (E: number, q: QbX, k: QbKey) => (k === "rushPg" || k === "olOut" || k === "defOut" || k === "oppDbOut" ? q[k] : E * q[k]);
 
-type QbJson = { keys: QbKey[]; head: number[]; use: boolean; projSource?: string; report?: unknown };
+type QbJson = { keys: QbKey[]; head: number[]; use: boolean; trial?: boolean; projSource?: string; report?: unknown };
 const QJ = QBJ as unknown as QbJson;
 export const qbModel = () => (QJ.use && QJ.head?.length ? QJ : null);
 export const qbReport = () => QJ.report ?? null;
+export const qbTrial = () => !!(QJ.use && QJ.trial);

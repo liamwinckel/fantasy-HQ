@@ -10,6 +10,7 @@ import { PlayerLink } from "./PlayerCard";
 import { runBacktest, type BacktestReport, type Grade } from "@/lib/services/backtest";
 import type { LeagueContext } from "@/lib/services/league";
 import { stackInfo, stackModel, STACK_POS } from "@/lib/services/shsStack";
+import { qbTrial } from "@/lib/services/shsQb";
 
 export function useBacktest(ctx: LeagueContext) {
   const [prog, setProg] = useState<[number, number] | null>(null);
@@ -171,13 +172,13 @@ function ResearchSummary() {
         ) : null; })}
       </div>
       <div className="mt-2 grid grid-cols-4 gap-1.5 text-center text-[11px]">
-        {STACK_POS.map((p) => { const t = rep.byPos[p]; const on = !!stackModel(p)?.use; return t ? (
+        {STACK_POS.map((p) => { const t = rep.byPos[p]; const trial = p === "QB" && qbTrial(); const on = !!stackModel(p)?.use || trial; return t ? (
           <div key={p} className={cx("rounded-lg px-1 py-1.5", on ? "bg-pos/15" : "bg-panel2")}>
-            <b>{p}</b><div className="num">{t["Experts"].near}% → {t["Stack, ranking head, capped"].near}%</div><div className={cx("text-[10px] font-semibold", on ? "text-pos" : "text-muted")}>{on ? "v2 on" : "formula kept"}</div>
+            <b>{p}</b><div className="num">{t["Experts"].near}% → {t["Stack, ranking head, capped"].near}%</div><div className={cx("text-[10px] font-semibold", on ? "text-pos" : "text-muted")}>{trial ? "v2 + wind (trial)" : on ? "v2 on" : "formula kept"}</div>
           </div>
         ) : null; })}
       </div>
-      <p className="mt-2 text-[11px] text-muted">v2 is switched on only at positions where it beat both the experts and the current formula on close calls out of sample. Elsewhere SHS AI keeps the current formula.</p>
+      <p className="mt-2 text-[11px] text-muted">v2 is switched on only at positions where it beat both the experts and the current formula on close calls out of sample. Elsewhere SHS AI keeps the current formula.{qbTrial() ? " QBs run v2 + wind as a live trial: it was the strongest QB input in testing but picked by hand, so the live track record decides whether it stays." : ""}</p>
     </section>
   );
 }
