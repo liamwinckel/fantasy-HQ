@@ -160,18 +160,27 @@ export function LeaguePage({ children }: { children: (d: LeagueData) => ReactNod
 }
 
 export function Loading({ label }: { label: string }) {
+  // Placeholder shaped like a league screen: header band, a score card and list rows, with a soft shimmer.
+  // Fades in only if loading takes longer than ~200 ms, so quick loads never flash it.
   return (
-    <div className="flex flex-col gap-4" aria-busy="true">
-      <div className="flex items-center gap-3 text-sm text-muted">
-        <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-acc" />
-        {label}… <span className="text-xs">(first load downloads this season&apos;s data, later loads are instant)</span>
+    <div className="sk-late flex flex-col gap-4" aria-busy="true" aria-label={`${label}…`}>
+      <div className="flex items-center gap-3">
+        <div className="sk h-11 w-11 rounded-xl" />
+        <div className="flex-1"><div className="sk h-5 w-2/3" /><div className="sk mt-2 h-3 w-1/3" /></div>
+        <div className="sk h-7 w-12" />
       </div>
-      <div className="h-24 animate-pulse rounded-2xl bg-panel" />
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="h-40 animate-pulse rounded-2xl bg-panel" />
-        <div className="h-40 animate-pulse rounded-2xl bg-panel" />
-        <div className="h-40 animate-pulse rounded-2xl bg-panel" />
+      <div className="sk h-11 rounded-2xl" />
+      <div className="rounded-2xl border border-line bg-panel p-4">
+        <div className="mx-auto sk h-6 w-32" />
+        <div className="mt-5 flex justify-between"><div><div className="sk h-10 w-10 rounded-full" /><div className="sk mt-3 h-10 w-28" /></div><div className="flex flex-col items-end"><div className="sk h-10 w-10 rounded-full" /><div className="sk mt-3 h-10 w-28" /></div></div>
+        <div className="sk mt-5 h-3 rounded-full" />
+        <ul className="mt-5 flex flex-col gap-3">
+          {[64, 52, 70, 46, 58].map((w, i) => (
+            <li key={i} className="flex items-center gap-3"><div className="sk h-8 w-8 rounded-full" /><div className="flex-1"><div className="sk h-3" style={{ width: `${w}%` }} /><div className="sk mt-1.5 h-2.5 w-1/3" /></div><div className="sk h-5 w-12" /></li>
+          ))}
+        </ul>
       </div>
+      <p className="text-center text-[11px] text-muted">{label}… first load downloads this season&apos;s data; later loads are instant.</p>
     </div>
   );
 }

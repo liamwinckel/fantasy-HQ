@@ -13,11 +13,12 @@ import { winProbability } from "@/lib/engine/simulate";
 import { powerRankings } from "@/lib/engine/power";
 import { InjuryChip, NflLogo, Bar, Card, Logo, Notice, PageHeader, Tag, cx, Info, WinBar } from "@/components/ui";
 import { MatchupBoard } from "@/components/matchup";
-import { Roll } from "@/components/motion";
+import { Roll, useInView } from "@/components/motion";
 import { PlayerLink } from "@/components/PlayerCard";
 import { LeagueOverview } from "@/components/LeagueOverview";
 import { LeagueHero } from "@/components/LeagueTabs";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useRef } from "react";
 
 const groupOf = (pos: string) => (["DL", "LB", "DB"].includes(pos) ? "IDP" : pos);
 
@@ -206,6 +207,10 @@ function Preview({ g, kind, started, myTotal, oppTotal, oppStrength, myStrength,
         <div className="mt-4">
           <div className="mb-1 flex justify-between text-xs font-bold"><span className={wp >= 60 ? "text-pos" : wp <= 40 ? "text-neg" : "text-acc-ink"}><Roll text={`${wp.toFixed(0)}%`} id={`mw:${g.a.rosterId}:${week}`} /></span><span className="text-[10px] font-semibold uppercase tracking-wider text-muted">Win chance</span><span className="text-muted"><Roll text={`${(100 - wp).toFixed(0)}%`} id={`mw2:${g.a.rosterId}:${week}`} /></span></div>
           <WinBar pct={wp} />
+          {!live && myStrength && oppStrength && g.b && (
+            <RangeCurves me={{ mean: myTotal ?? myStrength.mean, sd: myStrength.sd }} them={{ mean: oppTotal ?? oppStrength.mean, sd: oppStrength.sd }}
+              base={[myStrength, oppStrength]} names={[g.a.name, g.b.name]} />
+          )}
         </div>
       )}
     </div>
@@ -245,5 +250,47 @@ function PlayoffEstimate({ ctx, rid, week }: { ctx: LeagueData["ctx"]; rid: numb
         </ul>
       ) : <p className="text-sm text-muted">{out >= 99 ? "Doesn't reach this round in any simulation." : "Has a bye in every simulation that reaches this round."}</p>}
     </Card>
+  );
+}
+
+/**
+ * Likely score range for both teams (same distributions as the win chance). Curves rise in on first view and slide
+ * when you switch Set / Optimal. Range shown = 1-in-10 bad week to 1-in-10 great week.
+ */
+function RangeCurves({ me, them, base, names }: { me: { mean: number; sd: number }; them: { mean: number; sd: number }; base: { mean: number; sd: number }[]; names: [string, string] }) {
+  const box = useRef<HTMLDivElement>(null);
+  const seen = useInView(box);
+  const W = 340, H = 120, top = 16, bottom = 104;
+  const lo = Math.min(...base.map((d) => d.mean - 2.8 * d.sd), me.mean - 2.8 * me.sd, them.mean - 2.8 * them.sd);
+  const hi = Math.max(...base.map((d) => d.mean + 2.8 * d.sd), me.mean + 2.8 * me.sd, them.mean + 2.8 * them.sd);
+  const sx = (W - 16) / (hi - lo);
+  const X = (v: number) => 8 + (v - lo) * sx;
+  const peak = Math.max(1 / me.sd, 1 / them.sd);
+  // Curve drawn around 0; it's moved into place with a transform so it can glide when the mean changes.
+  const shape = (sd: number) => {
+    const pts: string[] = [];
+    for (let k = -3; k <= 3.001; k += 0.1) pts.push(`L${(k * sd * sx).toFixed(1)} ${(bottom - (Math.exp(-(k * k) / 2) / sd / peak) * (bottom - top)).toFixed(1)}`);
+    return `M${(-3 * sd * sx).toFixed(1)} ${bottom} ${pts.join(" ")} L${(3 * sd * sx).toFixed(1)} ${bottom} Z`;
+  };
+  const z = 1.2816;
+  const ticks = (() => { const step = (hi - lo) > 90 ? 40 : 20; const out: number[] = []; for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) out.push(v); return out; })();
+  const glide = (v: number): React.CSSProperties => ({ transform: `translateX(${X(v)}px)`, transition: "transform 600ms cubic-bezier(0.22,1,0.36,1)" });
+  return (
+    <div ref={box} className="mt-4">
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted">Likely score range</div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="mt-1 w-full" role="img" aria-label={`${names[0]} likely ${(me.mean - z * me.sd).toFixed(0)} to ${(me.mean + z * me.sd).toFixed(0)}; ${names[1]} ${(them.mean - z * them.sd).toFixed(0)} to ${(them.mean + z * them.sd).toFixed(0)}`}>
+        <line x1={8} x2={W - 8} y1={bottom} y2={bottom} stroke="var(--border)" />
+        {ticks.map((t) => <text key={t} x={X(t)} y={H - 2} fontSize={9} textAnchor="middle" fill="var(--muted)">{t}</text>)}
+        <g style={glide(them.mean)}><path d={shape(them.sd)} fill="var(--muted)" fillOpacity={0.2} stroke="var(--muted)" strokeWidth={1.5} className={seen ? "fhq-grow-y" : undefined} style={seen ? undefined : { opacity: 0 }} /></g>
+        <g style={glide(me.mean)}><path d={shape(me.sd)} fill="var(--acc)" fillOpacity={0.22} stroke="var(--acc)" strokeWidth={2} className={seen ? "fhq-grow-y" : undefined} style={seen ? { animationDelay: "120ms" } : { opacity: 0 }} /></g>
+        <g style={{ ...glide(me.mean), opacity: seen ? 1 : 0 }}><line x1={0} x2={0} y1={top - 4} y2={bottom} stroke="var(--acc)" strokeDasharray="3 3" /></g>
+        <g style={{ ...glide(them.mean), opacity: seen ? 1 : 0 }}><line x1={0} x2={0} y1={top + 4} y2={bottom} stroke="var(--muted)" strokeDasharray="3 3" /></g>
+      </svg>
+      <div className="mt-1 grid grid-cols-2 gap-2 text-[11px]">
+        <div className="rounded-lg bg-panel2 px-2.5 py-1.5"><span className="flex items-center gap-1.5 text-muted"><span className="h-2 w-2 rounded-full bg-acc" />{names[0]}</span><b className="num text-sm"><Roll text={`${Math.max(0, me.mean - z * me.sd).toFixed(0)} – ${(me.mean + z * me.sd).toFixed(0)}`} /></b></div>
+        <div className="rounded-lg bg-panel2 px-2.5 py-1.5 text-right"><span className="flex items-center justify-end gap-1.5 text-muted">{names[1]}<span className="h-2 w-2 rounded-full bg-muted" /></span><b className="num text-sm"><Roll text={`${Math.max(0, them.mean - z * them.sd).toFixed(0)} – ${(them.mean + z * them.sd).toFixed(0)}`} /></b></div>
+      </div>
+      <p className="mt-1 text-[10px] text-muted">Bad week (1 in 10) to great week (1 in 10). The further your curve sits right of theirs, the better your odds.</p>
+    </div>
   );
 }

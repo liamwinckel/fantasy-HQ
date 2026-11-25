@@ -23,7 +23,8 @@ import { Sheet } from "@/components/Sheet";
 import { DashDetail, type DashKey } from "@/app/DashDetails";
 import { LeagueHero } from "./LeagueTabs";
 import { seasonSummary, leaguePpg } from "@/lib/services/teamSeason";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { Roll, useInView } from "./motion";
 import { useRouter } from "next/navigation";
 
 const FORMAT_NOTE: Record<string, string> = {
@@ -114,6 +115,7 @@ export function LeagueOverview({ setup, league, ctx, sp }: LeagueData) {
       <Card title="Season at a glance" onOpen={() => setOpen("season")}><SeasonChart ctx={ctx} rosterId={me.rosterId} selectedWeek={week} /></Card>
 
       {/* Format-specific section */}
+      <PlayoffPicture ctx={ctx} />
       {fmt === "redraft" && <PlayoffPath ctx={ctx} me={me.rosterId} power={power} />}
       {fmt === "dynasty" && <DynastyWindowCard ctx={ctx} />}
       {fmt === "dynasty" && (
@@ -249,5 +251,72 @@ function AgeProfile({ ctx, rosterId }: { ctx: Ctx; rosterId: number }) {
       })}
       <Info className="">Value-weighted age of your top 3 at each position. The green band is the position&apos;s peak-production age window.</Info>
     </div>
+  );
+}
+
+/** Standings after `upto` regular-season weeks: wins (ties half), then points for. */
+function standingsAfter(ctx: Ctx, upto: number) {
+  const rows = new Map(ctx.teams.map((t) => [t.rosterId, { rid: t.rosterId, w: 0, l: 0, t: 0, pf: 0 }]));
+  for (let wk = 1; wk <= upto; wk++) {
+    const ms = ctx.matchupsByWeek[wk - 1] ?? [];
+    for (const m of ms) {
+      const r = rows.get(m.roster_id);
+      const o = m.matchup_id ? ms.find((x) => x.matchup_id === m.matchup_id && x.roster_id !== m.roster_id) : undefined;
+      if (!r || !o || (m.points === 0 && o.points === 0)) continue;
+      r.pf += m.points;
+      if (m.points > o.points) r.w++; else if (m.points < o.points) r.l++; else r.t++;
+    }
+  }
+  return [...rows.values()].sort((a, b) => b.w + b.t / 2 - (a.w + a.t / 2) || b.pf - a.pf);
+}
+
+/**
+ * Playoff picture: seeds after the latest finished week. The first time it's on screen, teams start at last week's
+ * spots and slide to their new seeds; ▲/▼ pills show the move and records roll to their new values.
+ */
+export function PlayoffPicture({ ctx }: { ctx: Ctx }) {
+  const done = Math.min(ctx.seasonOver ? ctx.lastWeek : ctx.currentWeek - 1, ctx.playoffStart - 1);
+  const box = useRef<HTMLUListElement>(null);
+  const seen = useInView(box);
+  if (done < 1) return null;
+  const now = standingsAfter(ctx, done);
+  const before = done >= 2 ? standingsAfter(ctx, done - 1) : now;
+  const prevIdx = new Map(before.map((r, i) => [r.rid, i]));
+  const seats = ctx.league.settings.playoff_teams ?? 0;
+  const ROW = 56;
+  const team = (rid: number) => ctx.teams.find((t) => t.rosterId === rid)!;
+  const rec = (r: { w: number; l: number; t: number }) => `${r.w}–${r.l}${r.t ? `–${r.t}` : ""}`;
+  return (
+    <Card title={`Playoff picture · after week ${done}`} pad={false} info={<>Seeds by record, then points for (ties count as half a win). <b>▲/▼</b> = seeds gained or lost since the week before. <b>Playoffs</b> = how often the team makes it in thousands of simulated seasons. The dashed line is the playoff cut ({seats} teams).</>}>
+      <ul ref={box} className="relative px-3 py-2 sm:px-5" style={{ height: now.length * ROW + 16 }}>
+        {seats > 0 && seats < now.length && (
+          <li aria-hidden className="pointer-events-none absolute inset-x-3 z-20 border-t-2 border-dashed border-acc/60 sm:inset-x-5" style={{ top: 8 + seats * ROW - 3 }}>
+            <span className="absolute -top-[7px] left-1/2 -translate-x-1/2 rounded bg-panel px-1.5 text-[9px] font-extrabold uppercase leading-none tracking-[0.1em] text-acc-ink">Playoff line</span>
+          </li>
+        )}
+        {now.map((r, i) => {
+          const t = team(r.rid);
+          const was = prevIdx.get(r.rid) ?? i;
+          const mv = was - i;
+          const old = before[was];
+          const mine = r.rid === ctx.myRosterId;
+          return (
+            <li key={r.rid} className="absolute inset-x-3 sm:inset-x-5" style={{ top: 8 + i * ROW, height: ROW - 6, zIndex: mine ? 10 : 1, transform: `translateY(${seen ? 0 : (was - i) * ROW}px)`, transition: `transform 800ms cubic-bezier(0.22,1,0.36,1) ${seen ? 250 : 0}ms` }}>
+              <div className={cx("grid h-full grid-cols-[1.6rem_minmax(0,1fr)_2.6rem_3.4rem] items-center gap-2 rounded-xl border px-2.5", mine ? "border-acc bg-acc-soft" : "border-line bg-panel2/40")}>
+                <span className="num h-display text-xl leading-none"><Roll text={String(i + 1)} from={String(was + 1)} /></span>
+                <div className="min-w-0">
+                  <TeamLink rosterId={t.rosterId} name={t.name} avatar={t.avatar} size={24} className="max-w-full text-sm font-semibold" />
+                  <div className="pl-8 text-[10px] text-muted"><Roll text={rec(r)} from={old ? rec(old) : undefined} /> · {r.pf.toFixed(0)} PF</div>
+                </div>
+                <span className="text-right">{mv !== 0 && seen && (
+                  <span className={cx("fhq-pop inline-block rounded-full px-1.5 py-0.5 text-[10px] font-extrabold", mv > 0 ? "bg-pos/15 text-pos" : "bg-neg/15 text-neg")} style={{ animationDelay: "900ms" }}>{mv > 0 ? "▲" : "▼"}{Math.abs(mv)}</span>
+                )}</span>
+                <span className="text-right"><b className="num text-sm">{(ctx.sim.playoffOdds[r.rid] ?? 0).toFixed(0)}%</b><span className="block text-[9px] text-muted">playoffs</span></span>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </Card>
   );
 }

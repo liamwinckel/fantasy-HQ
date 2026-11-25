@@ -35,10 +35,10 @@ const played = new Map<string, string | number>();
  * Counts every number inside `text` up from 0 the first time it's on screen, then rolls from the old value to the
  * new one whenever it changes ("8–3", "#6", "124.6", "72%" all work; decimals are kept as written).
  */
-export function Roll({ text, ms = 700, className, id }: { text: string; ms?: number; className?: string; id?: string }) {
+export function Roll({ text, ms = 700, className, id, from: start }: { text: string; ms?: number; className?: string; id?: string; from?: string }) {
   const ref = useRef<HTMLSpanElement>(null);
   const seen = useInView(ref);
-  const prev = id ? (played.get(id) as string | undefined) : undefined;
+  const prev = id ? (played.get(id) as string | undefined) ?? start : start;
   const [shown, setShown] = useState(() => (reducedMotion() ? text : prev ?? zeroed(text)));
   const from = useRef<string>(prev ?? zeroed(text));
   useEffect(() => { if (id) played.set(id, text); }, [id, text]);

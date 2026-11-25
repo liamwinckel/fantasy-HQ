@@ -1,4 +1,5 @@
 "use client";
+import { Sparkline } from "./charts";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -132,6 +133,7 @@ export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots
           {p?.locked && <Lock size={12} className="shrink-0 text-muted" aria-label="Game started" />}
         </div>
         <div className="flex items-center gap-1 truncate text-xs text-muted">
+          {p && p.recent.length >= 3 && <Sparkline values={p.recent.slice(-6).map((r) => r.pts)} width={40} height={14} />}
           {p && <NflLogo team={p.team} size={13} />}
           <span className="truncate">{p ? `${p.pos}${p.team ? ` · ${p.team}` : ""} · ${p.unavailable ?? (p.onBye ? "BYE" : p.opp ? `vs ${p.opp}` : "no game")}${i !== null && p.matchup !== 1 ? ` · ${signed((p.matchup - 1) * 100, 0)}%` : ""}` : ""}</span>
         </div>
@@ -325,7 +327,7 @@ function Versus({ slots, lineup, bench, byId, opponent, oppChanged, live, change
             {p ? <><PlayerLink id={p.id} name={shortName(p.name)} className="sm:hidden" /><PlayerLink id={p.id} name={p.name} className="hidden sm:inline" /></> : <span className="text-muted">Empty</span>}
             {p && <InjuryChip status={p.injury} />}
           </div>
-          <div className="flex items-center gap-1 truncate text-[10px] text-muted sm:text-[11px]">{p && <NflLogo team={p.team} size={11} />}<span className="truncate">{p ? `${p.team ?? p.pos} ${p.onBye ? "BYE" : p.opp ? `v ${p.opp}` : ""}` : ""}</span></div>
+          <div className="flex items-center gap-1 truncate text-[10px] text-muted sm:text-[11px]">{p && p.recent.length >= 3 && <Sparkline values={p.recent.slice(-6).map((r) => r.pts)} width={30} height={12} />}{p && <NflLogo team={p.team} size={11} />}<span className="truncate">{p ? `${p.team ?? p.pos} ${p.onBye ? "BYE" : p.opp ? `v ${p.opp}` : ""}` : ""}</span></div>
         </div>
         <div className="w-10 shrink-0 text-right sm:w-12">
           <div className={cx("num text-sm font-bold", !started && "text-muted")}>{p ? (started ? p.actual!.toFixed(1) : p.median.toFixed(1)) : "—"}</div>

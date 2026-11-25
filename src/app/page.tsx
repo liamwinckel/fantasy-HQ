@@ -10,6 +10,7 @@ import { useApp, Loading } from "@/components/AppData";
 import { Onboarding } from "@/components/Onboarding";
 import { Logo, Notice, cx } from "@/components/ui";
 import { EASE, Roll, firstTime, useGrow } from "@/components/motion";
+import { Sparkline } from "@/components/charts";
 import { getLeagueContext, type LeagueContext } from "@/lib/services/league";
 import { formatLabel } from "@/lib/services/portfolio";
 import { gameView } from "@/lib/services/views";
@@ -87,7 +88,7 @@ function LeagueWidget({ league, slot, index }: { league: League; slot: Slot | un
   );
 
   const baseSub = `${league.total_rosters} teams · ${formatLabel(league)}`;
-  if (!slot) return shell(<div className="mx-4 mb-4 mt-3 h-24 animate-pulse rounded-2xl bg-panel2" />, baseSub);
+  if (!slot) return shell(<WidgetSkeleton />, baseSub);
   if (!ctx) return shell(<p className="px-4 pb-4 pt-2 text-sm text-muted">Couldn&apos;t load this league: {slot.error}</p>, baseSub);
   if (!me) return shell(<p className="px-4 pb-4 pt-2 text-sm text-muted">You don&apos;t own a team here.</p>, baseSub);
 
@@ -144,6 +145,14 @@ function LeagueWidget({ league, slot, index }: { league: League; slot: Slot | un
     </div>
   );
 
+  // Your weekly scoring (finished weeks) with the league average per week, for the trend line.
+  const done = Array.from({ length: ctx.seasonOver ? ctx.lastWeek : Math.max(0, ctx.currentWeek - 1) }, (_, i) => i + 1)
+    .map((w) => { const ms = ctx.matchupsByWeek[w - 1] ?? []; const mine = ms.find((m) => m.roster_id === me.rosterId); return mine && mine.points > 0 ? { pts: mine.points, avg: ms.reduce((a, m) => a + m.points, 0) / Math.max(1, ms.length) } : null; })
+    .filter(Boolean) as { pts: number; avg: number }[];
+  const recent = done.slice(-7);
+  const seasonAvg = done.reduce((a, x) => a + x.pts, 0) / Math.max(1, done.length);
+  const last3 = done.slice(-3).reduce((a, x) => a + x.pts, 0) / Math.max(1, Math.min(3, done.length));
+  const form = done.length >= 4 ? (last3 / seasonAvg - 1) * 100 : null;
   const cell = (label: string, value: string, tone = "") => (
     <div className="rounded-xl bg-panel2 py-2 text-center"><div className={cx("num text-sm font-bold", tone)}><Roll text={value} id={`h:${league.league_id}:${label}`} /></div><div className="text-[10px] text-muted">{label}</div></div>
   );
@@ -152,6 +161,20 @@ function LeagueWidget({ league, slot, index }: { league: League; slot: Slot | un
       {shell(
         <>
           {matchup}
+          {recent.length >= 3 && (
+            <div className="flex items-center gap-3 px-4 pb-3">
+              <div className="min-w-0 flex-1">
+                <div className="text-[9px] font-bold uppercase tracking-[0.1em] text-muted">Your scoring · last {recent.length} weeks</div>
+                <Sparkline values={recent.map((x) => x.pts)} avg={recent.reduce((a, x) => a + x.avg, 0) / recent.length} width={220} height={30} label={`Your last ${recent.length} weekly scores: ${recent.map((x) => x.pts.toFixed(1)).join(", ")}; dashed line is the league average`} />
+              </div>
+              {form !== null && (
+                <div className="shrink-0 text-right">
+                  <div className={cx("num h-display text-2xl leading-none", form >= 0 ? "text-pos" : "text-neg")}>{form >= 0 ? "▲" : "▼"} <Roll text={`${Math.abs(form).toFixed(0)}%`} id={`h:${league.league_id}:form`} /></div>
+                  <div className="text-[9px] text-muted">last 3 vs season</div>
+                </div>
+              )}
+            </div>
+          )}
           <div className="grid grid-cols-4 gap-1.5 px-3 pb-3">
             {cell("PF", me.pointsFor.toFixed(0))}
             {cell("PA", me.pointsAgainst.toFixed(0))}
@@ -172,5 +195,19 @@ function Gauge({ win, stroke, delay, id }: { win: number; stroke: string; delay:
   return (
     <path ref={ref} d="M10 60 A50 50 0 0 1 110 60" fill="none" stroke={stroke} strokeWidth={9} strokeLinecap="round" pathLength={100}
       strokeDasharray={`${v} 100`} style={{ transition: `stroke-dasharray 1000ms ${EASE} ${delay}` }} />
+  );
+}
+
+/** Loading placeholder shaped like the widget: two teams and scores, the empty gauge, four stat boxes. */
+function WidgetSkeleton() {
+  return (
+    <div className="sk-late" aria-hidden>
+      <div className="grid grid-cols-[minmax(0,1fr)_120px_minmax(0,1fr)] items-end px-4 pb-3.5 pt-2.5">
+        <div><div className="sk h-[34px] w-[34px] rounded-full" /><div className="sk mt-2 h-8 w-24" /></div>
+        <svg width="120" height="84" viewBox="0 0 120 84"><path d="M10 60 A50 50 0 0 1 110 60" fill="none" stroke="currentColor" strokeOpacity={0.12} strokeWidth={9} strokeLinecap="round" /></svg>
+        <div className="flex flex-col items-end"><div className="sk h-[34px] w-[34px] rounded-full" /><div className="sk mt-2 h-8 w-24" /></div>
+      </div>
+      <div className="grid grid-cols-4 gap-1.5 px-3 pb-3">{[0, 1, 2, 3].map((i) => <div key={i} className="sk h-11 rounded-xl" />)}</div>
+    </div>
   );
 }
