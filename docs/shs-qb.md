@@ -12,7 +12,7 @@ Walk-forward, seasons 2023, 2024, 2025, 2026 (each predicted only from earlier s
 
 Inputs chosen inside each training window: 2023: press, trend, defOut; 2024: wind, defOut, total, passRt; 2025: wind, total; 2026: wind.
 
-Final model (every season): **total, wind, ownDef, short**, **not used** (didn't beat the experts and base v2 out of sample by 0.2+).
+Final model (every season): **wind**, **live trial** (picked by hand after these results; judged by the live track record).
 
 ## Each input on its own (added to v2 base)
 
