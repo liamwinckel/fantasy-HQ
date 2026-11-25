@@ -11,7 +11,7 @@ import { accuracy, snapshotWeek } from "@/lib/services/accuracy";
 import { BacktestCard } from "@/components/Backtest";
 import { playerDist } from "@/lib/engine/ranges";
 import { scoringRules } from "@/lib/engine/scoring";
-import { Sparkline } from "@/components/charts";
+import { Sparkline, TREND_MAX } from "@/components/charts";
 import { useEffect } from "react";
 import { formatLabel } from "@/lib/services/portfolio";
 import { rankings, type RankRow, type RankScope } from "@/lib/services/rankings";
@@ -127,7 +127,12 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
   const base = by === "ai" ? ranked.ai : by === "name" ? [...all].sort((a, b) => a.name.localeCompare(b.name))
     : by === "pts" ? [...all].sort((a, b) => (scope === "dynasty" ? b.value - a.value : b.pts - a.pts)) : ranked.ecr;
   // Last 6 games of league-scored points for each player's trend line.
-  const trend = (id: string) => { const l = (ctx.logs.get(id) ?? []).slice(-6).map((g) => g.pts); return l.length >= 3 ? <Sparkline values={l} width={48} height={16} label={`Last ${l.length} games: ${l.map((v) => v.toFixed(1)).join(", ")}`} /> : null; };
+  // Last 6 games on a scale shared by every player at the position; dashed line = this league's startable line there.
+  const trend = (id: string, pos: string) => {
+    const l = (ctx.logs.get(id) ?? []).slice(-6).map((g) => g.pts);
+    const ref = ctx.replacement[pos];
+    return l.length >= 3 ? <Sparkline values={l} width={48} height={16} max={TREND_MAX[pos] ?? 30} refLine={ref} label={`Last ${l.length} games: ${l.map((v) => v.toFixed(1)).join(", ")}. Dashed line ≈ ${ref?.toFixed(1) ?? "—"} pts, the startable line for a ${pos} in this league.`} /> : null;
+  };
   const ptsN = useMemo(() => new Map([...all].sort((a, b) => (dynScope ? b.value - a.value : b.pts - a.pts)).map((r, i) => [r.id, i + 1])), [all, dynScope]);
   const rows = (desc ? [...base].reverse() : base)
     .filter((r) => posMatch(r.pos) && (own === "all" || (own === "fa" ? r.owner === "Free agent" : r.mine)) && (!q || r.name.toLowerCase().includes(q.toLowerCase())));
@@ -165,6 +170,7 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
           <p className="text-[11px] leading-relaxed text-muted">
             Points use this league&apos;s scoring: <span className="font-semibold text-fg">{rules.join(" · ")}</span>.
             {by === "pts" ? " Ordered by projected points in that scoring." : " Expert order is converted to your scoring across positions; tap “Your scoring” to rank purely by it."}
+            {" "}Trend lines = his last 6 games on the same scale for every player at his position; dashed = the startable line at that position in this league; end dot green if his latest game cleared it.
           </p>
         )}
       </div>
@@ -194,7 +200,7 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
                 <div className="min-w-0">
                   <div className="flex min-w-0 items-center gap-1.5 text-sm font-semibold"><PlayerLink id={r.id} name={r.name} className="min-w-0" /><InjuryChip status={r.injury} /></div>
                   <div className="flex min-w-0 items-center gap-1 overflow-hidden whitespace-nowrap text-[11px] text-muted"><NflLogo team={r.team} size={12} />{r.pos} · {r.team ?? "FA"}{r.opp ? ` vs ${r.opp}` : ""}<span className={cx("ml-1 truncate", r.mine ? "font-semibold text-acc-ink" : r.owner === "Free agent" ? "font-semibold text-pos" : "")}>· {r.owner}</span></div>
-                  <div className="flex min-w-0 items-center gap-1.5 text-[11px] text-muted">{trend(r.id)}<span className="truncate sm:hidden">{statLine(r, scope)}</span></div>
+                  <div className="flex min-w-0 items-center gap-1.5 text-[11px] text-muted">{trend(r.id, r.pos)}<span className="truncate sm:hidden">{statLine(r, scope)}</span></div>
                 </div>
               </div>
               <div className="hidden truncate text-xs text-muted sm:block">{statLine(r, scope)}</div>

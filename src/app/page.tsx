@@ -150,6 +150,10 @@ function LeagueWidget({ league, slot, index }: { league: League; slot: Slot | un
     .map((w) => { const ms = ctx.matchupsByWeek[w - 1] ?? []; const mine = ms.find((m) => m.roster_id === me.rosterId); return mine && mine.points > 0 ? { pts: mine.points, avg: ms.reduce((a, m) => a + m.points, 0) / Math.max(1, ms.length) } : null; })
     .filter(Boolean) as { pts: number; avg: number }[];
   const recent = done.slice(-7);
+  // Fixed scale per league: from the lowest to the highest weekly score any team has posted this season, so the line
+  // shows where your weeks sit among everyone's, not just against your own best and worst.
+  const allScores = ctx.matchupsByWeek.slice(0, done.length).flat().map((m) => m.points).filter((v) => v > 0);
+  const scoreLo = allScores.length ? Math.min(...allScores) : 0, scoreHi = allScores.length ? Math.max(...allScores) : 1;
   const seasonAvg = done.reduce((a, x) => a + x.pts, 0) / Math.max(1, done.length);
   const last3 = done.slice(-3).reduce((a, x) => a + x.pts, 0) / Math.max(1, Math.min(3, done.length));
   const form = done.length >= 4 ? (last3 / seasonAvg - 1) * 100 : null;
@@ -164,8 +168,8 @@ function LeagueWidget({ league, slot, index }: { league: League; slot: Slot | un
           {recent.length >= 3 && (
             <div className="flex items-center gap-3 px-4 pb-3">
               <div className="min-w-0 flex-1">
-                <div className="text-[9px] font-bold uppercase tracking-[0.1em] text-muted">Your scoring · last {recent.length} weeks</div>
-                <Sparkline values={recent.map((x) => x.pts)} avg={recent.reduce((a, x) => a + x.avg, 0) / recent.length} width={220} height={30} label={`Your last ${recent.length} weekly scores: ${recent.map((x) => x.pts.toFixed(1)).join(", ")}; dashed line is the league average`} />
+                <div className="text-[9px] font-bold uppercase tracking-[0.1em] text-muted">Last {recent.length} wks <span className="normal-case tracking-normal">· dashed = league avg</span></div>
+                <Sparkline values={recent.map((x) => x.pts)} min={scoreLo} max={scoreHi} refLine={recent.reduce((a, x) => a + x.avg, 0) / recent.length} width={220} height={30} label={`Your last ${recent.length} weekly scores: ${recent.map((x) => x.pts.toFixed(1)).join(", ")}. Scale runs from the league's lowest (${scoreLo.toFixed(0)}) to highest (${scoreHi.toFixed(0)}) weekly score this season; dashed line is the league average.`} />
               </div>
               {form !== null && (
                 <div className="shrink-0 text-right">

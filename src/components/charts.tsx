@@ -155,26 +155,32 @@ export function HBars({ rows, max, fmt = (v: number) => `${v.toFixed(0)}%`, high
   );
 }
 
+/** Fixed top of the scale for a player's trend line, by position, so every line at a position is drawn on the same
+ *  axis (a 25-point week sits at the same height for every WR). Bigger weeks are clipped at the top. */
+export const TREND_MAX: Record<string, number> = { QB: 36, RB: 32, WR: 32, TE: 26, K: 18, DEF: 22, DL: 22, LB: 22, DB: 22 };
+
 /**
- * Trend line: recent weekly points. The end dot is green when the latest value beat the average of the ones
- * before it, red when it didn't. Optional dashed reference line (e.g. league average). Draws in once on view.
+ * Trend line of recent weekly points on a FIXED scale (min..max, shared by every line of the same kind), with a
+ * dashed reference line. The end dot is green when the latest week cleared the reference, red when it didn't.
+ * For players the reference is the league's startable line at his position; for teams, the league average.
  */
-export function Sparkline({ values, width = 64, height = 18, avg, color = "var(--acc)", label }: { values: number[]; width?: number; height?: number; avg?: number; color?: string; label?: string }) {
+export function Sparkline({ values, width = 64, height = 18, min = 0, max, refLine, color = "var(--acc)", label }: { values: number[]; width?: number; height?: number; min?: number; max: number; refLine?: number; color?: string; label?: string }) {
   const box = useRef<SVGSVGElement>(null);
   const seen = useInView(box);
   if (values.length < 2) return <svg ref={box} width={width} height={height} aria-hidden />;
-  const all = avg !== undefined ? [...values, avg] : values;
-  const lo = Math.min(...all), hi = Math.max(...all), rng = hi - lo || 1;
+  const rng = Math.max(1e-6, max - min);
   const X = (i: number) => 2 + (i * (width - 4)) / (values.length - 1);
-  const Y = (v: number) => height - 3 - ((v - lo) / rng) * (height - 6);
+  const Y = (v: number) => height - 2 - ((Math.max(min, Math.min(max, v)) - min) / rng) * (height - 4);
   const d = values.map((v, i) => `${i ? "L" : "M"}${X(i).toFixed(1)} ${Y(v).toFixed(1)}`).join(" ");
   const last = values[values.length - 1];
-  const prior = values.slice(0, -1).reduce((a, b) => a + b, 0) / (values.length - 1);
+  const good = refLine === undefined ? last >= values.slice(0, -1).reduce((a, b) => a + b, 0) / (values.length - 1) : last >= refLine;
   return (
     <svg ref={box} width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="shrink-0 overflow-visible" role="img" aria-label={label ?? `Last ${values.length}: ${values.map((v) => v.toFixed(1)).join(", ")}`}>
-      {avg !== undefined && <line x1={2} x2={width - 2} y1={Y(avg)} y2={Y(avg)} stroke="var(--muted)" strokeDasharray="2 3" strokeWidth={1} />}
+      <title>{label ?? `Last ${values.length}: ${values.map((v) => v.toFixed(1)).join(", ")}`}</title>
+      <line x1={2} x2={width - 2} y1={height - 2} y2={height - 2} stroke="var(--border)" strokeWidth={1} />
+      {refLine !== undefined && <line x1={2} x2={width - 2} y1={Y(refLine)} y2={Y(refLine)} stroke="var(--muted)" strokeDasharray="2 2" strokeWidth={1} />}
       <path d={d} pathLength={1} fill="none" stroke={color} strokeWidth={1.75} strokeLinejoin="round" strokeLinecap="round" className={seen ? "fhq-draw" : undefined} style={seen ? undefined : { opacity: 0 }} />
-      <circle cx={X(values.length - 1)} cy={Y(last)} r={2.6} fill={last >= prior ? "var(--pos)" : "var(--neg)"} className={seen ? "fhq-pop" : undefined} style={seen ? { animationDelay: "700ms" } : { opacity: 0 }} />
+      <circle cx={X(values.length - 1)} cy={Y(last)} r={2.6} fill={good ? "var(--pos)" : "var(--neg)"} className={seen ? "fhq-pop" : undefined} style={seen ? { animationDelay: "700ms" } : { opacity: 0 }} />
     </svg>
   );
 }

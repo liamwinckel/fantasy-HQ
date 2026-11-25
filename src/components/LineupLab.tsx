@@ -1,5 +1,5 @@
 "use client";
-import { Sparkline } from "./charts";
+import { Sparkline, TREND_MAX } from "./charts";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -15,6 +15,8 @@ export interface LabPlayer {
   median: number; low: number; high: number; base: number; seasonAvg: number; last4: number; games: number;
   confidence: string; opp: string | null; onBye: boolean; matchup: number; usage: number; notes: string[];
   snapL3: number[] | null; recent: { week: number; pts: number }[]; actual?: number | null;
+  /** Last 6 games and this league's startable line at his position (for the trend line). */
+  trend?: number[]; trendRef?: number;
   /** SHS AI ±% vs expert rank this week. */
   ai?: number | null;
   /** Chance of a big week / a dud (position thresholds). */
@@ -133,7 +135,7 @@ export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots
           {p?.locked && <Lock size={12} className="shrink-0 text-muted" aria-label="Game started" />}
         </div>
         <div className="flex items-center gap-1 truncate text-xs text-muted">
-          {p && p.recent.length >= 3 && <Sparkline values={p.recent.slice(-6).map((r) => r.pts)} width={40} height={14} />}
+          {p && (p.trend?.length ?? 0) >= 3 && <Sparkline values={p.trend!} width={40} height={14} max={TREND_MAX[p.pos] ?? 30} refLine={p.trendRef} label={`Last ${p.trend!.length} games: ${p.trend!.map((v) => v.toFixed(1)).join(", ")}; dashed = startable line`} />}
           {p && <NflLogo team={p.team} size={13} />}
           <span className="truncate">{p ? `${p.pos}${p.team ? ` · ${p.team}` : ""} · ${p.unavailable ?? (p.onBye ? "BYE" : p.opp ? `vs ${p.opp}` : "no game")}${i !== null && p.matchup !== 1 ? ` · ${signed((p.matchup - 1) * 100, 0)}%` : ""}` : ""}</span>
         </div>
@@ -159,7 +161,7 @@ export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots
         ) : (
         <Card pad={false} className="min-w-0 overflow-hidden lg:flex-[3]" title={`Your lineup · Week ${week}`}
           right={<Segmented label="Lineup view" value={view} onChange={(v) => setView(v)} options={[{ value: "current", label: edited ? "Yours" : "Current" }, { value: "optimal", label: "Optimal" }]} />}
-          info={<>Tap a position (QB, RB…) to choose who plays there; the player you replace moves to the bench, or swaps slots if he can play the other one. <b>Proj</b> = Sleeper&apos;s projection in your scoring. <b>Range</b> = floor (1 week in 10 is worse) · projection · ceiling (1 in 10 is better), from his own week-to-week swings and, when he has them, betting-market lines. Matchup % = how many more (+) or fewer (−) points this opponent allows to the position. Slots: {rosterSlots}. Nothing here changes Sleeper.</>}>
+          info={<>Tap a position (QB, RB…) to choose who plays there; the player you replace moves to the bench, or swaps slots if he can play the other one. <b>Proj</b> = Sleeper&apos;s projection in your scoring. <b>Range</b> = floor (1 week in 10 is worse) · projection · ceiling (1 in 10 is better), from his own week-to-week swings and, when he has them, betting-market lines. Matchup % = how many more (+) or fewer (−) points this opponent allows to the position. Trend line = his last 6 games on the same scale for every player at his position; dashed = the startable line there; end dot green if his latest game cleared it. Slots: {rosterSlots}. Nothing here changes Sleeper.</>}>
           <div className="flex items-center justify-between gap-2 border-b border-line px-3 py-2 text-xs sm:px-5">
             <span className="text-muted">{view === "optimal" ? "Optimal lineup" : edited ? "Your changes" : "Set in Sleeper"}: <b className="num text-fg">{shownTotal.toFixed(1)}</b> pts</span>
             {view === "current" && optTotal - shownTotal > 0.05 && <span className="font-semibold text-acc-ink">Optimal is {signed(optTotal - shownTotal)}</span>}
@@ -327,7 +329,7 @@ function Versus({ slots, lineup, bench, byId, opponent, oppChanged, live, change
             {p ? <><PlayerLink id={p.id} name={shortName(p.name)} className="sm:hidden" /><PlayerLink id={p.id} name={p.name} className="hidden sm:inline" /></> : <span className="text-muted">Empty</span>}
             {p && <InjuryChip status={p.injury} />}
           </div>
-          <div className="flex items-center gap-1 truncate text-[10px] text-muted sm:text-[11px]">{p && p.recent.length >= 3 && <Sparkline values={p.recent.slice(-6).map((r) => r.pts)} width={30} height={12} />}{p && <NflLogo team={p.team} size={11} />}<span className="truncate">{p ? `${p.team ?? p.pos} ${p.onBye ? "BYE" : p.opp ? `v ${p.opp}` : ""}` : ""}</span></div>
+          <div className="flex items-center gap-1 truncate text-[10px] text-muted sm:text-[11px]">{p && (p.trend?.length ?? 0) >= 3 && <Sparkline values={p.trend!} width={30} height={12} max={TREND_MAX[p.pos] ?? 30} refLine={p.trendRef} label={`Last ${p.trend!.length} games: ${p.trend!.map((v) => v.toFixed(1)).join(", ")}; dashed = startable line`} />}{p && <NflLogo team={p.team} size={11} />}<span className="truncate">{p ? `${p.team ?? p.pos} ${p.onBye ? "BYE" : p.opp ? `v ${p.opp}` : ""}` : ""}</span></div>
         </div>
         <div className="w-10 shrink-0 text-right sm:w-12">
           <div className={cx("num text-sm font-bold", !started && "text-muted")}>{p ? (started ? p.actual!.toFixed(1) : p.median.toFixed(1)) : "—"}</div>
