@@ -83,7 +83,8 @@ export default function Methodology() {
         <Card title="Trades: who wins and how to make it fair">
           <ul className="list-disc space-y-1.5 pl-5 text-sm leading-relaxed">
             <li><b>What goes into each player (Redraft):</b> production (season and last 4 games), rest-of-season projection, opportunity trend, team offense, schedule ahead (incl. playoffs) and injury status. Shown as chips on every trade.</li>
-            <li><b>Dynasty adds:</b> age curve, contract (expiring deals for players 26+ ×0.95, 2+ years left ×1.02) and durability from games played and official injury reports (under 60% of games ×0.88, under 80% ×0.94). Rookie picks use the pick model.</li>
+            <li><b>Dynasty trade value</b> = the dynasty market value built from FantasyPros dynasty expert rankings (superflex values in superflex leagues), so values always follow the dynasty ranks: rank 1 = 100 and every lower rank is worth less. Players the market doesn&apos;t cover use the SHS model on the same scale, never above a player the market rates higher.</li>
+            <li><b>SHS dynasty model (its own view, and how strategy splits now vs later):</b> age curve, contract (expiring deals for players 26+ ×0.95, 2+ years left ×1.02) and durability from games played and official injury reports (under 60% of games ×0.88, under 80% ×0.94). Rookie picks use the pick model.</li>
             <li><b>Four quarters ≠ a dollar:</b> each side&apos;s package value = (Σ value^1.5)^(1/1.5). One 80 stays 80, four 20s ≈ 50, 50 + 40 ≈ 72. The same applies to picks.</li>
             <li><b>Roster spots:</b> taking back more players than you send means cutting your lowest-value players; their value is subtracted. Freeing spots credits half the value of the best free agents.</li>
             <li><b>Spectrum bar:</b> Redraft blends value gained (50%) with each side&apos;s rest-of-season lineup gain (50%). Dynasty uses each team&apos;s strategy-adjusted value.</li>

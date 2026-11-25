@@ -169,7 +169,11 @@ export const ecrToValue = (ecr: number) => 100 * Math.exp(-(Math.max(1, ecr) - 1
 
 /**
  * Blend the SHS model with the market so values reflect what managers actually trade at:
- *   Dynasty = 40% model + 60% dynasty market value (DynastyProcess, from FantasyPros dynasty ECR; superflex values in SF leagues)
+ *   Dynasty = the dynasty market value (DynastyProcess, built from FantasyPros dynasty ECR; superflex values in SF
+ *             leagues), so trade values always follow the dynasty expert ranks. The SHS model stays available as
+ *             dynastyModel (its own view) and supplies the now / future split used for team strategy. Players the market
+ *             doesn't cover get their model value converted to the market scale, and never rank above covered players
+ *             the market rates higher.
  *   Redraft = 55% model + 45% FantasyPros rest-of-season consensus rank
  * Players the market doesn't cover keep the model value. Rescaled so the league's top asset = 100.
  */
@@ -185,16 +189,26 @@ export function blendWithMarket(values: Map<string, PlayerValue>, players: Playe
     return c.ro ? ecrToValue(c.ro) : null;
   };
   for (const v of values.values()) { v.redraftModel = v.redraft; v.dynastyModel = v.dynasty; }
+  // Market value replaces the dynasty number; the model's own now/future mix is kept for team strategy.
+  const setDynasty = (v: PlayerValue, val: number) => {
+    const total = (v.dynastyModel ?? 0) > 0 ? v.dynastyNow + v.dynastyFuture : 0;
+    const nowShare = total > 0 ? v.dynastyNow / total : 0.3;
+    v.dynasty = val; v.dynastyNow = val * nowShare; v.dynastyFuture = val * (1 - nowShare);
+  };
+  // Uncovered players: model value on the market scale (median market/model ratio of covered players), capped
+  // at the market value of every covered player the model rates at least as highly, so they never jump them.
+  const covered = [...values.values()].filter((v) => mk(v.id) && (v.dynastyModel ?? 0) > 1);
+  const ratios = covered.map((v) => (100 * mk(v.id)!) / maxMk / v.dynastyModel!).sort((a, b) => a - b);
+  const k = ratios.length ? ratios[Math.floor(ratios.length / 2)] : 1;
+  for (const v of values.values()) {
+    if (mk(v.id) || (v.dynastyModel ?? 0) <= 0) continue;
+    const above = covered.filter((c) => c.dynastyModel! >= v.dynastyModel!).map((c) => (100 * mk(c.id)!) / maxMk);
+    const cap = above.length ? Math.min(...above) : Infinity;
+    setDynasty(v, Math.min(v.dynastyModel! * k, cap));
+  }
   for (const v of values.values()) {
     const m = mk(v.id);
-    if (m) {
-      const blended = 0.4 * v.dynasty + 0.6 * (100 * m) / maxMk;
-      const f = v.dynasty > 0 ? blended / v.dynasty : 1;
-      v.dynastyNow = round1(v.dynastyNow * f);
-      v.dynastyFuture = round1(v.dynastyFuture * f);
-      if (v.dynasty <= 0) { v.dynastyNow = round1(blended * 0.3); v.dynastyFuture = round1(blended * 0.7); }
-      v.dynasty = round1(blended);
-    }
+    if (m) setDynasty(v, (100 * m) / maxMk);
     const r = roVal(v.id);
     if (r !== null) v.redraft = round1(0.55 * v.redraft + 0.45 * r);
   }
