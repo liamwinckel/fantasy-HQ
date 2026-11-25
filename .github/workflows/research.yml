@@ -39,9 +39,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Commit results
         run: |
-          git add src/lib/services/shsResearch.json docs/shs-research.md
+          git add src/lib/services/shsResearch.json docs/shs-research.md src/lib/services/shsStack.json docs/shs-stack.md
           if ! git diff --cached --quiet; then
-            git -c user.name="fantasy-hq-bot" -c user.email="actions@users.noreply.github.com" commit -q -m "SHS AI research: refit defaults from replayed seasons"
+            git -c user.name="fantasy-hq-bot" -c user.email="actions@users.noreply.github.com" commit -q -m "SHS AI research: refit defaults and v2 stack from replayed seasons"
             git push -q
           fi
       - uses: actions/upload-artifact@v4
@@ -50,3 +50,5 @@ jobs:
           path: |
             docs/shs-research.md
             src/lib/services/shsResearch.json
+            docs/shs-stack.md
+            src/lib/services/shsStack.json

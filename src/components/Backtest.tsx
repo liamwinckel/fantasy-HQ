@@ -9,6 +9,7 @@ import { LineChart } from "./charts";
 import { PlayerLink } from "./PlayerCard";
 import { runBacktest, type BacktestReport, type Grade } from "@/lib/services/backtest";
 import type { LeagueContext } from "@/lib/services/league";
+import { stackInfo, stackModel, STACK_POS } from "@/lib/services/shsStack";
 
 export function useBacktest(ctx: LeagueContext) {
   const [prog, setProg] = useState<[number, number] | null>(null);
@@ -35,13 +36,18 @@ export function BacktestCard({ ctx }: { ctx: LeagueContext }) {
   return (
     <>
       <Card title="SHS AI backtest" onOpen={data ? () => setOpen(true) : undefined}
-        info={<>Every finished week of this season replayed with only what was known before kickoff, then graded on what happened. <b>Picks right</b> = for every pair of players at a position, how often the ranking put the higher scorer first. <b>Avg miss</b> = average points off per player. Betting lines and weather can&apos;t be replayed, so they&apos;re graded only by the live record.</>}>
+        info={<>Every finished week of this season replayed with only what was known before kickoff, then graded on what happened. <b>Close calls</b> = players within 3 expert-rank spots at the same position: how often the ranking picked the one who scored more (the start/sit decisions you actually face; 50% is a coin flip). <b>All pairs</b> = the same over every two ranked players. <b>Avg miss</b> = average points off per player. <b>Rank corr.</b> = how closely the order matched what happened (1 = perfectly). Betting lines and weather can&apos;t be replayed, so they&apos;re graded only by the live record.</>}>
         {loading || !data ? (
           <p className="text-sm text-muted">{loading ? `Replaying past weeks${prog ? ` · ${prog[0]}/${prog[1]}` : ""}…` : "Backtest needs last weeks' expert rankings; it'll appear after the next data refresh."}</p>
         ) : (
           <div className="flex flex-col gap-3">
-            <div><div className="mb-1 text-[11px] font-semibold text-muted">Picks right · {data.weeks.length} weeks</div><Trio s={data.total.shs.pairAcc} e={data.total.ecr.pairAcc} p={data.total.sleeper.pairAcc} fmt={(v) => `${v.toFixed(1)}%`} better="high" /></div>
-            <div><div className="mb-1 text-[11px] font-semibold text-muted">Avg miss (points)</div><Trio s={data.total.shs.mae} e={data.total.ecr.mae} p={data.total.sleeper.mae} fmt={(v) => v.toFixed(2)} better="low" /></div>
+            <div><div className="mb-1 text-[11px] font-semibold text-muted">Close calls · {data.weeks.length} weeks</div><Trio s={data.total.shs.near} e={data.total.ecr.near} p={data.total.sleeper.near} fmt={(v) => `${v.toFixed(1)}%`} better="high" /></div>
+            <div className="grid grid-cols-3 gap-2 text-center text-[11px] text-muted">
+              <span>All pairs<b className="num block text-sm text-fg">{data.total.shs.pairAcc.toFixed(1)}% <span className="font-normal text-muted">vs {data.total.ecr.pairAcc.toFixed(1)}%</span></b></span>
+              <span>Avg miss<b className="num block text-sm text-fg">{data.total.shs.mae.toFixed(2)} <span className="font-normal text-muted">vs {data.total.ecr.mae.toFixed(2)}</span></b></span>
+              <span>Rank corr.<b className="num block text-sm text-fg">{data.total.shs.rho.toFixed(3)} <span className="font-normal text-muted">vs {data.total.ecr.rho.toFixed(3)}</span></b></span>
+            </div>
+            <p className="-mt-1 text-center text-[10px] text-muted">SHS AI vs experts</p>
             <p className="text-[11px] text-muted">{verdict(data.total.shs, data.total.ecr)} Tap for week by week.</p>
           </div>
         )}
@@ -54,9 +60,9 @@ export function BacktestCard({ ctx }: { ctx: LeagueContext }) {
 }
 
 export function verdict(s: Grade, e: Grade) {
-  const d = Math.round((s.pairAcc - e.pairAcc) * 10) / 10;
+  const d = Math.round((s.near - e.near) * 10) / 10;
   if (Math.abs(d) < 0.3) return "SHS AI and the experts are level so far.";
-  return d > 0 ? `SHS AI is ahead of the experts by ${d} points.` : `The experts are ahead of SHS AI by ${Math.abs(d)} points.`;
+  return d > 0 ? `SHS AI is ahead of the experts by ${d} points on close calls.` : `The experts are ahead of SHS AI by ${Math.abs(d)} points on close calls.`;
 }
 
 export function BacktestDetail({ r }: { r: BacktestReport }) {
@@ -64,12 +70,13 @@ export function BacktestDetail({ r }: { r: BacktestReport }) {
   const labels = r.weeks.map((w) => String(w.week));
   return (
     <div className="flex flex-col gap-6 pb-4">
+      <ResearchSummary />
       <section>
-        <h3 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted">Picks right by week</h3>
-        <LineChart labels={labels} yMin={40} yMax={80} fmt={(v) => `${Math.round(v)}%`} series={[
-          { name: "SHS AI", color: "var(--acc)", values: r.weeks.map((w) => w.shs.pairAcc) },
-          { name: "Experts", color: "#38bdf8", values: r.weeks.map((w) => w.ecr.pairAcc) },
-          { name: "Sleeper proj", color: "var(--muted)", values: r.weeks.map((w) => w.sleeper.pairAcc), dash: true },
+        <h3 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted">Close calls by week</h3>
+        <LineChart labels={labels} yMin={35} yMax={70} fmt={(v) => `${Math.round(v)}%`} series={[
+          { name: "SHS AI", color: "var(--acc)", values: r.weeks.map((w) => w.shs.near) },
+          { name: "Experts", color: "#38bdf8", values: r.weeks.map((w) => w.ecr.near) },
+          { name: "Sleeper proj", color: "var(--muted)", values: r.weeks.map((w) => w.sleeper.near), dash: true },
         ]} />
       </section>
       <section>
@@ -85,8 +92,8 @@ export function BacktestDetail({ r }: { r: BacktestReport }) {
         <div className="overflow-hidden rounded-xl border border-line">
           <div className="grid grid-cols-[2.5rem_repeat(3,minmax(0,1fr))] gap-2 border-b border-line bg-panel2/60 px-3 py-1.5 text-[10px] font-semibold uppercase text-muted"><span>Wk</span><span className="text-right">SHS AI</span><span className="text-right">Experts</span><span className="text-right">Sleeper</span></div>
           {[...r.weeks].reverse().map((w) => {
-            const best = Math.max(w.shs.pairAcc, w.ecr.pairAcc, w.sleeper.pairAcc);
-            const c = (g: Grade) => <span className={cx("num text-right", g.pairAcc === best && "font-bold text-pos")}>{g.pairAcc.toFixed(1)}%<span className="block text-[10px] font-normal text-muted">±{g.mae.toFixed(1)} pts</span></span>;
+            const best = Math.max(w.shs.near, w.ecr.near, w.sleeper.near);
+            const c = (g: Grade) => <span className={cx("num text-right", g.near === best && "font-bold text-pos")}>{g.near.toFixed(1)}%<span className="block text-[10px] font-normal text-muted">all {g.pairAcc.toFixed(0)}% · ±{g.mae.toFixed(1)}</span></span>;
             return <div key={w.week} className="grid grid-cols-[2.5rem_repeat(3,minmax(0,1fr))] items-center gap-2 border-b border-line px-3 py-2 text-sm last:border-0"><span className="text-xs text-muted">{w.week}</span>{c(w.shs)}{c(w.ecr)}{c(w.sleeper)}</div>;
           })}
         </div>
@@ -143,5 +150,34 @@ export function BacktestDetail({ r }: { r: BacktestReport }) {
         {r.tuned && <p className="mt-2 text-[11px] text-muted">With the best-fitting weights SHS AI would have picked right {r.tuned.shs.pairAcc.toFixed(1)}% (in-sample, so treat as an upper bound). Best expert share found: {r.tuned.expert}%.</p>}
       </section>
     </div>
+  );
+}
+
+type ResearchMetrics = { all: number; near: number; mae: number; rho: number; nearPairs: number };
+/** Long-run, out-of-sample results of SHS AI v2 from the replayed seasons (scripts/research/stack.ts). */
+function ResearchSummary() {
+  const info = stackInfo();
+  const rep = info.report as { tests: number[]; total: Record<string, ResearchMetrics>; byPos: Record<string, Record<string, ResearchMetrics>> } | null;
+  if (!rep) return null;
+  const rows: [string, string][] = [["Experts", "Experts"], ["SHS (current)", "SHS formula"], ["Stack, ranking head, capped", "SHS v2"]];
+  return (
+    <section>
+      <h3 className="mb-1 text-[11px] font-bold uppercase tracking-widest text-muted">Long-run research · out of sample</h3>
+      <p className="mb-2 text-[11px] text-muted">Seasons {rep.tests.join(", ")}, each predicted by a model trained only on earlier seasons ({info.trainedOn}; projections: {info.projSource}). {rep.total.Experts.nearPairs.toLocaleString()} close calls.</p>
+      <div className="overflow-hidden rounded-xl border border-line text-sm">
+        <div className="grid grid-cols-[minmax(0,1fr)_repeat(4,3.6rem)] gap-1 border-b border-line bg-panel2/60 px-3 py-1.5 text-[10px] font-semibold uppercase text-muted"><span /><span className="text-right">Close</span><span className="text-right">All</span><span className="text-right">Miss</span><span className="text-right">Corr.</span></div>
+        {rows.map(([k, l]) => { const m = rep.total[k]; return m ? (
+          <div key={k} className="grid grid-cols-[minmax(0,1fr)_repeat(4,3.6rem)] gap-1 border-b border-line px-3 py-2 last:border-0"><span className="font-semibold">{l}</span><span className="num text-right">{m.near}%</span><span className="num text-right">{m.all}%</span><span className="num text-right">{m.mae}</span><span className="num text-right">{m.rho}</span></div>
+        ) : null; })}
+      </div>
+      <div className="mt-2 grid grid-cols-4 gap-1.5 text-center text-[11px]">
+        {STACK_POS.map((p) => { const t = rep.byPos[p]; const on = !!stackModel(p)?.use; return t ? (
+          <div key={p} className={cx("rounded-lg px-1 py-1.5", on ? "bg-pos/15" : "bg-panel2")}>
+            <b>{p}</b><div className="num">{t["Experts"].near}% → {t["Stack, ranking head, capped"].near}%</div><div className={cx("text-[10px] font-semibold", on ? "text-pos" : "text-muted")}>{on ? "v2 on" : "formula kept"}</div>
+          </div>
+        ) : null; })}
+      </div>
+      <p className="mt-2 text-[11px] text-muted">v2 is switched on only at positions where it beat both the experts and the current formula on close calls out of sample. Elsewhere SHS AI keeps the current formula.</p>
+    </section>
   );
 }

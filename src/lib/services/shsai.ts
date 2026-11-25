@@ -22,7 +22,8 @@ import { getTuning } from "./accuracy";
 import { marketPoints } from "../markets";
 import { DOMINATOR_AVG, type CollegeProfile } from "../cfbd";
 import RESEARCH_JSON from "./shsResearch.json";
-import { rankMoveLimit, shsFormula } from "./shsModel";
+import { MAX_TILT, rankMoveLimit, shsFormula } from "./shsModel";
+import { basePreds, deltas, stackInputs, stackModel } from "./shsStack";
 
 /** Weekly research summary (scripts/research). */
 export const RESEARCH = RESEARCH_JSON as unknown as { summary: Record<string, number>; generatedAt: string; weeks: number; rows: number; seasons: number[]; projSource: string };
@@ -101,6 +102,10 @@ export function shsAi(ctx: LeagueContext, rows: RankRow[], scope: RankScope, wea
   for (const [pos, arr] of byPos) curve.set(pos, [...arr].map((r) => r.pts).sort((a, b) => b - a));
   const atRank = (pos: string, k: number) => curve.get(pos)?.[Math.min(k, curve.get(pos)!.length) - 1] ?? 0;
 
+  // ---- SHS AI v2 (stacked model), weekly, only at positions where it beat the experts out of sample ----
+  const v2 = scope === "week" && !opts.neutral
+    ? stackInputs(ctx, rows.filter((r) => r.ecrPos !== null && stackModel(r.pos)?.use).map((r) => ({ id: r.id, pos: r.pos, E: atRank(r.pos, r.ecrPos!), proj: r.pts })), w0)
+    : null;
   // ---- weekly inputs ----
   const def = scope === "week" ? new Map(defenseTable(ctx).map((d) => [d.team, d])) : null;
   const wkGames = ctx.games.filter((g) => g.week === w0);
@@ -326,6 +331,18 @@ export function shsAi(ctx: LeagueContext, rows: RankRow[], scope: RankScope, wea
       const fx = new Map(calc.parts.map((x) => [x.key, x.effect]));
       for (const f of factors) f.weight = Math.round(Math.abs(fx.get(f.key) ?? 0) * 1000) / 1000;
       rating = calc.rating; parts = calc.parts;
+      const sx = v2?.get(r.id), sm = stackModel(r.pos);
+      if (sx && sm?.use && sm.head && ecrRating > 0.5) {
+        // v2: the learned ranking head replaces the formula's tilt; betting lines (live only) still blend on top.
+        const d = deltas(basePreds(sm, sx), sx);
+        const keys = ["v2proj", "v2opp", "v2ctx", "v2early", "v2small", "v2range"];
+        const v2parts = keys.map((key, i) => ({ key, effect: (sm.head![i] * d[i]) / ecrRating })).filter((x) => Math.abs(x.effect) >= 0.001);
+        const tilt = Math.max(-MAX_TILT, Math.min(MAX_TILT, v2parts.reduce((a, x) => a + x.effect, 0)));
+        const lines = calc.parts.find((x) => x.key === "lines");
+        parts = [...v2parts, ...(lines ? [lines] : [])];
+        rating = ecrRating * (1 + tilt + (lines?.effect ?? 0));
+        for (const f of factors) f.weight = 0;
+      }
       blend = { expert: 1 - calc.lineShare, sleeper: 0, market: calc.lineShare, factors: 0 };
     } else {
       const rm: Record<string, number> = {};

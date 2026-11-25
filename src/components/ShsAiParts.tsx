@@ -58,9 +58,18 @@ export function ShsExplainer({ scope }: { scope: RankScope }) {
 const LABELS: Record<string, string> = {
   gap: "Sleeper projection", lines: "Betting lines", ppg: "Points per game", snap: "Snap share", adv: "Advanced metrics", xfp: "Expected points", track: "Player tracking", chart: "Film charting",
   weather: "Weather", inj: "Injuries", matchup: "Matchup", vegas: "Vegas team total", script: "Game script", sched: "Schedule", age: "Age", team: "Team situation", coach: "Coaching",
+  v2proj: "Sleeper projection (v2)", v2opp: "Usage model (v2)", v2ctx: "Vegas & matchup (v2)", v2early: "Early-season projection pull", v2small: "Small-sample usage", v2range: "Boom/bust range",
   usage: "Usage", games: "Durability", form: "Recent form", luck: "Scoring vs expected", missed: "Games missed", share: "Opportunity share", sd: "Expert disagreement", rookie: "Rookie", draft: "Draft & combine", college: "College production",
 };
 export const label = (k: string) => LABELS[k] ?? k;
+const V2_DETAIL: Record<string, string> = {
+  v2proj: "Learned model: Sleeper's projection vs what his expert rank is usually worth",
+  v2opp: "Learned model: expected points from his targets, carries and attempts, and recent scoring",
+  v2ctx: "Learned model: team implied points (betting total and spread) and an opponent-adjusted defensive matchup",
+  v2early: "Learned model: extra weight on the projection in weeks 1–4",
+  v2small: "Learned model: usage when he has fewer than 3 games",
+  v2range: "Learned model: how boom-or-bust his scoring has been",
+};
 
 /**
  * SHS AI's view in plain words. The % is how much higher (+) or lower (−) SHS AI values him than his expert rank:
@@ -128,7 +137,8 @@ export function ShsWhy({ pct, ai, pos }: { pct: number; ai: ShsAiT | null; pos?:
   const posLabel = pos ?? ai?.pos ?? "#";
   const custom = ai?.mode === "custom";
   const detail = (k: string) => k === "lines" ? (ai?.market ? `Lines imply ${ai.market.pts.toFixed(1)} pts in your scoring (${ai.market.covered.join(", ")})` : "")
-    : k === "gap" ? "Sleeper's projection vs what his expert rank is usually worth" : ai?.factors.find((f) => f.key === k)?.detail ?? "";
+    : k === "gap" ? "Sleeper's projection vs what his expert rank is usually worth"
+    : k.startsWith("v2") ? V2_DETAIL[k] ?? "" : ai?.factors.find((f) => f.key === k)?.detail ?? "";
   const moving = !custom && ai ? [...ai.parts].filter((x) => Math.abs(x.effect) >= 0.005).sort((a, b) => Math.abs(b.effect) - Math.abs(a.effect)) : [];
   const tracked = !custom && ai ? ai.factors.filter((f) => !ai.parts.some((x) => x.key === f.key)) : [];
   const reasons = custom && ai ? [

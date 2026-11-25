@@ -95,7 +95,7 @@ function Brief({ league, ctx }: LeagueData) {
               <ModelRow label="SHS AI" g={btw.shs} best={best(btw)} />
               <ModelRow label="Experts (ECR)" g={btw.ecr} best={best(btw)} />
               <ModelRow label="Sleeper projection" g={btw.sleeper} best={best(btw)} />
-              <p className="text-xs text-muted">{verdict(btw.shs, btw.ecr)} Season to date: SHS AI {bt.data!.total.shs.pairAcc.toFixed(1)}% · experts {bt.data!.total.ecr.pairAcc.toFixed(1)}% · Sleeper {bt.data!.total.sleeper.pairAcc.toFixed(1)}%.</p>
+              <p className="text-xs text-muted">{verdict(btw.shs, btw.ecr)} Season to date, close calls: SHS AI {bt.data!.total.shs.near.toFixed(1)}% · experts {bt.data!.total.ecr.near.toFixed(1)}% · Sleeper {bt.data!.total.sleeper.near.toFixed(1)}%.</p>
               {btw.biggestCalls.length > 0 && (
                 <div>
                   <div className="mb-1 text-[11px] font-bold uppercase tracking-widest text-muted">SHS AI&apos;s biggest disagreements with the experts</div>
@@ -138,13 +138,13 @@ function Brief({ league, ctx }: LeagueData) {
   );
 }
 
-const best = (w: { shs: Grade; ecr: Grade; sleeper: Grade }) => Math.max(w.shs.pairAcc, w.ecr.pairAcc, w.sleeper.pairAcc);
+const best = (w: { shs: Grade; ecr: Grade; sleeper: Grade }) => Math.max(w.shs.near, w.ecr.near, w.sleeper.near);
 function ModelRow({ label, g, best }: { label: string; g: Grade; best: number }) {
-  const top = g.pairAcc === best;
+  const top = g.near === best;
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_5rem_5rem] items-center gap-2 text-sm">
       <span className={cx("truncate", top && "font-bold")}>{label}{top && <span className="ml-1.5 rounded bg-pos/15 px-1.5 py-0.5 text-[10px] font-bold text-pos">best</span>}</span>
-      <span className="num text-right"><b className={top ? "text-pos" : ""}>{g.pairAcc.toFixed(1)}%</b><span className="block text-[10px] text-muted">picks right</span></span>
+      <span className="num text-right"><b className={top ? "text-pos" : ""}>{g.near.toFixed(1)}%</b><span className="block text-[10px] text-muted">close calls</span></span>
       <span className="num text-right"><b>±{g.mae.toFixed(1)}</b><span className="block text-[10px] text-muted">avg miss</span></span>
     </div>
   );

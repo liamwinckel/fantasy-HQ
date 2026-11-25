@@ -20,16 +20,18 @@ import { rankings } from "./rankings";
 import { shsAi } from "./shsai";
 import { shsFormula } from "./shsModel";
 import { buildSignals } from "./signals";
+import { stackInputs, stackModel, stackPredict, type StackX } from "./shsStack";
 import { DEFAULT_SHS, getSettings, type ShsWeights } from "../settings";
 
 const POS_CUT: Record<string, number> = { QB: 24, RB: 40, WR: 50, TE: 20 };
-const VERSION = 6;
+const VERSION = 7;
 
 /** One player in one replayed week. f = factor key → [value −1…1, base weight]. */
-export interface BtRow { id: string; pos: string; ecrPos: number; ecrPts: number; proj: number; expert: number | null; actual: number; f: Record<string, [number, number]>; mkt?: number | null }
+export interface BtRow { id: string; pos: string; ecrPos: number; ecrPts: number; proj: number; expert: number | null; actual: number; f: Record<string, [number, number]>; mkt?: number | null; x?: StackX }
 export interface BtWeek { week: number; at: string; rows: BtRow[] }
 
-export interface Grade { pairAcc: number; mae: number; pairs: number; n: number }
+/** pairAcc = all pairs; near = close calls (within 3 expert-rank spots); rho = Spearman rank correlation. */
+export interface Grade { pairAcc: number; near: number; rho: number; mae: number; pairs: number; n: number }
 export interface MarketGrade { n: number; markets: number; experts: number; shs: number }
 export interface WeekGrade { week: number; shs: Grade; ecr: Grade; sleeper: Grade; mkt: MarketGrade | null; byPos: Record<string, { shs: number; ecr: number; sleeper: number }>; biggestCalls: { id: string; pct: number; ecrPos: number; actualPosRank: number; right: boolean }[] }
 export interface BacktestReport {
@@ -88,6 +90,7 @@ async function replayWeek(ctx: LeagueContext, w: number, snap: { at: string; row
   for (const r of rows) (curve.get(r.pos) ?? curve.set(r.pos, []).get(r.pos)!).push(r.pts);
   for (const a of curve.values()) a.sort((x, y) => y - x);
   const atRank = (pos: string, k: number) => { const c = curve.get(pos) ?? []; return c[Math.min(k, c.length) - 1] ?? 0; };
+  const sx = stackInputs(cw, rows.filter((r) => r.ecrPos !== null).map((r) => ({ id: r.id, pos: r.pos, E: atRank(r.pos, r.ecrPos!), proj: r.pts })), w);
   const out: BtRow[] = [];
   for (const r of rows) {
     if (r.ecrPos === null || !POS_CUT[r.pos] || r.ecrPos > POS_CUT[r.pos] * 1.5) continue;
@@ -100,6 +103,7 @@ async function replayWeek(ctx: LeagueContext, w: number, snap: { at: string; row
       mkt: mk ? Math.round(mk.pts * 10) / 10 : null,
       id: r.id, pos: r.pos, ecrPos: r.ecrPos, ecrPts: Math.round(atRank(r.pos, r.ecrPos) * 10) / 10, proj: r.pts, expert: expertProj.get(r.id) ?? null, actual: g.pts,
       f: Object.fromEntries((a?.factors ?? []).map((f) => [f.key, [Math.round(f.value * 1000) / 1000, f.weight]])),
+      x: sx.get(r.id),
     });
   }
   const res: BtWeek = { week: w, at: snap.at, rows: out };
@@ -111,6 +115,15 @@ type Cfg = Pick<ShsWeights, "mode" | "lines" | "mix" | "mixLines">;
 /** SHS AI points for a replayed row (same formula as the live app; betting lines only on weeks that saved them). */
 export function shsPoints(r: BtRow, cfg: Cfg, mult: Record<string, number>, withLines = false) {
   const hasM = withLines && r.mkt !== null && r.mkt !== undefined;
+  const sm = stackModel(r.pos);
+  if (cfg.mode !== "custom" && sm?.use && sm.head && r.x && r.ecrPts > 0.5) {
+    // SHS AI v2 where it's switched on (same as the live app), lines blended on top when saved.
+    const v = stackPredict(sm, r.x).score;
+    const tilt = Math.max(-0.2, Math.min(0.2, v / r.ecrPts - 1));
+    const lineShare = hasM ? Math.max(0, Math.min(60, cfg.lines)) / 100 : 0;
+    const eff = lineShare ? Math.max(-0.15, Math.min(0.15, lineShare * (r.mkt! / r.ecrPts - 1 - tilt))) : 0;
+    return r.ecrPts * (1 + tilt + eff);
+  }
   if (cfg.mode !== "custom") {
     const factors = Object.entries(r.f).map(([key, [value]]) => ({ key, value }));
     return shsFormula("week", r.pos, r.ecrPts, r.proj > 0.3 ? r.proj : null, factors, hasM ? r.mkt! : null, cfg, (k) => mult[k] ?? 1).rating;
@@ -124,21 +137,37 @@ export function shsPoints(r: BtRow, cfg: Cfg, mult: Record<string, number>, with
   return (parts.ecr * r.ecrPts + parts.sleeper * r.proj + parts.markets * (r.mkt ?? 0) + parts.factors * r.ecrPts * (1 + F)) / t;
 }
 
-function grade(list: { score: number; pred: number; actual: number; pos: string }[]): Grade {
-  let good = 0, all = 0, err = 0;
-  const byPos = new Map<string, typeof list>();
+type GItem = { score: number; pred: number; actual: number; pos: string; ecrPos: number };
+function grade(list: GItem[]): Grade {
+  let good = 0, all = 0, ng = 0, nn = 0, err = 0, rhoSum = 0, rhoN = 0;
+  const byPos = new Map<string, GItem[]>();
   for (const x of list) (byPos.get(x.pos) ?? byPos.set(x.pos, []).get(x.pos)!).push(x);
-  for (const arr of byPos.values()) for (let i = 0; i < arr.length; i++) for (let j = i + 1; j < arr.length; j++) {
-    const a = arr[i], b = arr[j];
-    if (a.actual === b.actual || a.score === b.score) continue;
-    all++; if ((a.actual > b.actual) === (a.score > b.score)) good++;
+  for (const arr of byPos.values()) {
+    for (let i = 0; i < arr.length; i++) for (let j = i + 1; j < arr.length; j++) {
+      const a = arr[i], b = arr[j];
+      if (a.actual === b.actual) continue;
+      // A tie in the ranking is a coin flip: half credit, so every ranking is graded on the same pairs.
+      const ok = a.score === b.score ? 0.5 : (a.actual > b.actual) === (a.score > b.score) ? 1 : 0;
+      all++; good += ok;
+      if (Math.abs(a.ecrPos - b.ecrPos) <= 3) { nn++; ng += ok; }
+    }
+    if (arr.length >= 5) { rhoSum += spearman(arr.map((x) => x.score), arr.map((x) => x.actual)); rhoN++; }
   }
   for (const x of list) err += Math.abs(x.pred - x.actual);
-  return { pairAcc: all ? Math.round((good / all) * 1000) / 10 : 0, mae: list.length ? Math.round((err / list.length) * 100) / 100 : 0, pairs: all, n: list.length };
+  return {
+    pairAcc: all ? Math.round((good / all) * 1000) / 10 : 0, near: nn ? Math.round((ng / nn) * 1000) / 10 : 0, rho: rhoN ? Math.round((rhoSum / rhoN) * 1000) / 1000 : 0,
+    mae: list.length ? Math.round((err / list.length) * 100) / 100 : 0, pairs: all, n: list.length,
+  };
+}
+function ranksOf(v: number[]) { const idx = v.map((x, i) => [x, i] as const).sort((a, b) => a[0] - b[0]); const r = new Array<number>(v.length); idx.forEach(([, i], k) => (r[i] = k)); return r; }
+function spearman(a: number[], b: number[]) {
+  const ra = ranksOf(a), rb = ranksOf(b), n = a.length, m = (n - 1) / 2;
+  let s = 0, sa = 0, sb = 0; for (let i = 0; i < n; i++) { s += (ra[i] - m) * (rb[i] - m); sa += (ra[i] - m) ** 2; sb += (rb[i] - m) ** 2; }
+  return sa && sb ? s / Math.sqrt(sa * sb) : 0;
 }
 
 function gradeWeeks(weeks: BtWeek[], cfg: Cfg, mult: Record<string, number>) {
-  const shs = weeks.flatMap((w) => w.rows.map((r) => { const v = shsPoints(r, cfg, mult); return { score: v, pred: v, actual: r.actual, pos: `${w.week}:${r.pos}` }; }));
+  const shs = weeks.flatMap((w) => w.rows.map((r) => { const v = shsPoints(r, cfg, mult); return { score: v, pred: v, actual: r.actual, pos: `${w.week}:${r.pos}`, ecrPos: r.ecrPos }; }));
   return grade(shs);
 }
 
@@ -164,12 +193,12 @@ export async function runBacktest(ctx: LeagueContext, onProgress?: (done: number
   const mgrade = (rs: BtRow[]): MarketGrade | null => {
     const sub = rs.filter((r) => r.mkt !== null && r.mkt !== undefined);
     if (sub.length < 8) return null;
-    const L = (f: (r: BtRow) => number) => sub.map((r) => ({ score: f(r), pred: f(r), actual: r.actual, pos: r.pos }));
+    const L = (f: (r: BtRow) => number) => sub.map((r) => ({ score: f(r), pred: f(r), actual: r.actual, pos: r.pos, ecrPos: r.ecrPos }));
     return { n: sub.length, markets: grade(L((r) => r.mkt!)).pairAcc, experts: grade(L((r) => -r.ecrPos)).pairAcc, shs: grade(L((r) => shsPoints(r, cfg, userMult, true))).pairAcc };
   };
 
   const weekGrades: WeekGrade[] = weeks.map((wk) => {
-    const L = (f: (r: BtRow) => { score: number; pred: number }) => wk.rows.map((r) => ({ ...f(r), actual: r.actual, pos: r.pos }));
+    const L = (f: (r: BtRow) => { score: number; pred: number }) => wk.rows.map((r) => ({ ...f(r), actual: r.actual, pos: r.pos, ecrPos: r.ecrPos }));
     const shsL = L((r) => { const v = shsPoints(r, cfg, userMult, true); return { score: v, pred: v }; });
     const ecrL = L((r) => ({ score: -r.ecrPos, pred: r.ecrPts }));
     const slL = L((r) => ({ score: r.proj, pred: r.proj }));
@@ -187,7 +216,7 @@ export async function runBacktest(ctx: LeagueContext, onProgress?: (done: number
     return { week: wk.week, shs: grade(shsL), ecr: grade(ecrL), sleeper: grade(slL), mkt: mgrade(wk.rows), byPos, biggestCalls: calls };
   });
 
-  const all = (f: (r: BtRow) => { score: number; pred: number }) => grade(weeks.flatMap((wk) => wk.rows.map((r) => ({ ...f(r), actual: r.actual, pos: `${wk.week}:${r.pos}` }))));
+  const all = (f: (r: BtRow) => { score: number; pred: number }) => grade(weeks.flatMap((wk) => wk.rows.map((r) => ({ ...f(r), actual: r.actual, pos: `${wk.week}:${r.pos}`, ecrPos: r.ecrPos }))));
   const total = {
     shs: all((r) => { const v = shsPoints(r, cfg, userMult, true); return { score: v, pred: v }; }),
     ecr: all((r) => ({ score: -r.ecrPos, pred: r.ecrPts })),
