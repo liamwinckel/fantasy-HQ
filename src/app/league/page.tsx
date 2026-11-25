@@ -8,7 +8,8 @@ import { powerRankings, POS_ORDER } from "@/lib/engine/power";
 import { ord } from "@/lib/engine/classify";
 import { Bar, Card, ClassBadge, Logo, PageHeader, Stat, cx } from "@/components/ui";
 import { Segmented } from "@/components/client";
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
+import { useInView } from "@/components/motion";
 import { Sheet } from "@/components/Sheet";
 import { DashDetail, type DashKey } from "../DashDetails";
 import { HBars } from "@/components/charts";
@@ -284,10 +285,14 @@ function PosPlot({ ctx, power, positions, onOpen }: { ctx: Ctx; power: Power; po
   const x = (t: number) => L + t * (W - L - R);
   const H = top + rows.length * rowH + 8;
   const f = power.find((p) => p.rosterId === focus);
+  // Dots start on the league-average tick and slide out to their spots the first time the chart is on screen.
+  const box = useRef<HTMLDivElement>(null);
+  const seen = useInView(box);
+  const slide = (at: number, row: number): React.CSSProperties => ({ transform: `translateX(${x(at)}px)`, transition: `transform 750ms cubic-bezier(0.22,1,0.36,1) ${seen ? row * 60 : 0}ms` });
   const n = power.length;
   const toneOf = (rank: number) => (rank <= Math.ceil(n / 3) ? "var(--pos)" : rank > n / 2 ? "var(--neg)" : "var(--acc)");
   return (
-    <div className="px-3 pb-3 pt-2 sm:px-5">
+    <div ref={box} className="px-3 pb-3 pt-2 sm:px-5">
       <div className="mb-2 flex items-center gap-2 text-sm">
         <Logo src={team(focus).avatar} name={team(focus).name} size={24} />
         <span className="min-w-0 flex-1 truncate font-semibold">{team(focus).name}</span>
@@ -306,15 +311,18 @@ function PosPlot({ ctx, power, positions, onOpen }: { ctx: Ctx; power: Power; po
               <line x1={L} x2={W - R} y1={y} y2={y} stroke="currentColor" strokeOpacity={0.12} strokeWidth={6} strokeLinecap="round" />
               <line x1={x(r.avgAt)} x2={x(r.avgAt)} y1={y - 8} y2={y + 8} stroke="currentColor" strokeOpacity={0.45} strokeWidth={1.5} />
               {r.pts.filter((p) => p.rid !== focus).map((p) => (
-                <circle key={p.rid} cx={x(p.at)} cy={y} r={5} fill="currentColor" fillOpacity={0.3} className="cursor-pointer" onClick={() => setFocus(p.rid)}>
+                <circle key={p.rid} cx={0} cy={y} r={5} fill="currentColor" fillOpacity={0.3} className="cursor-pointer" onClick={() => setFocus(p.rid)} style={slide(seen ? p.at : r.avgAt, i)}>
                   <title>{`${team(p.rid).name}: ${p.pts.toFixed(1)} pts (${ord(p.rank)})`}</title>
                 </circle>
               ))}
               {me && (
                 <g className="cursor-pointer" onClick={() => onOpen(focus, r.pos)}>
-                  <circle cx={x(me.at)} cy={y} r={9} fill={toneOf(me.rank)} stroke="var(--bg)" strokeWidth={2} />
-                  <text x={x(me.at)} y={y + 3.5} textAnchor="middle" fontSize={9} fontWeight={800} fill="#0a0a0a">{me.rank}</text>
-                  <text x={Math.min(W - R + 4, Math.max(L - 4, x(me.at)))} y={y - 12} textAnchor={me.at > 0.8 ? "end" : me.at < 0.2 ? "start" : "middle"} fontSize={9} fill="currentColor" opacity={0.8}>
+                  {/* keyed by row, not team: tapping another team glides this dot to its spot */}
+                  <g style={slide(seen ? me.at : r.avgAt, i)}>
+                    <circle cx={0} cy={y} r={9} fill={toneOf(me.rank)} stroke="var(--bg)" strokeWidth={2} style={{ transition: "fill 400ms ease" }} />
+                    <text x={0} y={y + 3.5} textAnchor="middle" fontSize={9} fontWeight={800} fill="#0a0a0a">{me.rank}</text>
+                  </g>
+                  <text x={Math.min(W - R + 4, Math.max(L - 4, x(me.at)))} y={y - 12} style={{ opacity: seen ? 0.8 : 0, transition: "opacity 300ms ease 600ms" }} textAnchor={me.at > 0.8 ? "end" : me.at < 0.2 ? "start" : "middle"} fontSize={9} fill="currentColor" opacity={0.8}>
                     {`${me.rel >= 0 ? "+" : ""}${Math.round(me.rel * 100)}% · ${me.pts.toFixed(1)}`}
                   </text>
                 </g>

@@ -13,6 +13,7 @@ import { winProbability } from "@/lib/engine/simulate";
 import { powerRankings } from "@/lib/engine/power";
 import { InjuryChip, NflLogo, Bar, Card, Logo, Notice, PageHeader, Tag, cx, Info, WinBar } from "@/components/ui";
 import { MatchupBoard } from "@/components/matchup";
+import { Roll } from "@/components/motion";
 import { PlayerLink } from "@/components/PlayerCard";
 import { LeagueOverview } from "@/components/LeagueOverview";
 import { LeagueHero } from "@/components/LeagueTabs";
@@ -183,7 +184,7 @@ function Preview({ g, kind, started, myTotal, oppTotal, oppStrength, myStrength,
   const side = (t: typeof g.a | null, score: number | null, right: boolean, win: boolean) => t ? (
     <div data-team={t.rosterId} className={cx("flex min-w-0 flex-1 flex-col gap-1.5", right ? "items-end text-right" : "items-start")}>
       <TeamLink rosterId={t.rosterId} name={t.name} avatar={t.avatar} size={40} className={cx("max-w-full text-sm font-bold", right && "flex-row-reverse")} />
-      <div className={cx("num h-display text-[44px] leading-none", !win && lead && "text-muted")}>{score !== null ? score.toFixed(1) : "—"}</div>
+      <div className={cx("num h-display text-[44px] leading-none transition-colors duration-500", !win && lead && "text-muted")}>{score !== null ? <Roll text={score.toFixed(1)} id={`m:${t.rosterId}:${week}`} /> : "—"}</div>
       <div className="text-[11px] text-muted">{record(t.rosterId)} · power #{rank(t.rosterId)}</div>
     </div>
   ) : <div className="flex flex-1 items-center justify-center text-sm text-muted">No opponent</div>;
@@ -203,7 +204,7 @@ function Preview({ g, kind, started, myTotal, oppTotal, oppStrength, myStrength,
         <div className="mt-3 text-center text-sm font-semibold">{g.result === "W" ? `${g.a.name} won` : g.result === "L" ? `${g.b?.name} won` : g.result === "T" ? "Tie" : ""}{g.a.actual !== null && g.b?.actual != null ? ` by ${Math.abs(g.a.actual - g.b.actual).toFixed(1)}` : ""}</div>
       ) : wp !== null && (
         <div className="mt-4">
-          <div className="mb-1 flex justify-between text-xs font-bold"><span className={wp >= 60 ? "text-pos" : wp <= 40 ? "text-neg" : "text-acc-ink"}>{wp.toFixed(0)}%</span><span className="text-[10px] font-semibold uppercase tracking-wider text-muted">Win chance</span><span className="text-muted">{(100 - wp).toFixed(0)}%</span></div>
+          <div className="mb-1 flex justify-between text-xs font-bold"><span className={wp >= 60 ? "text-pos" : wp <= 40 ? "text-neg" : "text-acc-ink"}><Roll text={`${wp.toFixed(0)}%`} id={`mw:${g.a.rosterId}:${week}`} /></span><span className="text-[10px] font-semibold uppercase tracking-wider text-muted">Win chance</span><span className="text-muted"><Roll text={`${(100 - wp).toFixed(0)}%`} id={`mw2:${g.a.rosterId}:${week}`} /></span></div>
           <WinBar pct={wp} />
         </div>
       )}

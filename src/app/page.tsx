@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { useApp, Loading } from "@/components/AppData";
 import { Onboarding } from "@/components/Onboarding";
 import { Logo, Notice, cx } from "@/components/ui";
+import { EASE, Roll, firstTime, useGrow } from "@/components/motion";
 import { getLeagueContext, type LeagueContext } from "@/lib/services/league";
 import { formatLabel } from "@/lib/services/portfolio";
 import { gameView } from "@/lib/services/views";
@@ -57,12 +58,12 @@ export default function Home() {
           {games.length ? <>Favoured in <b className="text-fg">{favoured} of {games.length}</b> · </> : null}Tap a league to open its matchup
         </p>
       </div>
-      {setup.leagues.map((l) => <LeagueWidget key={l.league_id} league={l} slot={slots[l.league_id]} />)}
+      {setup.leagues.map((l, i) => <LeagueWidget key={l.league_id} league={l} slot={slots[l.league_id]} index={i} />)}
     </div>
   );
 }
 
-function LeagueWidget({ league, slot }: { league: League; slot: Slot | undefined }) {
+function LeagueWidget({ league, slot, index }: { league: League; slot: Slot | undefined; index: number }) {
   const { selectLeague } = useApp();
   const colour = colourOf(league.league_id);
   const avatar = league.avatar ? `https://sleepercdn.com/avatars/thumbs/${league.avatar}` : null;
@@ -70,9 +71,10 @@ function LeagueWidget({ league, slot }: { league: League; slot: Slot | undefined
   const me = ctx?.teams.find((t) => t.rosterId === ctx.myRosterId);
   const href = `/matchup/?league=${league.league_id}`;
 
+  const [enter] = useState(() => firstTime(`home:${league.league_id}`));
   const shell = (body: React.ReactNode, sub: string, right?: React.ReactNode) => (
     <Link href={href} onClick={() => selectLeague(league.league_id)} aria-label={`Open ${league.name}`}
-      className="block overflow-hidden rounded-3xl border border-line bg-panel transition-transform active:scale-[0.99]">
+      className={cx(enter && "fhq-rise", "block overflow-hidden rounded-3xl border border-line bg-panel transition-transform active:scale-[0.99]")} style={{ animationDelay: `${index * 80}ms` }}>
       <div style={{ backgroundImage: `linear-gradient(160deg, ${colour}66 0%, ${colour}1f 45%, transparent 80%)` }}>
         <div className="flex items-center gap-3 px-4 pb-1 pt-3.5">
           <Logo src={avatar} name={league.name} size={36} square />
@@ -104,10 +106,11 @@ function LeagueWidget({ league, slot }: { league: League; slot: Slot | undefined
   const seedTone = me.rank <= 2 ? "text-pos" : seats && me.rank > seats ? "text-neg" : "text-fg";
   const record = `${me.wins}–${me.losses}${me.ties ? `–${me.ties}` : ""}`;
   const fmt = (n: number | null | undefined) => (n === null || n === undefined ? "—" : n.toFixed(1));
+  const delay = `${index * 80 + 150}ms`;
 
   const right = (
     <div className="text-right">
-      <div className="h-display text-[26px] leading-none">{record}</div>
+      <div className="h-display text-[26px] leading-none"><Roll text={record} id={`h:${league.league_id}:rec`} /></div>
       <span className={cx("rounded-full bg-panel/70 px-2 py-0.5 text-[10px] font-extrabold", seedTone)}>{ord(me.rank)}{seats && me.rank > seats ? " · out" : ""}</span>
     </div>
   );
@@ -120,29 +123,29 @@ function LeagueWidget({ league, slot }: { league: League; slot: Slot | undefined
     <div className="grid grid-cols-[minmax(0,1fr)_120px_minmax(0,1fr)] items-end px-4 pb-3.5 pt-2.5">
       <div className="min-w-0">
         <Logo src={g.a.avatar} name={g.a.name} size={34} />
-        <div className="num h-display mt-1.5 text-[34px] leading-none">{fmt(myScore)}</div>
+        <div className="num h-display mt-1.5 text-[34px] leading-none"><Roll text={fmt(myScore)} id={`h:${league.league_id}:me`} /></div>
         <div className="truncate text-[10px] text-muted">{g.a.name}</div>
       </div>
       <div className="relative h-[84px]">
         <svg width="120" height="66" viewBox="0 0 120 66" className="absolute left-0 top-0" role="img" aria-label={win === null ? "Win chance unavailable" : `Win chance ${Math.round(win)} percent`}>
           <path d="M10 60 A50 50 0 0 1 110 60" fill="none" stroke="currentColor" strokeOpacity={0.15} strokeWidth={9} strokeLinecap="round" />
-          {win !== null && <path d="M10 60 A50 50 0 0 1 110 60" fill="none" stroke={winStroke} strokeWidth={9} strokeLinecap="round" pathLength={100} strokeDasharray={`${Math.max(1, win)} 100`} />}
+          {win !== null && <Gauge win={win} stroke={winStroke} delay={enter ? delay : "0ms"} id={`h:${league.league_id}:g`} />}
         </svg>
         <div className="absolute inset-x-0 top-[30px] text-center">
-          <div className={cx("num h-display text-[36px] leading-none", winTone)}>{win === null ? "—" : `${Math.round(win)}%`}</div>
+          <div className={cx("num h-display text-[36px] leading-none", winTone)}>{win === null ? "—" : <Roll text={`${Math.round(win)}%`} ms={900} id={`h:${league.league_id}:win`} />}</div>
           <div className={cx("text-[10px] font-extrabold uppercase tracking-[0.08em]", winTone)}>{started ? `Live · ${verdict}` : verdict}</div>
         </div>
       </div>
       <div className="min-w-0 text-right">
         <span className="inline-flex"><Logo src={g.b.avatar} name={g.b.name} size={34} /></span>
-        <div className="num h-display mt-1.5 text-[34px] leading-none text-muted">{fmt(oppScore)}</div>
+        <div className="num h-display mt-1.5 text-[34px] leading-none text-muted"><Roll text={fmt(oppScore)} id={`h:${league.league_id}:op`} /></div>
         <div className="truncate text-[10px] text-muted">{g.b.name}</div>
       </div>
     </div>
   );
 
   const cell = (label: string, value: string, tone = "") => (
-    <div className="rounded-xl bg-panel2 py-2 text-center"><div className={cx("num text-sm font-bold", tone)}>{value}</div><div className="text-[10px] text-muted">{label}</div></div>
+    <div className="rounded-xl bg-panel2 py-2 text-center"><div className={cx("num text-sm font-bold", tone)}><Roll text={value} id={`h:${league.league_id}:${label}`} /></div><div className="text-[10px] text-muted">{label}</div></div>
   );
   return (
     <>
@@ -160,5 +163,14 @@ function LeagueWidget({ league, slot }: { league: League; slot: Slot | undefined
         right,
       )}
     </>
+  );
+}
+
+/** The win-chance arc sweeps from empty to its value the first time the widget is on screen. */
+function Gauge({ win, stroke, delay, id }: { win: number; stroke: string; delay: string; id: string }) {
+  const [ref, v] = useGrow<SVGPathElement>(Math.max(1, win), id);
+  return (
+    <path ref={ref} d="M10 60 A50 50 0 0 1 110 60" fill="none" stroke={stroke} strokeWidth={9} strokeLinecap="round" pathLength={100}
+      strokeDasharray={`${v} 100`} style={{ transition: `stroke-dasharray 1000ms ${EASE} ${delay}` }} />
   );
 }

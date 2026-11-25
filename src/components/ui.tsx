@@ -1,4 +1,5 @@
 "use client";
+import { Roll, useGrow } from "./motion";
 
 import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
@@ -124,7 +125,7 @@ export function Stat({ label, value, sub, tone, onClick }: { label: string; valu
         <span className="text-xs font-medium text-muted">{label}</span>
         {onClick && <ChevronRight size={14} className="shrink-0 text-muted" aria-hidden />}
       </div>
-      <div className="num font-[family-name:var(--font-display)] text-3xl font-bold leading-none sm:text-4xl">{value}</div>
+      <div className="num font-[family-name:var(--font-display)] text-3xl font-bold leading-none sm:text-4xl">{typeof value === "string" || typeof value === "number" ? <Roll text={String(value)} /> : value}</div>
       {sub && <div className={cx("text-xs", tone === "pos" ? "text-pos" : tone === "neg" ? "text-neg" : tone === "warn" ? "text-warn" : "text-muted")}>{sub}</div>}
     </>
   );
@@ -151,10 +152,11 @@ export function PageHeader({ eyebrow, title, children, info }: { eyebrow?: strin
 /** Win chance: 0% = a red sliver at the left, 100% = all the way green; the fill shades from red to green. */
 export function WinBar({ pct, className }: { pct: number; className?: string }) {
   const p = Math.max(1.5, Math.min(100, pct));
+  const [ref, w] = useGrow<HTMLDivElement>(p);
   return (
-    <div className={cx("h-3 w-full overflow-hidden rounded-full bg-panel2", className)} role="img" aria-label={`${Math.round(pct)}% win chance`}>
-      <div className="h-full rounded-full transition-[width] duration-700"
-        style={{ width: `${p}%`, backgroundImage: "linear-gradient(90deg, var(--neg), #eab308 50%, var(--pos))", backgroundSize: `${(100 / p) * 100}% 100%` }} />
+    <div ref={ref} className={cx("h-3 w-full overflow-hidden rounded-full bg-panel2", className)} role="img" aria-label={`${Math.round(pct)}% win chance`}>
+      <div className="h-full rounded-full transition-[width] duration-[900ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
+        style={{ width: `${w}%`, backgroundImage: "linear-gradient(90deg, var(--neg), #eab308 50%, var(--pos))", backgroundSize: `${(100 / p) * 100}% 100%` }} />
     </div>
   );
 }

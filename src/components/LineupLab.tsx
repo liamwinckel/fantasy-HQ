@@ -398,17 +398,20 @@ function SideToggle({ name, value, onChange, gain, edited = false, onReset, disa
 }) {
   const btn = (v: View, label: React.ReactNode) => (
     <button type="button" onClick={() => onChange(v)} disabled={disabled} aria-pressed={value === v}
-      className={cx("flex-1 rounded-full px-2 py-1 text-[11px] font-bold transition-colors", value === v ? "bg-acc text-on-acc" : "text-muted", disabled && "opacity-50")}>{label}</button>
+      className={cx("min-w-0 truncate whitespace-nowrap rounded-full px-1.5 py-1 text-[11px] font-bold transition-colors duration-300", value === v ? "text-on-acc" : "text-muted", disabled && "opacity-50")}>{label}</button>
   );
   return (
     <div className={cx("flex flex-col gap-1", align === "right" ? "items-end" : "items-start")}>
       <span className={cx("flex w-full items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted", align === "right" && "flex-row-reverse")}>
         <span className="min-w-0 truncate">{name}</span>
+        {gain > 0.05 && <span className="num shrink-0 normal-case tracking-normal text-acc-ink">+{gain.toFixed(1)} optimal</span>}
         {edited && value === "current" && onReset && <button type="button" onClick={onReset} className="shrink-0 normal-case tracking-normal text-acc-ink underline">reset</button>}
       </span>
-      <div role="group" aria-label={`${name} lineup`} className="flex w-full max-w-[170px] rounded-full border border-line bg-panel p-0.5">
+      <div role="group" aria-label={`${name} lineup`} className="relative isolate grid w-full max-w-[200px] grid-cols-2 rounded-full border border-line bg-panel p-0.5">
+        <span aria-hidden className="absolute inset-y-0.5 left-0.5 -z-10 rounded-full bg-acc transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+          style={{ width: "calc((100% - 4px) / 2)", transform: `translateX(${value === "optimal" ? 100 : 0}%)`, opacity: disabled ? 0.5 : 1 }} />
         {btn("current", edited ? "Yours" : "Set")}
-        {btn("optimal", <>Optimal{gain > 0.05 && <span className="num ml-0.5 opacity-80">+{gain.toFixed(1)}</span>}</>)}
+        {btn("optimal", "Optimal")}
       </div>
     </div>
   );

@@ -1,7 +1,13 @@
+"use client";
+
+import { useId, useRef } from "react";
+import { reducedMotion, useInView } from "./motion";
 import type { LeagueContext } from "@/lib/services/league";
 
 /** Your weekly score vs league average (actual), then projected best lineup for the weeks ahead. */
 export function SeasonChart({ ctx, rosterId, selectedWeek }: { ctx: LeagueContext; rosterId: number; selectedWeek: number }) {
+  const box = useRef<HTMLDivElement>(null);
+  const seen = useInView(box);
   const weeks = Array.from({ length: ctx.lastWeek }, (_, i) => i + 1);
   const rows = weeks.map((w) => {
     const ms = ctx.matchupsByWeek[w - 1] ?? [];
@@ -18,8 +24,9 @@ export function SeasonChart({ ctx, rosterId, selectedWeek }: { ctx: LeagueContex
   const bw = (W - padL) / weeks.length;
   const y = (v: number) => H - padB - (v / max) * (H - padB - 10);
   const avgPts = rows.filter((r) => r.avg !== null).map((r, i) => `${padL + (r.w - 1) * bw + bw / 2},${y(r.avg!)}${i === 0 ? "" : ""}`);
+  const grow = (i: number) => (seen ? { className: "fhq-grow-y", style: { animationDelay: `${i * 35}ms` } } : { style: { opacity: 0 } });
   return (
-    <div>
+    <div ref={box}>
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Weekly scores: actual, league average and projected">
         {[0.5, 1].map((f) => (
           <g key={f}><line x1={padL} x2={W} y1={y((max / 1.08) * f)} y2={y((max / 1.08) * f)} stroke="var(--border)" strokeDasharray="3 4" />
@@ -32,14 +39,14 @@ export function SeasonChart({ ctx, rosterId, selectedWeek }: { ctx: LeagueContex
           const sel = r.w === selectedWeek;
           return (
             <g key={r.w}>
-              {r.actual !== null && <rect x={x} y={y(r.actual)} width={width} height={Math.max(1, H - padB - y(r.actual))} rx="3" fill={r.won === false ? "var(--muted)" : "var(--acc)"} opacity={sel ? 1 : 0.85}><title>{`Week ${r.w}: ${r.actual.toFixed(1)}${r.won === null ? "" : r.won ? " (W)" : " (L)"}`}</title></rect>}
-              {r.proj !== null && <rect x={x} y={y(r.proj)} width={width} height={Math.max(1, H - padB - y(r.proj))} rx="3" fill="none" stroke="var(--acc)" strokeDasharray="4 3"><title>{`Week ${r.w}: ${r.proj.toFixed(1)} projected`}</title></rect>}
+              {r.actual !== null && <rect {...grow(r.w)} x={x} y={y(r.actual)} width={width} height={Math.max(1, H - padB - y(r.actual))} rx="3" fill={r.won === false ? "var(--muted)" : "var(--acc)"} opacity={sel ? 1 : 0.85}><title>{`Week ${r.w}: ${r.actual.toFixed(1)}${r.won === null ? "" : r.won ? " (W)" : " (L)"}`}</title></rect>}
+              {r.proj !== null && <rect {...grow(r.w)} x={x} y={y(r.proj)} width={width} height={Math.max(1, H - padB - y(r.proj))} rx="3" fill="none" stroke="var(--acc)" strokeDasharray="4 3"><title>{`Week ${r.w}: ${r.proj.toFixed(1)} projected`}</title></rect>}
               {sel && <rect x={x - 3} y={6} width={width + 6} height={H - padB - 4} rx="4" fill="none" stroke="var(--text)" strokeWidth="1.5" />}
               <text x={x + width / 2} y={H - 5} fontSize="10" textAnchor="middle" fill={sel ? "var(--text)" : "var(--muted)"} fontWeight={sel ? 700 : 400}>{r.w}</text>
             </g>
           );
         })}
-        {avgPts.length > 1 && <polyline points={avgPts.join(" ")} fill="none" stroke="var(--text)" strokeWidth="1.5" strokeDasharray="2 3" />}
+        {avgPts.length > 1 && <polyline points={avgPts.join(" ")} fill="none" stroke="var(--text)" strokeWidth="1.5" strokeDasharray="2 3" style={{ opacity: seen ? 1 : 0, transition: "opacity 600ms ease 500ms" }} />}
       </svg>
       <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted">
         <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-acc" />Win</span>
@@ -63,9 +70,17 @@ export function LineChart({ labels, series, height = 200, yMin, yMax, invert = f
   const x = (i: number) => padL + (labels.length <= 1 ? (W - padL) / 2 : (i * (W - padL - 10)) / (labels.length - 1));
   const y = (v: number) => { const f = (v - lo) / (hi - lo || 1); return padT + (invert ? f : 1 - f) * (H - padB - padT); };
   const ticks = [lo, lo + (hi - lo) / 2, hi];
+  const box = useRef<HTMLDivElement>(null);
+  const seen = useInView(box);
+  const clip = `lc${useId().replace(/:/g, "")}`;
+  const still = reducedMotion();
   return (
-    <div>
+    <div ref={box}>
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img">
+        {/* Lines draw left to right the first time the chart is on screen. */}
+        <defs><clipPath id={clip}><rect x={0} y={0} height={H} width={seen && still ? W : 0}>
+          {seen && !still && <animate attributeName="width" from="0" to={W} dur="0.9s" fill="freeze" calcMode="spline" keyTimes="0;1" keySplines="0.22 1 0.36 1" />}
+        </rect></clipPath></defs>
         {ticks.map((t) => <g key={t}><line x1={padL} x2={W} y1={y(t)} y2={y(t)} stroke="var(--border)" strokeDasharray="3 4" /><text x={0} y={y(t) + 3} fontSize="10" fill="var(--muted)">{fmt(t)}</text></g>)}
         {labels.map((l, i) => (labels.length <= 18 || i % 2 === 0) && <text key={i} x={x(i)} y={H - 5} fontSize="10" textAnchor="middle" fill="var(--muted)">{l}</text>)}
         {series.map((s) => {
@@ -74,10 +89,10 @@ export function LineChart({ labels, series, height = 200, yMin, yMax, invert = f
           for (const p of pts) { if (p) cur.push(p); else if (cur.length) { segs.push(cur); cur = []; } }
           if (cur.length) segs.push(cur);
           return (
-            <g key={s.name}>
+            <g key={s.name} clipPath={`url(#${clip})`}>
               {s.area && segs.map((g, k) => <polygon key={k} points={`${g[0].split(",")[0]},${y(lo)} ${g.join(" ")} ${g[g.length - 1].split(",")[0]},${y(lo)}`} fill={s.color} opacity="0.12" />)}
               {segs.map((g, k) => <polyline key={k} points={g.join(" ")} fill="none" stroke={s.color} strokeWidth="2.2" strokeDasharray={s.dash ? "5 4" : undefined} strokeLinejoin="round" />)}
-              {s.values.map((v, i) => v !== null && <circle key={i} cx={x(i)} cy={y(v)} r="3" fill={s.color}><title>{`${s.name} · ${labels[i]}: ${fmt(v)}`}</title></circle>)}
+              {s.values.map((v, i) => v !== null && <circle key={i} cx={x(i)} cy={y(v)} r="3" fill={s.color} className={seen ? "fhq-pop" : undefined} style={seen ? { animationDelay: `${(i / Math.max(1, labels.length - 1)) * 800}ms` } : undefined}><title>{`${s.name} · ${labels[i]}: ${fmt(v)}`}</title></circle>)}
             </g>
           );
         })}
@@ -101,15 +116,17 @@ export function StackedBars({ labels, stacks, height = 200 }: { labels: string[]
   const max = niceMax(Math.max(1, ...totals) * 1.05);
   const bw = (W - padL) / Math.max(1, labels.length);
   const y = (v: number) => H - padB - (v / max) * (H - padB - 8);
+  const box = useRef<HTMLDivElement>(null);
+  const seen = useInView(box);
   return (
-    <div>
+    <div ref={box}>
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img">
         {[0.5, 1].map((f) => <g key={f}><line x1={padL} x2={W} y1={y(max * f)} y2={y(max * f)} stroke="var(--border)" strokeDasharray="3 4" /><text x={0} y={y(max * f) + 3} fontSize="10" fill="var(--muted)">{Math.round(max * f)}</text></g>)}
         {labels.map((l, i) => {
           let acc = 0;
           return (
             <g key={i}>
-              {stacks.map((s) => { const v = Math.max(0, s.values[i] ?? 0); const top = acc + v; const el = v > 0 ? <rect key={s.name} x={padL + i * bw + bw * 0.18} y={y(top)} width={bw * 0.64} height={y(acc) - y(top)} fill={s.color}><title>{`${l} · ${s.name}: ${v.toFixed(1)}`}</title></rect> : null; acc = top; return el; })}
+              {stacks.map((s) => { const v = Math.max(0, s.values[i] ?? 0); const top = acc + v; const el = v > 0 ? <rect key={s.name} className={seen ? "fhq-grow-y" : undefined} style={seen ? { animationDelay: `${i * 40}ms` } : { opacity: 0 }} x={padL + i * bw + bw * 0.18} y={y(top)} width={bw * 0.64} height={y(acc) - y(top)} fill={s.color}><title>{`${l} · ${s.name}: ${v.toFixed(1)}`}</title></rect> : null; acc = top; return el; })}
               <text x={padL + i * bw + bw / 2} y={H - 5} fontSize="10" textAnchor="middle" fill="var(--muted)">{l}</text>
             </g>
           );
@@ -123,12 +140,14 @@ export function StackedBars({ labels, stacks, height = 200 }: { labels: string[]
 /** Horizontal bars, one per row (e.g. odds by team). */
 export function HBars({ rows, max, fmt = (v: number) => `${v.toFixed(0)}%`, highlight }: { rows: { key: string | number; label: React.ReactNode; value: number }[]; max?: number; fmt?: (v: number) => string; highlight?: string | number }) {
   const m = max ?? Math.max(1, ...rows.map((r) => r.value));
+  const box = useRef<HTMLUListElement>(null);
+  const seen = useInView(box);
   return (
-    <ul className="flex flex-col gap-1.5">
+    <ul ref={box} className="flex flex-col gap-1.5">
       {rows.map((r) => (
         <li key={r.key} className="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)_3.25rem] items-center gap-2 text-xs">
           <span className={r.key === highlight ? "truncate font-bold text-fg" : "truncate text-muted"}>{r.label}</span>
-          <span className="h-2.5 overflow-hidden rounded-full bg-panel2"><span className="block h-full rounded-full transition-[width] duration-500" style={{ width: `${Math.max(1.5, (r.value / m) * 100)}%`, background: r.key === highlight ? "var(--acc)" : "var(--muted)" }} /></span>
+          <span className="h-2.5 overflow-hidden rounded-full bg-panel2"><span className="block h-full rounded-full transition-[width] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]" style={{ width: seen ? `${Math.max(1.5, (r.value / m) * 100)}%` : "0%", background: r.key === highlight ? "var(--acc)" : "var(--muted)" }} /></span>
           <span className="num text-right font-semibold">{fmt(r.value)}</span>
         </li>
       ))}
