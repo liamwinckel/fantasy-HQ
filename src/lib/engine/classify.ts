@@ -71,18 +71,23 @@ export function classifyTeams(teams: TeamMetrics[], mode: "redraft" | "dynasty")
     // One or two off weeks happen to everyone; evidence starts at 3 of the last 6.
     const tankEvidence = clamp01((recent - 2) / 3);
     const liquidation = clamp01(t.vetsSoldForFuture / 2);
+    // Pretender has two routes: a record ahead of the roster ("lucky"), or simply stuck in the
+    // middle — mid-pack strength and coin-flip playoff odds, neither a real threat nor a rebuild.
+    const middle = (x: number, c = 0.5, half = 0.35) => clamp01(1 - Math.abs(x - c) / half);
+    const lucky = w >= 0.5 ? 0.45 * clamp01(w - s + 0.5) + 0.35 * luck + 0.2 * top : 0.1 * luck;
+    const mid = 0.62 * (0.55 * middle(s) + 0.45 * middle(po, 0.45, 0.4));
 
     const scores: Record<TeamClass, number> =
       mode === "redraft"
         ? {
             Contender: 0.4 * s + 0.3 * po + 0.2 * ti + 0.1 * pf,
-            Pretender: w >= 0.5 ? 0.45 * clamp01(w - s + 0.5) + 0.35 * luck + 0.2 * top : 0.1 * luck,
+            Pretender: Math.max(lucky, mid),
             Rebuilder: 0.6 * (1 - s) + 0.4 * (1 - po),
             Tanking: tankEvidence * (1 - po),
           }
         : {
             Contender: 0.35 * s + 0.25 * po + 0.15 * ti + 0.1 * pf + 0.15 * (1 - fut),
-            Pretender: w >= 0.5 ? 0.9 * (0.45 * clamp01(w - s + 0.5) + 0.35 * luck + 0.2 * top) : 0.1 * luck,
+            Pretender: Math.max(0.9 * lucky, mid),
             Rebuilder: 0.35 * (1 - s) + 0.25 * young + 0.25 * cap + 0.15 * fut,
             Tanking: (0.7 * tankEvidence + 0.3 * liquidation) * (1 - po),
           };
@@ -103,6 +108,8 @@ export function classifyTeams(teams: TeamMetrics[], mode: "redraft" | "dynasty")
     if (Math.abs(luckGap) >= 1)
       evidence.push(`${luckGap > 0 ? "About " + luckGap + " more" : "About " + Math.abs(luckGap) + " fewer"} wins than their weekly scores would earn against an average schedule.`);
     evidence.push(`Playoff odds ${t.playoffOdds}% · title odds ${t.titleOdds}% (simulated).`);
+    if (best === "Pretender" && mid >= lucky)
+      evidence.push(`Middle of the pack: lineup strength ${ord(sRank)} of ${n} with ${t.playoffOdds}% playoff odds — not a real title threat, not weak enough to rebuild.`);
     if (mode === "dynasty") {
       if (young >= 0.7) evidence.push(`One of the younger cores in the league (value-weighted age ${t.youth.toFixed(1)}).`);
       if (cap >= 0.7) evidence.push(`Above-average future draft capital.`);
@@ -128,7 +135,11 @@ export function classifyTeams(teams: TeamMetrics[], mode: "redraft" | "dynasty")
         mode === "dynasty"
           ? "Push for the title. Turn surplus depth or future picks into reliable starters at your weakest lineup slot."
           : "Push for the title. Consolidate bench depth into a stronger starter and prioritise playoff-week schedules.",
-      Pretender:
+      Pretender: mid >= lucky
+        ? mode === "dynasty"
+          ? "Stuck in the middle. Pick a lane: consolidate depth into a true contender, or sell veterans at full value before they fade. Avoid paying for small upgrades that only lift you to a fringe playoff spot."
+          : "Stuck in the middle. Chase a ceiling, not a floor: target high-upside starters and avoid trading value for marginal gains."
+        :
         "Avoid paying premium prices for short-term upgrades. Fix the weakest starting slot cheaply, and consider selling players whose value is propped up by the record.",
       Rebuilder:
         mode === "dynasty"

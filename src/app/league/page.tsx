@@ -16,7 +16,7 @@ import { HBars } from "@/components/charts";
 import { PlayerLink } from "@/components/PlayerCard";
 
 /** Which detail is open: a dashboard-style panel for one team, or one team's position group. */
-type Detail = { k: DashKey; rid: number } | { k: "sched"; rid: number } | { k: "pos"; rid: number; pos: string } | { k: "depth"; rid: number } | null;
+type Detail = { k: DashKey; rid: number } | { k: "sched"; rid: number } | { k: "pos"; rid: number; pos: string } | { k: "depth"; rid: number } | { k: "picks"; rid: number } | null;
 const CellBtn = ({ onClick, className, children, title }: { onClick: () => void; className?: string; children: ReactNode; title?: string }) => (
   <button type="button" title={title} onClick={onClick} className={cx("transition-transform active:scale-90", className)}>{children}</button>
 );
@@ -36,6 +36,12 @@ function LeagueBody({ league, ctx }: LeagueData) {
   const extraPos = POS_ORDER.filter((p) => !["QB", "RB", "WR", "TE"].includes(p) && power.some((t) => t.positions[p]));
   const [detail, setDetail] = useState<Detail>(null);
   const open = (d: Detail) => setDetail(d);
+  const games = Math.max(1, ctx.playoffStart - 1);
+  const proj = (rid: number) => { const w = Math.round(ctx.sim.projectedWins[rid] ?? 0); return `${w}–${Math.max(0, games - w)}`; };
+  const capital = new Map(ctx.teams.map((t) => [t.rosterId, ctx.picks.filter((k) => k.ownerRosterId === t.rosterId).reduce((a, k) => a + k.value, 0)]));
+  const capSorted = [...capital.values()].sort((a, b) => b - a);
+  const pickRank = (rid: number) => capSorted.indexOf(capital.get(rid) ?? 0) + 1;
+  const showPicks = fmt === "dynasty" && ctx.picks.length > 0;
   const tone = (rank: number) => (rank <= Math.ceil(n / 3) ? "bg-pos/20 text-pos" : rank > n / 2 ? "bg-neg/15 text-neg" : "bg-panel2 text-muted");
 
   return (
@@ -54,16 +60,16 @@ function LeagueBody({ league, ctx }: LeagueData) {
         </div>
       )}
 
-      <Card title="Power rankings" pad={false} info={<><b>Power /100</b> = overall team strength: 45% best-lineup strength now, 35% rest-of-season strength, 20% points per game, scaled so the best team ≈ 100. <b>Playoff % / Title %</b> = how often the team makes the playoffs / wins it all in thousands of simulated seasons. Tap any number for the detail.</>}>
-        <div className="grid grid-cols-[1.75rem_minmax(0,1fr)_3rem_4.5rem] items-center gap-2 border-b border-line px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted sm:grid-cols-[2rem_minmax(0,1fr)_3.5rem_8rem_4rem_4rem] sm:px-5">
-          <span>#</span><span>Team</span><span>Record</span><span className="text-right sm:text-left" title="Power score, 0–100 (best team ≈ 100)">Power /100</span><span className="hidden text-right sm:block">Playoff %</span><span className="hidden text-right sm:block">Title %</span>
+      <Card title="Power rankings" pad={false} info={<><b>Power</b> = overall team strength (0–100): 45% best-lineup strength now, 35% rest-of-season strength, 20% points per game, scaled so the best team ≈ 100. <b>Proj.</b> = projected final regular-season record: current wins plus the average of the remaining games across the simulated seasons. <b>Playoff % / Title %</b> = how often the team makes the playoffs / wins it all in thousands of simulated seasons. Tap any number for the detail.</>}>
+        <div className="grid grid-cols-[1.5rem_minmax(0,1fr)_2.75rem_2.75rem_3rem] items-center gap-2 border-b border-line px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted sm:grid-cols-[2rem_minmax(0,1fr)_3.5rem_3.5rem_8rem_4rem_4rem] sm:px-5">
+          <span>#</span><span>Team</span><span>Record</span><span title="Projected final regular-season record">Proj.</span><span className="text-right sm:text-left" title="Power score, 0–100 (best team ≈ 100)">Power</span><span className="hidden text-right sm:block">Playoff %</span><span className="hidden text-right sm:block">Title %</span>
         </div>
         <ul className="divide-y divide-line">
           {power.map((p) => {
             const t = team(p.rosterId);
             const c = ctx.showClasses ? ctx.classifications.get(p.rosterId) : undefined;
             return (
-              <li key={p.rosterId} data-team={p.rosterId} className={cx("cursor-pointer active:bg-panel2", "grid grid-cols-[1.75rem_minmax(0,1fr)_3rem_4.5rem] items-center gap-2 px-3 py-2.5 sm:grid-cols-[2rem_minmax(0,1fr)_3.5rem_8rem_4rem_4rem] sm:px-5", p.rosterId === ctx.myRosterId && "bg-acc-soft")}>
+              <li key={p.rosterId} data-team={p.rosterId} className={cx("cursor-pointer active:bg-panel2", "grid grid-cols-[1.5rem_minmax(0,1fr)_2.75rem_2.75rem_3rem] items-center gap-2 px-3 py-2.5 sm:grid-cols-[2rem_minmax(0,1fr)_3.5rem_3.5rem_8rem_4rem_4rem] sm:px-5", p.rosterId === ctx.myRosterId && "bg-acc-soft")}>
                 <span className="num font-bold">{p.rank}</span>
                 <div className="min-w-0">
                   <TeamLink rosterId={t.rosterId} name={t.name} avatar={t.avatar} size={28} className="max-w-full text-sm font-semibold" />
@@ -74,6 +80,7 @@ function LeagueBody({ league, ctx }: LeagueData) {
                   </div>
                 </div>
                 <CellBtn onClick={() => open({ k: "record", rid: p.rosterId })} className="num text-left text-xs underline decoration-line underline-offset-4">{t.wins}–{t.losses}{t.ties ? `–${t.ties}` : ""}</CellBtn>
+                <CellBtn onClick={() => open({ k: "playoff", rid: p.rosterId })} title="Projected final record (simulated)" className="num text-left text-xs text-muted underline decoration-line underline-offset-4">{proj(p.rosterId)}</CellBtn>
                 <CellBtn onClick={() => open({ k: "power", rid: p.rosterId })} className="flex items-center justify-end gap-2 sm:justify-start"><Bar value={p.score} className="hidden sm:block" /><span className="num rounded bg-panel2 px-1.5 py-0.5 text-sm font-bold">{p.score.toFixed(0)}</span></CellBtn>
                 <CellBtn onClick={() => open({ k: "playoff", rid: p.rosterId })} className="num hidden text-right text-sm underline decoration-line underline-offset-4 sm:block">{(ctx.sim.playoffOdds[p.rosterId] ?? 0).toFixed(0)}%</CellBtn>
                 <CellBtn onClick={() => open({ k: "title", rid: p.rosterId })} className="num hidden text-right text-sm underline decoration-line underline-offset-4 sm:block">{(ctx.sim.titleOdds[p.rosterId] ?? 0).toFixed(0)}%</CellBtn>
@@ -83,7 +90,7 @@ function LeagueBody({ league, ctx }: LeagueData) {
         </ul>
       </Card>
 
-      <Card title="Positional ranks" pad={false} right={<Segmented label="Positional view" value={posView} onChange={(v) => setPosView(v)} options={[{ value: "table", label: "Table" }, { value: "chart", label: "Chart" }]} />} info={<>Each number is that team&apos;s league rank at the position (1 = strongest), based on the projected points its starters there score in the best lineup. <span className="text-pos">Green</span> = top third, <span className="text-neg">red</span> = bottom half. <b>Depth</b> = quality of the best bench players. Tap any number for the players behind it.</>}>
+      <Card title="Positional ranks" pad={false} right={<Segmented label="Positional view" value={posView} onChange={(v) => setPosView(v)} options={[{ value: "table", label: "Table" }, { value: "chart", label: "Chart" }]} />} info={<>Each number is that team&apos;s league rank at the position (1 = strongest), based on the projected points its starters there score in the best lineup. <span className="text-pos">Green</span> = top third, <span className="text-neg">red</span> = bottom half. <b>Depth</b> = quality of the best bench players.{showPicks && <> <b>Picks</b> = draft pick capital: total market value of the picks each team owns.</>} Tap any number for the players behind it.</>}>
         {posView === "chart" ? <PosPlot ctx={ctx} power={power} positions={[...mainPos, ...extraPos]} onOpen={(rid, pos) => open({ k: "pos", rid, pos })} /> : <>
         {/* Team names stay put; the coloured blocks scroll sideways when there are more positions than fit. */}
         <div className="flex">
@@ -100,13 +107,14 @@ function LeagueBody({ league, ctx }: LeagueData) {
           <div className="min-w-0 flex-1 overflow-x-auto overscroll-x-contain" data-no-swipe>
             <div className="min-w-max">
               <div className="flex h-9 items-center gap-1 border-b border-line px-2 text-center text-[10px] font-semibold uppercase tracking-wider text-muted">
-                {[...mainPos, ...extraPos].map((pos) => <span key={pos} className="w-11">{pos}</span>)}<span className="w-12">Depth</span>
+                {[...mainPos, ...extraPos].map((pos) => <span key={pos} className="w-11">{pos}</span>)}<span className="w-12">Depth</span>{showPicks && <span className="w-12">Picks</span>}
               </div>
               <ul className="divide-y divide-line">
                 {power.map((p) => (
                   <li key={p.rosterId} className={cx("flex h-11 items-center gap-1 px-2", p.rosterId === ctx.myRosterId && "bg-acc-soft")}>
                     {[...mainPos, ...extraPos].map((pos) => { const r = p.positions[pos]?.rank ?? 0; return <CellBtn key={pos} onClick={() => open({ k: "pos", rid: p.rosterId, pos })} title={`${p.positions[pos]?.pts.toFixed(1) ?? 0} projected pts`} className={cx("num w-11 rounded py-1.5 text-center text-xs font-bold", tone(r))}>{r || "—"}</CellBtn>; })}
                     <CellBtn onClick={() => open({ k: "depth", rid: p.rosterId })} className={cx("num w-12 rounded py-1.5 text-center text-xs font-bold", tone(p.depthRank))}>{p.depthRank}</CellBtn>
+                    {showPicks && <CellBtn onClick={() => open({ k: "picks", rid: p.rosterId })} title={`${(capital.get(p.rosterId) ?? 0).toFixed(0)} pick value`} className={cx("num w-12 rounded py-1.5 text-center text-xs font-bold", tone(pickRank(p.rosterId)))}>{pickRank(p.rosterId)}</CellBtn>}
                   </li>
                 ))}
               </ul>
@@ -125,8 +133,8 @@ function LeagueBody({ league, ctx }: LeagueData) {
       )}
       {fmt === "dynasty" && <DynastyOutlook ctx={ctx} power={power} onOpen={open} />}
       <Sheet open={detail !== null} onClose={() => setDetail(null)} full={detail?.k === "record"}
-        title={detail ? (detail.k === "pos" ? `${detail.pos} group` : detail.k === "depth" ? "Bench depth" : detail.k === "sched" ? "Schedule left" : TITLES[detail.k] ?? "") : ""} sub={detail ? team(detail.rid).name : ""}>
-        {detail && (detail.k === "sched" ? <SchedDetail ctx={ctx} power={power} rid={detail.rid} /> : detail.k === "pos" || detail.k === "depth" ? <GroupDetail ctx={ctx} power={power} rid={detail.rid} pos={detail.k === "pos" ? detail.pos : null} /> : <DashDetail k={detail.k} ctx={ctx} me={detail.rid} power={power} />)}
+        title={detail ? (detail.k === "pos" ? `${detail.pos} group` : detail.k === "depth" ? "Bench depth" : detail.k === "picks" ? "Draft picks" : detail.k === "sched" ? "Schedule left" : TITLES[detail.k] ?? "") : ""} sub={detail ? team(detail.rid).name : ""}>
+        {detail && (detail.k === "picks" ? <PicksDetail ctx={ctx} rid={detail.rid} rank={pickRank(detail.rid)} total={capital.get(detail.rid) ?? 0} /> : detail.k === "sched" ? <SchedDetail ctx={ctx} power={power} rid={detail.rid} /> : detail.k === "pos" || detail.k === "depth" ? <GroupDetail ctx={ctx} power={power} rid={detail.rid} pos={detail.k === "pos" ? detail.pos : null} /> : <DashDetail k={detail.k} ctx={ctx} me={detail.rid} power={power} />)}
       </Sheet>
     </div>
   );
@@ -197,6 +205,30 @@ function SchedDetail({ ctx, power, rid }: { ctx: Ctx; power: Power; rid: number 
 }
 
 /** Dynasty: roster value, strategy and draft capital for every team. */
+/** The picks one team owns, best first, with league rank of its total pick capital. */
+function PicksDetail({ ctx, rid, rank, total }: { ctx: Ctx; rid: number; rank: number; total: number }) {
+  const picks = ctx.picks.filter((k) => k.ownerRosterId === rid).sort((a, b) => a.season.localeCompare(b.season) || a.round - b.round || b.value - a.value);
+  const team = (id: number) => ctx.teams.find((t) => t.rosterId === id);
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-sm text-muted">Pick capital <b className="text-fg">{total.toFixed(0)}</b> · {ord(rank)} of {ctx.teamsCount}</p>
+      {picks.length === 0 ? <p className="text-sm text-muted">No future picks owned.</p> : (
+        <ul className="divide-y divide-line rounded-xl border border-line">
+          {picks.map((k) => (
+            <li key={k.key} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+              <div className="min-w-0">
+                <div className="font-semibold">{k.label}</div>
+                {k.originalRosterId !== rid && <div className="truncate text-[11px] text-muted">via {team(k.originalRosterId)?.name ?? "trade"}</div>}
+              </div>
+              <span className="num rounded bg-panel2 px-1.5 py-0.5 font-bold">{k.value.toFixed(0)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function DynastyOutlook({ ctx, power, onOpen }: { ctx: Ctx; power: Power; onOpen: (d: Detail) => void }) {
   const rows = [...power].sort((a, b) => a.dynastyRank - b.dynastyRank);
   return (

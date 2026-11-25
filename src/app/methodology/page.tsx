@@ -138,7 +138,7 @@ export default function Methodology() {
         </Card>
 
         <Card title="Team classification (dynasty only)">
-          <p className="text-sm leading-relaxed">Used only in dynasty leagues, where a team&apos;s long-term plan changes what assets are worth. Redraft leagues don&apos;t use these labels. Each team gets a score for Contender, Pretender, Rebuilder and Tanking from league-relative percentiles of: projected lineup strength, record, points for, record vs all-play record (luck), playoff and title odds, dependence on two players, roster age, future share of value and pick capital. Highest score wins. Confidence is its share across the four.</p>
+          <p className="text-sm leading-relaxed">Used only in dynasty leagues, where a team&apos;s long-term plan changes what assets are worth. Redraft leagues don&apos;t use these labels. Each team gets a score for Contender, Pretender, Rebuilder and Tanking from league-relative percentiles of: projected lineup strength, record, points for, record vs all-play record (luck), playoff and title odds, dependence on two players, roster age, future share of value and pick capital. Pretender also covers middling teams: mid-pack strength and coin-flip playoff odds, neither a real threat nor a rebuild. Highest score wins. Confidence is its share across the four.</p>
           <p className="mt-2 text-sm leading-relaxed"><b>Tanking</b> only uses observable evidence: starting lineups clearly weaker (by season average) than available bench players in 3+ of the last 6 weeks, and trades selling veterans for picks/youth. It never claims to know intent. Manual overrides are stored next to the automatic result.</p>
         </Card>
 
