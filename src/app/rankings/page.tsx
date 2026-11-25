@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { ChevronRight, Search } from "lucide-react";
 import { Sheet } from "@/components/Sheet";
 import { LeaguePage, useQuery, type LeagueData } from "@/components/AppData";
-import { PlayerImg, TabSwitch } from "@/components/client";
+import { PlayerImg, Segmented, TabSwitch } from "@/components/client";
 import { PlayerLink } from "@/components/PlayerCard";
 import { InfoButton, InjuryChip, NflLogo, PageHeader, cx } from "@/components/ui";
 import { AiChip, label, MovePill, rankMove, ShsExplainer, shsVerdict, useCollege, useShsWeights } from "@/components/ShsAiParts";
@@ -16,7 +16,7 @@ import { isSuperflex } from "@/lib/engine/positions";
 import { Sparkline, TREND_MAX } from "@/components/charts";
 import { useEffect } from "react";
 import { formatLabel } from "@/lib/services/portfolio";
-import { rankings, type RankRow, type RankScope } from "@/lib/services/rankings";
+import { leagueOpts, pickRows, rankings, type RankOpts, type RankRow, type RankScope } from "@/lib/services/rankings";
 import { shsAi, type ShsAi } from "@/lib/services/shsai";
 import { weekWeather } from "@/lib/weather";
 import { useAsync } from "@/components/AppData";
@@ -94,7 +94,14 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
   const { set } = useQuery();
   const scope: RankScope = sp.scope === "ros" ? "ros" : sp.scope === "dynasty" ? "dynasty" : "week";
   const w0 = Math.min(ctx.currentWeek, ctx.lastWeek);
-  const all = useMemo(() => rankings(ctx, scope), [ctx, scope]);
+  // View modifiers (format / scoring); empty = this league's settings.
+  const [mods, setMods] = useState<RankOpts>({});
+  const lo = useMemo(() => leagueOpts(ctx), [ctx]);
+  const opt = { ...lo, ...mods };
+  const all = useMemo(() => rankings(ctx, scope, mods), [ctx, scope, mods]);
+  const pickList = useMemo(() => (scope === "dynasty" ? pickRows(ctx, mods) : []), [ctx, scope, mods]);
+  // Dynasty list includes this league's rookie picks, slotted by value among the players.
+  const list = useMemo(() => (scope === "dynasty" ? [...all, ...pickList].sort((a, b) => b.value - a.value) : all), [all, pickList, scope]);
   const wx = useAsync(() => (scope === "week" ? weekWeather(ctx.games, w0) : Promise.resolve(null)), [ctx, scope, w0]);
   const college = useCollege(ctx, scope === "dynasty" ? all.slice(0, 400) : []);
   const weights = useShsWeights();
@@ -107,7 +114,7 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
   const [aiInfo, setAiInfo] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
   const [pos, setPos] = useState("ALL");
-  const [own, setOwn] = useState<"all" | "fa" | "mine">("all");
+  const [own, setOwn] = useState<"all" | "fa">("all");
   // Tap a column title to sort by it; tap again to flip the order.
   const [by, setBy] = useState<"experts" | "ai" | "name" | "pts">("experts");
   const [desc, setDesc] = useState(false);
@@ -118,17 +125,17 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
   const dynScope = scope === "dynasty";
   const IDP = ["DL", "LB", "DB"];
   const hasIdp = all.some((r) => IDP.includes(r.pos));
-  const positions = ["ALL", ...["QB", "RB", "WR", "TE", "K", "DEF"].filter((p) => all.some((r) => r.pos === p)), ...(hasIdp ? ["IDP", ...IDP.filter((p) => all.some((r) => r.pos === p))] : [])];
+  const positions = ["ALL", ...["QB", "RB", "WR", "TE", "K", "DEF"].filter((p) => all.some((r) => r.pos === p)), ...(hasIdp ? ["IDP", ...IDP.filter((p) => all.some((r) => r.pos === p))] : []), ...(pickList.length ? ["PICK"] : [])];
   const posMatch = (rp: string) => pos === "ALL" || rp === pos || (pos === "IDP" && IDP.includes(rp));
   const rules = scoringRules(ctx.league.scoring_settings as Record<string, number>);
   // Ranks come from the full list, so filters (position, owner, search) never renumber players.
   const ranked = useMemo(() => {
-    const ecr = [...all].sort((a, b) => a.rank - b.rank);
+    const ecr = scope === "dynasty" ? list : [...all].sort((a, b) => a.rank - b.rank);
     const byAi = [...all].sort((a, b) => (a.ecrPos === null ? 1 : 0) - (b.ecrPos === null ? 1 : 0) || ai.get(b.id)!.rating - ai.get(a.id)!.rating);
     return { ecr, ai: byAi, ecrN: new Map(ecr.map((r, i) => [r.id, i + 1])), aiN: new Map(byAi.map((r, i) => [r.id, i + 1])) };
-  }, [all, ai]);
-  const base = by === "ai" ? ranked.ai : by === "name" ? [...all].sort((a, b) => a.name.localeCompare(b.name))
-    : by === "pts" ? [...all].sort((a, b) => (scope === "dynasty" ? b.value - a.value : b.pts - a.pts)) : ranked.ecr;
+  }, [all, ai, list, scope]);
+  const base = by === "ai" ? ranked.ai : by === "name" ? [...list].sort((a, b) => a.name.localeCompare(b.name))
+    : by === "pts" ? [...list].sort((a, b) => (scope === "dynasty" ? b.value - a.value : b.pts - a.pts)) : ranked.ecr;
   // Last 6 games of league-scored points for each player's trend line.
   // Last 6 games on a scale shared by every player at the position; dashed line = this league's startable line there.
   const trend = (id: string, pos: string) => {
@@ -136,9 +143,9 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
     const ref = ctx.replacement[pos];
     return l.length >= 3 ? <Sparkline values={l} width={48} height={16} max={TREND_MAX[pos] ?? 30} refLine={ref} label={`Last ${l.length} games: ${l.map((v) => v.toFixed(1)).join(", ")}. Dashed line ≈ ${ref?.toFixed(1) ?? "—"} pts, the startable line for a ${pos} in this league.`} /> : null;
   };
-  const ptsN = useMemo(() => new Map([...all].sort((a, b) => (dynScope ? b.value - a.value : b.pts - a.pts)).map((r, i) => [r.id, i + 1])), [all, dynScope]);
+  const ptsN = useMemo(() => new Map([...list].sort((a, b) => (dynScope ? b.value - a.value : b.pts - a.pts)).map((r, i) => [r.id, i + 1])), [list, dynScope]);
   const rows = (desc ? [...base].reverse() : base)
-    .filter((r) => posMatch(r.pos) && (own === "all" || (own === "fa" ? r.owner === "Free agent" : r.mine)) && (!q || r.name.toLowerCase().includes(q.toLowerCase())));
+    .filter((r) => posMatch(r.pos) && (own === "all" || r.owner === "Free agent") && (!q || r.name.toLowerCase().includes(q.toLowerCase())));
   const dates = ctx.consensusDates;
   const dyn = scope === "dynasty";
   const numLabel = dyn ? "Value" : "Pts";
@@ -152,6 +159,7 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
         </>}>
         <TabSwitch label="Rankings span" value={scope} onChange={(v) => { set({ scope: v === "week" ? undefined : v }, true); setLimit(75); }}
           options={[{ value: "week", label: "Week", sub: `Week ${w0}` }, { value: "ros", label: "Season", sub: `Weeks ${w0}–${ctx.lastWeek}` }, { value: "dynasty", label: "Dynasty", sub: "Long term" }]} />
+        <Modifiers scope={scope} opt={opt} lo={lo} set={(m) => setMods({ ...mods, ...m })} reset={() => setMods({})} />
       </PageHeader>
 
       {/* SHS AI results in one compact strip; tap a row for the full detail. */}
@@ -178,20 +186,16 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
         {!dyn && (
           <p className="text-[11px] leading-relaxed text-muted">
             Points use this league&apos;s scoring: <span className="font-semibold text-fg">{rules.join(" · ")}</span>.
-            {by === "pts" ? " Ordered by projected points in that scoring." : " Expert order is converted to your scoring across positions; tap “Your scoring” to rank purely by it."}
+            {by === "pts" ? " Ordered by projected points in that scoring." : " Expert order is converted to your scoring across positions; tap the Pts column to rank purely by points."}
             {" "}Trend lines = his last 6 games on the same scale for every player at his position; dashed = the startable line at that position in this league; end dot green if his latest game cleared it.
           </p>
         )}
         </div>}
-        <div className="flex flex-wrap items-center gap-1">
-          {positions.map((p) => <button key={p} type="button" onClick={() => setPos(p)} className={cx("rounded-full px-3 py-1 text-xs font-semibold", pos === p ? "bg-acc text-on-acc" : "bg-panel2 text-muted")}>{p === "ALL" ? "All" : p === "DEF" ? "DST" : p}</button>)}
-        </div>
-        <div className="flex flex-wrap items-center gap-1">
-          {!dyn && <>
-            {([["experts", "Expert order"], ["pts", "Your scoring"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => { setBy(k); setDesc(false); }} className={cx("rounded-full px-3 py-1 text-xs font-semibold", by === k ? "bg-fg text-bg" : "bg-panel2 text-muted")}>{l}</button>)}
-            <span className="mx-1 h-4 w-px bg-line" aria-hidden />
-          </>}
-          {([["all", "Everyone"], ["fa", "Free agents"], ["mine", "My team"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => setOwn(k)} className={cx("rounded-full px-3 py-1 text-xs font-semibold", own === k ? "bg-fg text-bg" : "bg-panel2 text-muted")}>{l}</button>)}
+        <div className="flex items-center gap-2">
+          <Segmented label="Players shown" value={own} onChange={(v) => setOwn(v)} options={[{ value: "all", label: "All players" }, { value: "fa", label: "Free agents" }]} />
+          <div className="flex min-w-0 flex-1 gap-1 overflow-x-auto" data-no-swipe>
+            {positions.map((p) => <button key={p} type="button" onClick={() => setPos(p)} className={cx("shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold", pos === p ? "bg-acc text-on-acc" : "bg-panel2 text-muted")}>{p === "ALL" ? "All" : p === "DEF" ? "DST" : p === "PICK" ? "Picks" : p}</button>)}
+          </div>
         </div>
       </div>
 
@@ -206,7 +210,21 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
         </div>
         {aiInfo && <div className="fhq-in border-b border-line bg-panel2/40 px-3 py-3 sm:px-4"><ShsExplainer scope={scope} /></div>}
         <ul className="divide-y divide-line">
-          {rows.slice(0, limit).map((r) => (
+          {rows.slice(0, limit).map((r) => r.pos === "PICK" ? (
+            <li key={r.id} className={cx("grid grid-cols-[2.5rem_minmax(0,1fr)_3.75rem_3.5rem] items-center gap-2 px-3 py-2 sm:grid-cols-[2.5rem_minmax(0,1fr)_minmax(0,14rem)_4.5rem_4.5rem] sm:px-4", r.mine && "bg-acc-soft")}>
+              <div className="text-center"><div className="num text-sm font-bold">{ranked.ecrN.get(r.id)}</div><div className="text-[9px] font-semibold text-muted">PICK</div></div>
+              <div className="flex min-w-0 items-center gap-2.5">
+                <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full border border-acc/50 bg-acc-soft text-[10px] font-extrabold text-acc-ink">{r.name.split(" ")[1] ?? "PK"}</span>
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-semibold">{r.name}</div>
+                  <div className="truncate text-[11px] text-muted"><span className={cx(r.mine && "font-semibold text-acc-ink")}>{r.owner}</span>{r.opp ? ` · ${r.opp}` : ""}{r.ecrAll ? ` · experts rank it like #${Math.round(r.ecrAll)} overall` : " · pick model"}</div>
+                </div>
+              </div>
+              <div className="hidden text-xs text-muted sm:block">Rookie pick</div>
+              <div />
+              <div className="text-right"><div className="num font-[family-name:var(--font-display)] text-xl font-bold leading-none">{r.value.toFixed(0)}</div></div>
+            </li>
+          ) : (
             <Fragment key={r.id}>
             <li onClick={() => setOpen(open === r.id ? null : r.id)} className={cx("cursor-pointer", "grid grid-cols-[2.5rem_minmax(0,1fr)_3.75rem_3.5rem] items-center gap-2 px-3 py-2 sm:grid-cols-[2.5rem_minmax(0,1fr)_minmax(0,14rem)_4.5rem_4.5rem] sm:px-4", r.mine && "bg-acc-soft")}>
               <div className="text-center">
@@ -283,5 +301,42 @@ function TrackRecord({ a }: { a: NonNullable<Awaited<ReturnType<typeof accuracy>
       <div className="grid grid-cols-3 gap-2">{cell("Experts", a.experts)}{cell("SHS AI", a.shs)}{cell("Projection", a.sleeper)}</div>
       <p className="mt-2 text-[11px] text-muted">How often each ranking put the higher scorer first, comparing every pair of players at a position (saved on this device before kickoff each week).{a.weeks.length >= 3 ? " SHS AI is now tuning its factor weights from these results." : " Factor auto-tuning starts after 3 graded weeks."}</p>
     </section>
+  );
+}
+
+/**
+ * Format / scoring modifiers under the Week · Season · Dynasty switch. They start at this league's settings (marked
+ * with a dot) and only change this list. Dynasty: 1QB or superflex lists and TE premium. Week / season: points per
+ * reception, TE premium and passing TD points (projections are re-scored).
+ */
+function Modifiers({ scope, opt, lo, set, reset }: { scope: RankScope; opt: Required<RankOpts>; lo: Required<RankOpts>; set: (m: RankOpts) => void; reset: () => void }) {
+  const changed = opt.sf !== lo.sf || opt.tep !== lo.tep || opt.ppr !== lo.ppr || opt.passTd !== lo.passTd;
+  const group = <T extends string | number | boolean>(label: string, value: T, league: T, options: [T, string][], on: (v: T) => void) => (
+    <div className="flex min-w-0 flex-col gap-1">
+      <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-muted">{label}</span>
+      <div className="flex rounded-full border border-line bg-panel2 p-0.5">
+        {options.map(([v, l]) => (
+          <button key={String(v)} type="button" onClick={() => on(v)} aria-pressed={value === v}
+            className={cx("relative flex-1 whitespace-nowrap rounded-full px-2 py-1 text-[11px] font-bold transition-colors", value === v ? "bg-fg text-bg" : "text-muted")}>
+            {l}{league === v && <span className="absolute right-1 top-1 h-1 w-1 rounded-full bg-acc" aria-label="league setting" />}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+  return (
+    <div className="mt-3 flex flex-col gap-2">
+      <div className={cx("grid gap-2", scope === "dynasty" ? "grid-cols-2" : "grid-cols-3")}>
+        {scope === "dynasty" && group("Format", opt.sf, lo.sf, [[false, "1QB"], [true, "Superflex"]], (v) => set({ sf: v }))}
+        {scope !== "dynasty" && group("PPR", opt.ppr, lo.ppr, ([[0, "0"], [0.5, "½"], [1, "1"]] as [number, string][]).concat([0, 0.5, 1].includes(lo.ppr) ? [] : [[lo.ppr, String(lo.ppr)]]).sort((a, b) => a[0] - b[0]), (v) => set({ ppr: v }))}
+        {group("TE premium", opt.tep, lo.tep, ([[0, "None"], [0.5, "+.5"], [1, "+1"]] as [number, string][]).concat([0, 0.5, 1].includes(lo.tep) ? [] : [[lo.tep, `+${lo.tep}`]]).sort((a, b) => a[0] - b[0]), (v) => set({ tep: v }))}
+        {scope !== "dynasty" && group("Pass TD", opt.passTd, lo.passTd, ([[4, "4 pt"], [6, "6 pt"]] as [number, string][]).concat([4, 6].includes(lo.passTd) ? [] : [[lo.passTd, `${lo.passTd} pt`]]).sort((a, b) => a[0] - b[0]), (v) => set({ passTd: v }))}
+      </div>
+      <p className="text-[10px] text-muted">
+        <span className="mr-1 inline-block h-1 w-1 rounded-full bg-acc align-middle" />= your league&apos;s setting.{" "}
+        {scope === "dynasty" ? "Superflex uses FantasyPros' superflex dynasty list. TE premium has no expert list, so TEs are raised by how much the premium adds to their scoring (more catches, bigger boost)." : "Changing these re-scores every projection."}
+        {changed && <button type="button" onClick={reset} className="ml-1 font-semibold text-acc-ink underline">Back to league settings</button>}
+      </p>
+    </div>
   );
 }

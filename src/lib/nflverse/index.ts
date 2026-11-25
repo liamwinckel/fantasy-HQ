@@ -38,7 +38,9 @@ export const injuryReports = (season: string, force = false) =>
 
 /** FantasyPros expert consensus + dynasty market values, keyed by Sleeper player ID. */
 export interface RookieProspect { n: string; p: string; t: string; e: number; s: string | null }
-export interface ConsensusFile { ecrDate: string; weeklyDate: string; source: string; players: Record<string, import("../engine/values").Consensus>; rookies?: RookieProspect[] }
+export interface ConsensusFile { ecrDate: string; weeklyDate: string; source: string; players: Record<string, import("../engine/values").Consensus>; rookies?: RookieProspect[];
+  /** Rookie pick market: equivalent dynasty overall rank (1QB / superflex) and value on the players' scale. */
+  picks?: Record<string, { e1: number; e2: number; v1: number; v2: number }> }
 export const consensus = (force = false) =>
   cached("data:consensus", "nflverse", 6 * HOUR, get("consensus.json"), (b) => JSON.parse(b) as ConsensusFile, { force });
 

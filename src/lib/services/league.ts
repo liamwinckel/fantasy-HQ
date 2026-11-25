@@ -9,7 +9,7 @@ import { optimizeLineup, lineupTotal, scoreStarters, type SlotAssignment } from 
 import { simulateSeason, type SimResult, type TeamWeek } from "../engine/simulate";
 import { classifyTeams, type Classification, type TeamClass, type TeamMetrics } from "../engine/classify";
 import { emptySignals, loadSignals, type Signals } from "./signals";
-import { buildPicks, type PickAsset, type Tier } from "../engine/picks";
+import { buildPicks, marketPickName, type PickAsset, type Tier } from "../engine/picks";
 import { easternToEpoch } from "../time";
 import { getSettings, type Mode } from "../settings";
 import { keeperPlan } from "../engine/keepers";
@@ -611,6 +611,19 @@ async function buildLeagueContext(
     teams: teamsCount, superflex: isSuperflex(league.roster_positions), projectedOrder, manualTiers: opts.manualTiers,
     valueOn: valuationMode === "dynasty",
   });
+  // Dynasty: price picks with the market (same scale as player values) when DynastyProcess covers them.
+  const pm = consR?.data.picks;
+  if (pm && valuationMode === "dynasty") {
+    const sf = isSuperflex(league.roster_positions);
+    const maxMk = Math.max(1, ...[...players.keys()].map((id) => (sf ? cons[id]?.v2 : cons[id]?.v1) ?? 0));
+    for (const p of picks) {
+      const known = p.tierSource !== "default";
+      const m = pm[marketPickName(p.season, p.round, p.tier, known) ?? ""] ?? pm[marketPickName(p.season, p.round, p.tier, false) ?? ""];
+      if (!m) continue;
+      p.market = m;
+      p.value = Math.round((1000 * (sf ? m.v2 : m.v1)) / maxMk) / 10;
+    }
+  }
   for (const m of metrics) m.capital = picks.filter((p) => p.ownerRosterId === m.rosterId).reduce((a, p) => a + (p.value || pickProxy(p)), 0);
   const showClasses = valuationMode === "dynasty";
   const classes = showClasses ? classifyTeams(metrics, "dynasty") : [];

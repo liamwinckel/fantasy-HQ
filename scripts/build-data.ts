@@ -147,7 +147,7 @@ async function main() {
   jobs.push(["consensus", async () => {
     const DP = process.env.DP_DIR;
     const get = async (f: string) => DP ? fs.readFileSync(path.join(DP, f), "utf8") : text(`https://github.com/dynastyprocess/data/raw/master/files/${f}`, f);
-    const [ecr, weekly, values, ids] = await Promise.all([get("db_fpecr_latest.csv"), get("fp_latest_weekly.csv"), get("values-players.csv"), get("db_playerids.csv")]);
+    const [ecr, weekly, values, ids, pickCsv] = await Promise.all([get("db_fpecr_latest.csv"), get("fp_latest_weekly.csv"), get("values-players.csv"), get("db_playerids.csv"), get("values-picks.csv").catch(() => "")]);
     const toSleeper = new Map<string, string>();
     for (const r of parseCsv(ids)) if (r.fantasypros_id && r.fantasypros_id !== "NA" && r.sleeper_id && r.sleeper_id !== "NA") toSleeper.set(r.fantasypros_id, r.sleeper_id);
     const teamFix = (t: string) => (t === "JAC" ? "JAX" : t === "LA" ? "LAR" : t);
@@ -180,8 +180,24 @@ async function main() {
       if (r.player_opponent) (out[sid(r.fantasypros_id, r.pos, r.team) ?? "_"] ??= {});
     }
     delete out._;
-    for (const r of parseCsv(values)) { const id = toSleeper.get(r.fp_id); put(id, "v1", r.value_1qb); put(id, "v2", r.value_2qb); }
-    write("consensus.json", JSON.stringify({ ecrDate, weeklyDate, source: "FantasyPros ECR via DynastyProcess", players: out, rookies: rookies.sort((a, b) => a.e - b.e) }));
+    const pv = parseCsv(values);
+    for (const r of pv) { const id = toSleeper.get(r.fp_id); put(id, "v1", r.value_1qb); put(id, "v2", r.value_2qb); }
+    // Rookie picks: DynastyProcess ranks each pick against the dynasty overall list (an equivalent ECR, 1QB and
+    // superflex). Turn that into a value on the players' own scale by interpolating players' ECR → value.
+    const curve = (ek: string, vk: string) => pv.map((r) => [Number(r[ek]), Number(r[vk])] as const).filter(([e, v]) => e > 0 && v > 0).sort((a, b) => a[0] - b[0]);
+    const c1 = curve("ecr_1qb", "value_1qb"), c2 = curve("ecr_2qb", "value_2qb");
+    const at = (c: readonly (readonly [number, number])[], e: number) => {
+      if (!c.length || !(e > 0)) return 0;
+      if (e <= c[0][0]) return c[0][1];
+      for (let i = 1; i < c.length; i++) if (e <= c[i][0]) { const [e0, v0] = c[i - 1], [e1, v1] = c[i]; return v0 + ((v1 - v0) * (e - e0)) / Math.max(1e-9, e1 - e0); }
+      return c[c.length - 1][1];
+    };
+    const picks: Record<string, { e1: number; e2: number; v1: number; v2: number }> = {};
+    for (const r of parseCsv(pickCsv)) {
+      const e1 = Number(r.ecr_1qb), e2 = Number(r.ecr_2qb);
+      if (r.player && e1 > 0) picks[r.player] = { e1: Math.round(e1 * 10) / 10, e2: Math.round(e2 * 10) / 10, v1: Math.round(at(c1, e1)), v2: Math.round(at(c2, e2)) };
+    }
+    write("consensus.json", JSON.stringify({ ecrDate, weeklyDate, source: "FantasyPros ECR via DynastyProcess", players: out, rookies: rookies.sort((a, b) => a.e - b.e), picks }));
   }]);
 
   // Weekly expert rankings as they stood before each week's Sunday games, rebuilt from the public git history of

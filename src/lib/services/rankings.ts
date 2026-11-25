@@ -5,6 +5,37 @@
  */
 import type { LeagueContext } from "./league";
 import { isSuperflex } from "../engine/positions";
+import { scoreSleeperStats } from "../engine/scoring";
+
+/**
+ * View modifiers (Rankings only; they don't change trade values elsewhere). Defaults = this league's settings.
+ *   sf     1QB or superflex: dynasty order and values use FantasyPros' superflex list / superflex market values.
+ *   tep    TE premium (extra points per TE reception). Week / season: projections are re-scored. Dynasty: no expert
+ *          list exists, so each TE's value is raised by how much the premium adds to his scoring (see tepFactor).
+ *   ppr    points per reception;  passTd  points per passing TD (week / season re-scoring).
+ */
+export interface RankOpts { sf?: boolean; tep?: number; ppr?: number; passTd?: number }
+
+export function leagueOpts(ctx: LeagueContext): Required<RankOpts> {
+  const sc = ctx.league.scoring_settings as Record<string, number>;
+  return { sf: isSuperflex(ctx.league.roster_positions), tep: sc.bonus_rec_te ?? 0, ppr: sc.rec ?? 0, passTd: sc.pass_td ?? 4 };
+}
+
+/**
+ * Dynasty TE premium: the share of extra scoring the premium gives this TE (premium × his receptions per game ÷ his
+ * points per game), counted 1.5× because the premium lifts startable TEs more than replacement ones (they catch more).
+ * Capped at +60%. Receptions: this season's per game (3+ games), else his projection, else 3.5.
+ */
+export function tepFactor(ctx: LeagueContext, id: string, tep: number): number {
+  if (!tep) return 1;
+  const p = ctx.players.get(id);
+  if (!p || p.pos !== "TE") return 1;
+  const games = p.gsis ? ctx.stats.filter((s) => s.gsis === p.gsis) : [];
+  const w0 = Math.min(ctx.currentWeek, ctx.lastWeek);
+  const recPg = games.length >= 3 ? games.reduce((a, s) => a + s.rec, 0) / games.length : ctx.projStats.get(w0)?.get(id)?.rec ?? 3.5;
+  const ppg = Math.max(5, ctx.projections.get(id)?.base ?? 0);
+  return Math.min(1.6, 1 + (1.5 * tep * recPg) / ppg);
+}
 
 export type RankScope = "week" | "ros" | "dynasty";
 
@@ -26,13 +57,22 @@ export interface RankRow {
   rank: number; // overall order shown
 }
 
-export function rankings(ctx: LeagueContext, scope: RankScope): RankRow[] {
+export function rankings(ctx: LeagueContext, scope: RankScope, opts: RankOpts = {}): RankRow[] {
   const w0 = Math.min(ctx.currentWeek, ctx.lastWeek);
   const weeks = scope === "week" ? [w0] : Array.from({ length: ctx.lastWeek - w0 + 1 }, (_, i) => w0 + i);
   const owner = new Map<string, { name: string; mine: boolean }>();
   for (const t of ctx.teams) for (const id of t.players) owner.set(id, { name: t.rosterId === ctx.myRosterId ? "You" : t.name, mine: t.rosterId === ctx.myRosterId });
   const rows: RankRow[] = [];
-  const sf = isSuperflex(ctx.league.roster_positions);
+  const lo = leagueOpts(ctx);
+  const opt = { ...lo, ...opts };
+  const sf = opt.sf;
+  // Re-scoring for week / season when a scoring modifier differs from the league.
+  const scLeague = ctx.league.scoring_settings as Record<string, number>;
+  const rescore = scope !== "dynasty" && (opt.tep !== lo.tep || opt.ppr !== lo.ppr || opt.passTd !== lo.passTd);
+  const scOv = { ...scLeague, bonus_rec_te: opt.tep, rec: opt.ppr, pass_td: opt.passTd };
+  // Dynasty market scale for the chosen format.
+  const mkt = (id: string) => (sf ? ctx.consensus[id]?.v2 : ctx.consensus[id]?.v1) ?? null;
+  const maxMk = scope === "dynasty" ? Math.max(1, ...[...ctx.players.keys()].map((id) => mkt(id) ?? 0)) : 1;
   for (const p of ctx.players.values()) {
     const pr = ctx.projections.get(p.id);
     const v = ctx.values.get(p.id);
@@ -46,6 +86,11 @@ export function rankings(ctx: LeagueContext, scope: RankScope): RankRow[] {
         if (st) { games++; for (const [k, x] of Object.entries(st)) s[k] = (s[k] ?? 0) + x; }
       }
       if (pts <= 0.05 && !c) continue;
+      if (rescore) {
+        let a = 0, b = 0;
+        for (const w of weeks) { const st = ctx.projStats.get(w)?.get(p.id); if (st) { a += scoreSleeperStats(st, scLeague, p.pos); b += scoreSleeperStats(st, scOv, p.pos); } }
+        if (a > 0.3) pts *= b / a;
+      }
     }
     if (scope === "dynasty" && !(v && (v.dynasty > 0.5 || c?.dp))) continue;
     const ecr = (scope === "week" ? c?.w : scope === "ros" ? c?.rp : c?.dp) ?? null;
@@ -60,7 +105,7 @@ export function rankings(ctx: LeagueContext, scope: RankScope): RankRow[] {
       passYd: Math.round(g("pass_yd")), passTd: r1(g("pass_td")), int: r1(g("pass_int")),
       rushYd: Math.round(g("rush_yd")), rec: r1(g("rec")), recYd: Math.round(g("rec_yd")), td: r1(g("rush_td") + g("rec_td")),
       fg: r1(g("fgm")), sacks: r1(g("sack") + g("idp_sack")), tackles: r1(g("idp_tkl_solo") + g("idp_tkl_ast")),
-      value: scope === "dynasty" ? v?.dynasty ?? 0 : v?.redraft ?? 0,
+      value: scope === "dynasty" ? Math.round((mkt(p.id) !== null ? (100 * mkt(p.id)!) / maxMk : v?.dynasty ?? 0) * tepFactor(ctx, p.id, opt.tep) * 10) / 10 : v?.redraft ?? 0,
       ecr, ecrPos: null, shsPos: 0, shsScore: null, rank: 0,
       ecrAll: scope === "dynasty" ? (sf ? c?.dsf ?? c?.do : c?.do) ?? null : null,
     });
@@ -85,7 +130,9 @@ export function rankings(ctx: LeagueContext, scope: RankScope): RankRow[] {
   // Overall order. Dynasty: FantasyPros' own dynasty overall list (superflex list in superflex leagues), as on their
   // site. Week / rest of season: experts' positional ranks converted to this league's scoring. Then anyone unranked.
   if (scope === "dynasty") {
-    rows.sort((a, b) => (a.ecrAll ?? 1e9) - (b.ecrAll ?? 1e9) || (a.ecr ?? 1e9) - (b.ecr ?? 1e9) || b.value - a.value);
+    // Market values are built from FantasyPros' dynasty list for the chosen format, so this is their order; with a
+    // TE premium on, TEs move up by their adjusted value.
+    rows.sort((a, b) => b.value - a.value || (a.ecrAll ?? 1e9) - (b.ecrAll ?? 1e9));
   } else {
     const key = (r: RankRow) => (r.ecrPos !== null ? atRank(r.pos, r.ecrPos) + 1e6 : r.pts);
     rows.sort((a, b) => key(b) - key(a) || b.pts - a.pts);
@@ -95,3 +142,22 @@ export function rankings(ctx: LeagueContext, scope: RankScope): RankRow[] {
 }
 
 const r1 = (x: number) => Math.round(x * 10) / 10;
+
+/** Rookie picks for the dynasty list: every pick in this league, valued on the players' market scale. */
+export function pickRows(ctx: LeagueContext, opts: RankOpts = {}): RankRow[] {
+  const o = { ...leagueOpts(ctx), ...opts };
+  const mk = (id: string) => (o.sf ? ctx.consensus[id]?.v2 : ctx.consensus[id]?.v1) ?? 0;
+  const maxMk = Math.max(1, ...[...ctx.players.keys()].map(mk));
+  const team = (rid: number) => ctx.teams.find((t) => t.rosterId === rid);
+  return ctx.picks.map((p) => {
+    const owner = team(p.ownerRosterId);
+    const from = p.originalRosterId !== p.ownerRosterId ? team(p.originalRosterId)?.name : null;
+    const value = p.market ? Math.round((1000 * (o.sf ? p.market.v2 : p.market.v1)) / maxMk) / 10 : p.value;
+    return {
+      id: `pick:${p.key}`, name: `${p.season} ${["", "1st", "2nd", "3rd", "4th", "5th"][p.round] ?? `R${p.round}`}${p.tierSource !== "default" ? ` · ${p.tier[0].toUpperCase()}${p.tier.slice(1)}` : ""}`, pos: "PICK", team: null, injury: null, opp: from ? `via ${from}` : null,
+      age: null, yearsExp: null, owner: owner ? (owner.rosterId === ctx.myRosterId ? "You" : owner.name) : "—", mine: p.ownerRosterId === ctx.myRosterId,
+      pts: value, games: 0, passYd: 0, passTd: 0, int: 0, rushYd: 0, rec: 0, recYd: 0, td: 0, fg: 0, sacks: 0, tackles: 0,
+      value, ecr: null, ecrPos: null, ecrAll: p.market ? (o.sf ? p.market.e2 : p.market.e1) : null, shsPos: 0, shsScore: null, rank: 0,
+    } as RankRow;
+  });
+}

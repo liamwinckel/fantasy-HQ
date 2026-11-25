@@ -25,7 +25,14 @@ export interface PickAsset {
   estimatedSlot: number | null;
   value: number;
   label: string;
+  /** Market data for this pick (DynastyProcess / FantasyPros), when covered. */
+  market?: { e1: number; e2: number; v1: number; v2: number };
 }
+
+const ORD = ["", "1st", "2nd", "3rd", "4th", "5th"];
+/** DynastyProcess pick names: next draft by tier ("2027 Early 1st"), later drafts by round ("2028 1st"). */
+export const marketPickName = (season: string, round: number, tier: Tier, known: boolean) =>
+  ORD[round] ? `${season} ${known ? `${tier[0].toUpperCase()}${tier.slice(1)} ` : ""}${ORD[round]}` : null;
 
 const BASE: Record<number, Record<Tier, number>> = {
   1: { early: 0.42, mid: 0.32, late: 0.24 },
