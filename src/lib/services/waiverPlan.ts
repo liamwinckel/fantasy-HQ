@@ -3,6 +3,7 @@
  * (byes, injuries, weak starters) and the free agents who fill them, so you can add a bye-week fill early (before
  * other teams do) and stash players who'll matter later (returning from injury, soft schedule ahead).
  */
+import { rbContingency } from "./waivers";
 import type { LeagueContext } from "./league";
 import { optimizeLineup, lineupTotal } from "../engine/lineup";
 
@@ -63,6 +64,9 @@ export function waiverPlan(ctx: LeagueContext, rosterId: number, horizon = 4): {
   targets.sort((a, b) => b.total - a.total || (a.kind === "stash" ? -1 : 1));
   const key = ctx.valuationMode === "dynasty" ? "dynasty" : "redraft";
   const starters = new Set(weeks.flatMap((w) => base.get(w)!.filter((s) => s.slot !== "BN").map((s) => s.playerId)));
-  const drop = roster.filter((id) => !starters.has(id)).sort((a, b) => (ctx.values.get(a)?.[key] ?? 0) - (ctx.values.get(b)?.[key] ?? 0))[0];
+  // Backup RBs last (injury upside), worst offence / lowest ceiling first among them.
+  const cont = rbContingency(ctx);
+  const dk = (id: string) => (cont.has(id) ? 1000 + cont.get(id)!.upside : ctx.values.get(id)?.[key] ?? 0);
+  const drop = roster.filter((id) => !starters.has(id)).sort((a, b) => dk(a) - dk(b))[0];
   return { weeks: planWeeks, targets: targets.slice(0, 12), drop: drop ? { id: drop, name: ctx.players.get(drop)?.name ?? drop } : null };
 }

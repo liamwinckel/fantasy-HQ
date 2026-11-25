@@ -21,7 +21,7 @@ import { TrackRecord } from "@/components/TrackRecord";
 import { SeasonChart } from "@/components/charts";
 import { Sheet } from "@/components/Sheet";
 import { DashDetail, type DashKey } from "@/app/DashDetails";
-import { LeagueTabs } from "./LeagueTabs";
+import { LeagueHero } from "./LeagueTabs";
 import { seasonSummary, leaguePpg } from "@/lib/services/teamSeason";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -78,10 +78,7 @@ export function LeagueOverview({ setup, league, ctx, sp }: LeagueData) {
 
   return (
     <div className="flex flex-col gap-5">
-      <PageHeader eyebrow={`${league.name} · ${formatLabel(league)} · ${ctx.scoring} · ${ctx.teamsCount} teams`} title="Overview">
-        <span className={cx("rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider", fmt === "dynasty" ? "bg-fg text-bg" : fmt === "keeper" ? "border border-acc text-acc-ink" : "bg-acc text-on-acc")}>{formatLabel(league)} league</span>
-      </PageHeader>
-      <LeagueTabs view="overview" />
+      <LeagueHero league={league} ctx={ctx} view="overview" />
       {!ctx.seasonOver && ctx.currentWeek > 1 && (
         <Card title="Weekly brief" href="/brief/"><p className="text-sm text-muted">Week {ctx.currentWeek - 1} recap, how SHS AI and the experts did, and your week {Math.min(ctx.currentWeek, ctx.lastWeek)} preview.</p></Card>
       )}

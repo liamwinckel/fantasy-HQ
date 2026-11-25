@@ -37,6 +37,53 @@ export interface WaiverReport {
 
 const UNAVAILABLE = ["IR", "Out", "PUP", "NFI", "Sus"];
 
+/**
+ * Backup / timeshare running backs carry hidden value: if the back ahead of them gets hurt they step into a
+ * starting role overnight. A player qualifies when he's an NFL team's No. 2 RB, by Sleeper's depth chart or by
+ * recent touches (opportunity) / snap share. `upside` is roughly what he'd score per game as the lead back,
+ * scaled by how good his offence is; `extra` is that over what he scores now.
+ */
+export interface Contingency { starter: PlayerLite; upside: number; extra: number; env: number }
+export function rbContingency(ctx: LeagueContext): Map<string, Contingency> {
+  const out = new Map<string, Contingency>();
+  const base = (id: string) => ctx.projections.get(id)?.base ?? 0;
+  // Offensive environment: projected fantasy points of each NFL team's skill players, vs the league average.
+  const teamPts = new Map<string, number>();
+  for (const p of ctx.players.values()) if (p.team && ["QB", "RB", "WR", "TE"].includes(p.pos)) teamPts.set(p.team, (teamPts.get(p.team) ?? 0) + base(p.id));
+  const vals = [...teamPts.values()].filter((v) => v > 0);
+  const avg = vals.reduce((a, b) => a + b, 0) / Math.max(1, vals.length);
+  const recent = (id: string) => {
+    const log = (ctx.logs.get(id) ?? []).slice(-3);
+    const opp = log.map((g) => g.opportunity).filter((x): x is number => x !== null);
+    const snaps = log.map((g) => g.snapPct).filter((x): x is number => x !== null);
+    return { opp: opp.length ? opp.reduce((a, b) => a + b, 0) / opp.length : 0, snap: snaps.length ? snaps.reduce((a, b) => a + b, 0) / snaps.length : 0 };
+  };
+  const byTeam = new Map<string, PlayerLite[]>();
+  for (const p of ctx.players.values()) if (p.pos === "RB" && p.team && !UNAVAILABLE.includes(p.injury ?? "")) (byTeam.get(p.team) ?? byTeam.set(p.team, []).get(p.team)!).push(p);
+  for (const [team, rbs] of byTeam) {
+    // Lead back: most recent touches, then depth chart, then projection.
+    const ranked = [...rbs].sort((a, b) => recent(b.id).opp - recent(a.id).opp || (a.depth ?? 99) - (b.depth ?? 99) || base(b.id) - base(a.id));
+    const lead = ranked[0];
+    if (!lead) continue;
+    const env = Math.max(0.8, Math.min(1.2, (teamPts.get(team) ?? avg) / Math.max(1, avg)));
+    const depthTwo = rbs.find((p) => p.depth === 2 && p.id !== lead.id);
+    const touchTwo = ranked[1] && (recent(ranked[1].id).snap >= 0.25 || recent(ranked[1].id).opp >= 6) ? ranked[1] : undefined;
+    for (const p of new Set([depthTwo, touchTwo].filter(Boolean) as PlayerLite[])) {
+      const upside = Math.max(base(lead.id) * 0.8, base(p.id)) * env;
+      out.set(p.id, { starter: lead, upside, extra: Math.max(0, upside - base(p.id)), env });
+    }
+  }
+  return out;
+}
+
+/** A replacement has to beat a backup RB clearly, not by a decimal, to be worth losing the injury upside. */
+export function beatsContingent(ctx: LeagueContext, keepId: string, addId: string, week: number) {
+  const b = (id: string) => ctx.projections.get(id)?.base ?? 0;
+  const wk = (id: string) => ctx.projections.get(id)?.byWeek[week] ?? 0;
+  const margin = Math.max(1.5, 0.2 * b(keepId));
+  return b(addId) - b(keepId) >= margin || wk(addId) - wk(keepId) >= 3;
+}
+
 export function waiverReport(ctx: LeagueContext, rosterId: number): WaiverReport {
   const me = ctx.teams.find((t) => t.rosterId === rosterId)!;
   const rp = ctx.league.roster_positions;
@@ -72,9 +119,13 @@ export function waiverReport(ctx: LeagueContext, rosterId: number): WaiverReport
   // Players in any of my best lineups for remaining weeks are not drop candidates.
   const needed = new Set<string>();
   for (const w of weeks) for (const s of optimizeLineup(rp, cand(mine, w))) if (s.playerId) needed.add(s.playerId);
-  const dropPool = mine.filter((id) => !needed.has(id)).sort((a, b) => value(a) - value(b));
+  // Backup RBs go to the back of the drop queue; among several, the one with the worst offence and lowest
+  // ceiling as a starter goes first (not simply whoever scores least now).
+  const cont = rbContingency(ctx);
+  const dropKey = (id: string) => (cont.has(id) ? 1000 + cont.get(id)!.upside : value(id));
+  const dropPool = mine.filter((id) => !needed.has(id)).sort((a, b) => dropKey(a) - dropKey(b));
   const space = rosterSpace(ctx, rosterId);
-  const fallbackDrop = [...mine].sort((a, b) => value(a) - value(b))[0];
+  const fallbackDrop = [...mine].sort((a, b) => dropKey(a) - dropKey(b))[0];
   const dropId = space.full ? dropPool[0] ?? fallbackDrop ?? null : null;
   const drop = dropPool[0] ? { id: dropPool[0], name: ctx.players.get(dropPool[0])!.name, value: value(dropPool[0]) } : fallbackDrop ? { id: fallbackDrop, name: ctx.players.get(fallbackDrop)!.name, value: value(fallbackDrop) } : null;
   const after = (add: string) => [...mine.filter((x) => x !== dropId), add];
@@ -109,7 +160,10 @@ export function waiverReport(ctx: LeagueContext, rosterId: number): WaiverReport
     if (rosGain > 0.5) reasons.push(`Adds ${rosGain.toFixed(1)} pts to your best lineups through Week ${ctx.lastWeek}${dropId ? ` after dropping ${ctx.players.get(dropId)!.name}` : ""}.`);
     if (proj.usageFactor >= 1.08) reasons.push(`Usage up ${Math.round((proj.usageFactor - 1) * 100 / 0.4)}% over the last 3 games.`);
     if (snaps.length >= 2 && snaps[snaps.length - 1] - snaps[0] >= 10) reasons.push(`Snap share rising: ${snaps.join("% → ")}%.`);
-    const score = 0.45 * weekGain + 0.55 * (rosGain / Math.max(1, weeks.length)) * 2 + (fills ? 1.5 : 0) + (ctx.valuationMode === "dynasty" ? value(p.id) / 15 : 0);
+    // Dropping a backup RB for a similar player throws away his injury upside.
+    const lostCuff = dropId && cont.has(dropId) && !beatsContingent(ctx, dropId, p.id, w0) ? cont.get(dropId)! : null;
+    if (lostCuff) reasons.push(`Costs you ${ctx.players.get(dropId!)!.name}'s upside: he'd be a ~${lostCuff.upside.toFixed(1)} pts/g starter if ${lostCuff.starter.name} goes down.`);
+    const score = (lostCuff ? -lostCuff.extra : 0) + 0.45 * weekGain + 0.55 * (rosGain / Math.max(1, weeks.length)) * 2 + (fills ? 1.5 : 0) + (ctx.valuationMode === "dynasty" ? value(p.id) / 15 : 0);
     return { player: p, proj, value: value(p.id), weekGain: r1(weekGain), rosGain: r1(rosGain), score, fills, snapTrend: snaps.length ? snaps : null, reasons, drop };
   };
   const evaluated = shortlist.map(evalPlayer);
@@ -160,10 +214,18 @@ export function waiverReport(ctx: LeagueContext, rosterId: number): WaiverReport
     const longOut = ["IR", "PUP", "NFI", "Sus"].includes(p.injury ?? "");
     // Dynasty keeps young upside: compare trade value too.
     const gap = dyn ? (fa ? value(fa.id) - value(id) : -99) : faBase - (longOut ? 0 : pr.base);
+    // Backup / timeshare RBs only go if the free agent is clearly better (or much better this week).
+    const c = cont.get(id);
+    if (c && !dyn && !longOut && fa && !beatsContingent(ctx, id, fa.id, w0)) {
+      return { player: p, value: value(id), proj: pr.median, reason: "", gap: 0 };
+    }
     const reason = fa && gap > 0
       ? `${fa.name} (free agent) ${dyn ? `is worth more (${value(fa.id).toFixed(0)} vs ${value(id).toFixed(0)})` : `projects ${faBase.toFixed(1)} pts/g vs his ${longOut ? `0 (${p.injury})` : pr.base.toFixed(1)}`}.`
       : longOut ? `${p.injury} and not in any of your best lineups.` : "";
-    return { player: p, value: value(id), proj: pr.median, reason, gap: longOut && !dyn ? Math.max(gap, 1) : gap };
+    const why = c && reason ? `${reason} Backs up ${c.starter.name}; of your backup RBs he has the least to gain (${c.upside.toFixed(1)} pts/g as a starter${c.env < 0.95 ? ", weak offence" : ""}).` : reason;
+    // Order: clear upgrades first; backup RBs last, worst environment / lowest ceiling first among them.
+    const g = longOut && !dyn ? Math.max(gap, 1) : gap;
+    return { player: p, value: value(id), proj: pr.median, reason: why, gap: g > 0 ? Math.max(0.01, g - (c ? c.upside / 10 : 0) + 10) : 0 };
   }).filter((d) => d.gap > 0).sort((a, b) => b.gap - a.gap).slice(0, 5).map(({ gap: _g, ...d }) => { void _g; return d; });
   return { needs, holes, topAdds, streamers, rising, handcuffs, drops };
 }

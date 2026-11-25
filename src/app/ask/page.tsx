@@ -1,9 +1,9 @@
 "use client";
 
 /** Ask SHS: questions about your league, answered from its data. Remembers the conversation for follow-ups. */
+import { useGoBack } from "@/components/EdgeBack";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { LeaguePage, useAsync, type LeagueData } from "@/components/AppData";
 import { cx } from "@/components/ui";
 import { PlayerImg } from "@/components/client";
@@ -19,7 +19,7 @@ export default function AskPage() {
 type Msg = { q: string; a: Answer };
 
 function Body({ league, ctx }: LeagueData) {
-  const router = useRouter();
+  const goBack = useGoBack();
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [mem, setMem] = useState<Memory | null>(null);
   const [q, setQ] = useState("");
@@ -43,7 +43,7 @@ function Body({ league, ctx }: LeagueData) {
       <div className="flex items-center justify-between gap-2">
         <button type="button" onClick={reset} disabled={!msgs.length} className="flex h-10 items-center gap-1.5 rounded-full border border-line px-3 text-xs font-bold disabled:opacity-30"><RotateCcw size={14} />New chat</button>
         <div className="text-center"><div className="text-[11px] font-bold uppercase tracking-widest text-acc-ink">{league.name}</div><div className="h-display text-2xl leading-none">Ask SHS</div></div>
-        <button type="button" onClick={() => (window.history.length > 1 ? router.back() : router.push("/"))} aria-label="Close" className="flex h-10 w-10 items-center justify-center rounded-full border border-line"><X size={18} /></button>
+        <button type="button" onClick={goBack} aria-label="Close" className="flex h-10 w-10 items-center justify-center rounded-full border border-line"><X size={18} /></button>
       </div>
       {!msgs.length && <p className="text-center text-sm text-muted">Ask about your team in your own words: name players, a position, and a time frame (this week, rest of season, playoffs, dynasty). Follow-ups remember the last question.</p>}
       {msgs.map((m, i) => (

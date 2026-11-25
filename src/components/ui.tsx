@@ -75,10 +75,10 @@ const DOT_STYLE: Record<SourceTag, string> = {
 };
 void TAG_STYLE;
 /** Where a number came from, as a small coloured dot (hover/long-press for the label). */
-export function Tag({ kind, className }: { kind: SourceTag; className?: string }) {
-  return (
-    <span title={TAG_LABEL[kind]} aria-label={TAG_LABEL[kind]} role="img" className={cx("inline-block h-2 w-2 shrink-0 rounded-full", DOT_STYLE[kind], className)} />
-  );
+/** Source markers used to be coloured dots in card corners; they read as noise, so they render nothing now. */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function Tag(_: { kind: SourceTag; className?: string }) {
+  return null;
 }
 
 /** Legend for the source dots. */
@@ -142,7 +142,7 @@ export function PageHeader({ eyebrow, title, children, info }: { eyebrow?: strin
         {eyebrow && <div className="text-[11px] font-semibold uppercase tracking-widest text-acc-ink sm:text-xs">{eyebrow}</div>}
         <h1 className="h-display mt-1 flex items-center gap-2.5 text-4xl sm:text-5xl">{title}{info && <InfoButton open={open} onClick={() => setOpen(!open)} label={`About ${title}`} />}</h1>
       </div>
-      {info && open && <div className="fhq-in max-w-2xl rounded-xl bg-panel px-4 py-3 text-left text-sm leading-relaxed text-muted">{info}<div className="mt-2"><SourceLegend /></div></div>}
+      {info && open && <div className="fhq-in max-w-2xl rounded-xl bg-panel px-4 py-3 text-left text-sm leading-relaxed text-muted">{info}</div>}
       {children}
     </div>
   );

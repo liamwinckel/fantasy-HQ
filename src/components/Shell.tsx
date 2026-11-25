@@ -3,15 +3,18 @@
 import Link from "next/link";
 import { Settings } from "lucide-react";
 import { AppProvider, useApp } from "./AppData";
-import { ASK, LeagueSelect, MobileTabs, QUICK_ACTIONS, RefreshButton, SideNavLink } from "./client";
+import { LeagueSelect, MobileTabs, QUICK_ACTIONS, RefreshButton, SideNavLink } from "./client";
 import { PlayerCardProvider } from "./PlayerCard";
 import { TeamPeekProvider } from "./TeamPeek";
 import { formatLabel } from "@/lib/services/portfolio";
 import { ago } from "@/lib/time";
 import { BASE_PATH } from "@/lib/net";
-import { Component, useEffect, useRef, type ReactNode } from "react";
+import { Component, useEffect, useRef, useState, type ReactNode } from "react";
+import { sleeper } from "@/lib/sleeper/client";
+import { Logo } from "./ui";
 import { usePathname } from "next/navigation";
-import { useEdgeBack } from "./EdgeBack";
+import { EdgeBackStage } from "./EdgeBack";
+import Home from "@/app/page";
 
 const MAIN = [
   { href: "/", label: "Home" },
@@ -37,8 +40,6 @@ function Frame({ children }: { children: ReactNode }) {
   const scroller = useRef<HTMLDivElement>(null);
   const path = usePathname();
   useEffect(() => { scroller.current?.scrollTo({ top: 0 }); }, [path]);
-  const page = useRef<HTMLDivElement>(null);
-  useEdgeBack(page);
   // Belt and braces: if iOS ever scrolls the document (keyboard, tab restore), snap it back so the header stays visible.
   useEffect(() => {
     const reset = () => { if (window.scrollY !== 0 || document.documentElement.scrollTop !== 0) window.scrollTo(0, 0); };
@@ -59,7 +60,7 @@ function Frame({ children }: { children: ReactNode }) {
   const home = path === "/";
   const leagues = (setup?.leagues ?? []).map((l) => ({ id: l.league_id, name: l.name, format: formatLabel(l), avatar: l.avatar ? `https://sleepercdn.com/avatars/thumbs/${l.avatar}` : null }));
   const isKeeper = setup?.leagues.find((l) => l.league_id === leagueId)?.settings.type === 1;
-  const tools = [{ href: ASK.href, label: ASK.label }, ...QUICK_ACTIONS.map((a) => ({ href: a.href, label: a.label })), ...(isKeeper ? [{ href: "/keepers", label: "Keeper Planner" }] : []), { href: "/shs", label: "SHS AI Lab" }];
+  const tools = [...QUICK_ACTIONS.map((a) => ({ href: a.href, label: a.label })), ...(isKeeper ? [{ href: "/keepers", label: "Keeper Planner" }] : []), { href: "/shs", label: "SHS AI Lab" }];
   return (
     <>
       {/* App shell: the header never moves; only the content area scrolls (no page bounce on iPhone). */}
@@ -71,7 +72,7 @@ function Frame({ children }: { children: ReactNode }) {
             <span className="h-display text-[22px] leading-none">Fantasy HQ</span>
           </Link>
           <div className="px-1">
-            {home ? <UserChip name={setup?.settings.username ?? null} count={leagues.length} /> : <LeagueSelect leagues={leagues} current={leagueId} />}
+            {home ? <UserChip name={setup?.settings.username ?? null} userId={setup?.settings.userId ?? null} count={leagues.length} /> : <LeagueSelect leagues={leagues} current={leagueId} />}
           </div>
           <nav aria-label="Main" className="flex flex-col gap-0.5">
             {MAIN.map((i) => <SideNavLink key={i.href} {...i} />)}
@@ -94,7 +95,7 @@ function Frame({ children }: { children: ReactNode }) {
               <img src={`${BASE_PATH}/shs-logo.png`} alt="SHS" width={34} height={34} />
             </Link>
             <div className="min-w-0 flex-1 md:hidden">
-              {home ? <UserChip name={setup?.settings.username ?? null} count={leagues.length} /> : <LeagueSelect leagues={leagues} current={leagueId} compact />}
+              {home ? <UserChip name={setup?.settings.username ?? null} userId={setup?.settings.userId ?? null} count={leagues.length} /> : <LeagueSelect leagues={leagues} current={leagueId} compact />}
             </div>
             <div className="hidden items-center gap-2 text-xs text-muted md:flex">
               <span className={synced ? "h-2 w-2 rounded-full bg-pos" : "h-2 w-2 rounded-full bg-muted"} aria-hidden />
@@ -105,11 +106,11 @@ function Frame({ children }: { children: ReactNode }) {
               <Link href="/settings" aria-label="Settings" className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-panel md:hidden"><Settings size={18} /></Link>
             </div>
           </header>
-          <div ref={page} className="flex min-h-0 flex-1 flex-col bg-bg will-change-transform">
+          <EdgeBackStage under={<Home />}>
           <div ref={scroller} id="fhq-scroll" className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-none">
             <main className="app-bottom-pad mx-auto w-full max-w-[1320px] px-3 pt-5 sm:px-6"><Boundary>{children}</Boundary></main>
           </div>
-          </div>
+          </EdgeBackStage>
         </div>
       </div>
       <MobileTabs keeper={!!isKeeper} />
@@ -134,10 +135,20 @@ class Boundary extends Component<{ children: ReactNode }, { error: Error | null 
 }
 
 /** On the all-leagues home there's no single league to pick, so show who's signed in instead. */
-function UserChip({ name, count }: { name: string | null; count: number }) {
+function UserChip({ name, userId, count }: { name: string | null; userId: string | null; count: number }) {
+  const [avatar, setAvatar] = useState<string | null>(null);
+  useEffect(() => {
+    if (!userId) return;
+    let live = true;
+    sleeper.user(userId).then((r) => {
+      const a = r.data.avatar;
+      if (live && a) setAvatar(`https://sleepercdn.com/avatars/thumbs/${a}`);
+    }).catch(() => {});
+    return () => { live = false; };
+  }, [userId]);
   return (
     <Link href="/settings" className="flex min-w-0 items-center gap-2 rounded-full border border-line bg-panel py-1 pl-1 pr-3" aria-label="Sleeper account">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-acc text-xs font-extrabold text-on-acc">{(name ?? "?").slice(0, 2).toUpperCase()}</span>
+      <Logo src={avatar} name={name ?? "?"} size={32} />
       <span className="min-w-0 leading-tight"><span className="block truncate text-sm font-bold">@{name ?? "Sleeper"}</span><span className="block text-[10px] text-muted">{count} league{count === 1 ? "" : "s"}</span></span>
     </Link>
   );

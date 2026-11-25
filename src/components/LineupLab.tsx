@@ -64,11 +64,13 @@ function useFlip(deps: unknown[], armed: React.MutableRefObject<boolean>) {
   return box;
 }
 
-export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots, week, onTotal, opponent, opponentBest, live = false, myName = "You", sim }: {
+export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots, week, onTotal, opponent, opponentBest, header, live = false, myName = "You", sim }: {
   slots: string[]; players: LabPlayer[]; current: (string | null)[]; optimal: (string | null)[]; swaps: Swap[]; rosterSlots: string; week: number; onTotal?: (t: number) => void;
   opponent?: TeamWeek | null; live?: boolean; myName?: string;
   /** Opponent's own best lineup this week (null when it can't differ, e.g. future weeks already assume it). */
   opponentBest?: TeamWeek | null;
+  /** Score + win chance block shown at the top of the same card (head-to-head view), given the totals on screen. */
+  header?: (t: { mine: number; opp: number | null }) => React.ReactNode;
   /** Matchup simulator for the lineup on screen; `apply` puts a lineup on screen. */
   sim?: (lineup: (string | null)[], apply: (l: (string | null)[]) => void, opponent: TeamWeek | null) => React.ReactNode;
 }) {
@@ -145,7 +147,15 @@ export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-        <Card pad={false} className="min-w-0 overflow-hidden lg:flex-[3]" title={opponent ? `Lineups · Week ${week}` : `Your lineup · Week ${week}`}
+        {opponent ? (
+        <section className="min-w-0 overflow-hidden rounded-2xl border border-line bg-panel lg:flex-[3]">
+          {header?.({ mine: shownTotal, opp: oppView === "optimal" && opponentBest ? oppTotal(opponentBest) : null })}
+          <div key={`${view}:${oppView}`} className="qa-fade-in"><Versus slots={slots} lineup={lineup} bench={bench} byId={byId} opponent={oppShown ?? opponent} oppChanged={oppChanged} live={live} changed={changed} onSlot={setSlotOpen} boxRef={box}
+            left={<SideToggle name={myName} value={view} onChange={setView} gain={optTotal - curTotal} edited={edited} onReset={() => setMine(current)} />}
+            right={<SideToggle name={opponent.name} value={oppView} onChange={setOppView} gain={oppGain} disabled={!opponentBest} align="right" />} /></div>
+        </section>
+        ) : (
+        <Card pad={false} className="min-w-0 overflow-hidden lg:flex-[3]" title={`Your lineup · Week ${week}`}
           right={<Segmented label="Lineup view" value={view} onChange={(v) => setView(v)} options={[{ value: "current", label: edited ? "Yours" : "Current" }, { value: "optimal", label: "Optimal" }]} />}
           info={<>Tap a position (QB, RB…) to choose who plays there; the player you replace moves to the bench, or swaps slots if he can play the other one. <b>Proj</b> = Sleeper&apos;s projection in your scoring. <b>Range</b> = floor (1 week in 10 is worse) · projection · ceiling (1 in 10 is better), from his own week-to-week swings and, when he has them, betting-market lines. Matchup % = how many more (+) or fewer (−) points this opponent allows to the position. Slots: {rosterSlots}. Nothing here changes Sleeper.</>}>
           <div className="flex items-center justify-between gap-2 border-b border-line px-3 py-2 text-xs sm:px-5">
@@ -154,15 +164,7 @@ export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots
             {view === "optimal" && <span className="font-semibold text-acc-ink">{signed(optTotal - curTotal)} vs current</span>}
             {edited && view === "current" && <button type="button" onClick={() => setMine(current)} className="font-semibold text-muted underline">Reset</button>}
           </div>
-          {opponent && opponentBest && (
-            <div className="flex items-center justify-between gap-2 border-b border-line px-3 py-2 text-xs sm:px-5">
-              <span className="min-w-0 truncate text-muted">{opponent.name} {oppView === "optimal" ? "optimal" : "as set"}: <b className="num text-fg">{oppTotal(oppShown).toFixed(1)}</b> pts{oppView === "current" && oppGain > 0.05 && <span className="font-semibold text-acc-ink"> · optimal is {signed(oppGain)}</span>}</span>
-              <Segmented label="Opponent lineup view" value={oppView} onChange={(v) => setOppView(v)} options={[{ value: "current", label: "Set" }, { value: "optimal", label: "Optimal" }]} />
-            </div>
-          )}
-          {opponent ? (
-            <div key={`${view}:${oppView}`} className="qa-fade-in"><Versus slots={slots} lineup={lineup} bench={bench} byId={byId} opponent={oppShown ?? opponent} oppChanged={oppChanged} live={live} changed={changed} onSlot={setSlotOpen} boxRef={box} myName={myName} /></div>
-          ) : (<>
+          <>
           <div className={cx(GRID, "border-b border-line px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted sm:px-5")}>
             <span>Slot</span><span /><span>Player</span><span className="hidden sm:block">Floor · proj · ceiling</span><span className="text-right">Proj</span>
           </div>
@@ -178,8 +180,9 @@ export function LineupLab({ slots, players, current, optimal, swaps, rosterSlots
             <div className="border-b border-line bg-panel2/50 px-5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted">Bench</div>
             {bench.map((b) => row(b.id, b, <span className="rounded-md bg-panel2 py-1.5 text-center text-[11px] font-bold text-muted">{b.unavailable === "IR slot" ? "IR" : b.unavailable === "Taxi" ? "TAXI" : "BN"}</span>, null))}
           </div>
-          </>)}
+          </>
         </Card>
+        )}
 
         <div className="flex min-w-0 flex-col gap-4 lg:flex-[2]">
           {sim?.(lineup, (l) => { armed.current = true; setMine(l); setView("current"); }, oppShown)}
@@ -306,8 +309,9 @@ function SlotSheet({ slot, index, lineup, players, byId, onPick, onClose }: {
 const shortName = (n: string) => { const [f, ...r] = n.split(" "); return r.length ? `${f[0]}. ${r.join(" ")}` : n; };
 
 /** Both rosters side by side, slot by slot (like Sleeper). Your side is editable: tap the slot badge. */
-function Versus({ slots, lineup, bench, byId, opponent, oppChanged, live, changed, onSlot, boxRef, myName }: {
-  slots: string[]; lineup: (string | null)[]; bench: LabPlayer[]; byId: Map<string, LabPlayer>; opponent: TeamWeek; oppChanged: (i: number) => boolean; live: boolean; myName: string;
+function Versus({ slots, lineup, bench, byId, opponent, oppChanged, live, changed, onSlot, boxRef, left, right }: {
+  slots: string[]; lineup: (string | null)[]; bench: LabPlayer[]; byId: Map<string, LabPlayer>; opponent: TeamWeek; oppChanged: (i: number) => boolean; live: boolean;
+  left: React.ReactNode; right: React.ReactNode;
   changed: (i: number) => boolean; onSlot: (i: number) => void; boxRef: React.RefObject<HTMLDivElement | null>;
 }) {
   const [showBench, setShowBench] = useState(true);
@@ -353,8 +357,10 @@ function Versus({ slots, lineup, bench, byId, opponent, oppChanged, live, change
   const nb = Math.max(bench.length, opponent.bench.length);
   return (
     <div ref={boxRef}>
-      <div className="flex items-center justify-between border-b border-line px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted sm:px-5">
-        <span className="truncate pr-2">{myName}</span><span className="truncate pl-2">{opponent.name}</span>
+      <div className="flex items-end gap-1 border-y border-line bg-panel2/40 px-1.5 py-2 sm:gap-3 sm:px-4">
+        <div className="min-w-0 flex-1">{left}</div>
+        <span className="w-10 shrink-0 sm:w-12" aria-hidden />
+        <div className="min-w-0 flex-1">{right}</div>
       </div>
       <ul className="divide-y divide-line">
         {slots.map((slot, i) => {
@@ -382,6 +388,28 @@ function Versus({ slots, lineup, bench, byId, opponent, oppChanged, live, change
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+/** Set / Optimal switch that sits above one side's roster. Shows how much the optimal lineup adds. */
+function SideToggle({ name, value, onChange, gain, edited = false, onReset, disabled = false, align = "left" }: {
+  name: string; value: View; onChange: (v: View) => void; gain: number; edited?: boolean; onReset?: () => void; disabled?: boolean; align?: "left" | "right";
+}) {
+  const btn = (v: View, label: React.ReactNode) => (
+    <button type="button" onClick={() => onChange(v)} disabled={disabled} aria-pressed={value === v}
+      className={cx("flex-1 rounded-full px-2 py-1 text-[11px] font-bold transition-colors", value === v ? "bg-acc text-on-acc" : "text-muted", disabled && "opacity-50")}>{label}</button>
+  );
+  return (
+    <div className={cx("flex flex-col gap-1", align === "right" ? "items-end" : "items-start")}>
+      <span className={cx("flex w-full items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted", align === "right" && "flex-row-reverse")}>
+        <span className="min-w-0 truncate">{name}</span>
+        {edited && value === "current" && onReset && <button type="button" onClick={onReset} className="shrink-0 normal-case tracking-normal text-acc-ink underline">reset</button>}
+      </span>
+      <div role="group" aria-label={`${name} lineup`} className="flex w-full max-w-[170px] rounded-full border border-line bg-panel p-0.5">
+        {btn("current", edited ? "Yours" : "Set")}
+        {btn("optimal", <>Optimal{gain > 0.05 && <span className="num ml-0.5 opacity-80">+{gain.toFixed(1)}</span>}</>)}
+      </div>
     </div>
   );
 }

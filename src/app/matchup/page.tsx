@@ -2,7 +2,6 @@
 
 import { LeaguePage, useQuery, type LeagueData } from "@/components/AppData";
 import { WeekSwipe } from "@/components/WeekSwipe";
-import { useState } from "react";
 import { MyLineup } from "@/components/MyLineup";
 import { TeamLink } from "@/components/TeamPeek";
 import { PlayerImg } from "@/components/client";
@@ -13,11 +12,11 @@ import { gameView, teamWeek, weekGames, weekKind, type TeamWeek } from "@/lib/se
 import { winProbability } from "@/lib/engine/simulate";
 import { powerRankings } from "@/lib/engine/power";
 import { InjuryChip, NflLogo, Bar, Card, Logo, Notice, PageHeader, Tag, cx, Info, WinBar } from "@/components/ui";
-import { WeekNav } from "@/components/client";
 import { MatchupBoard } from "@/components/matchup";
 import { PlayerLink } from "@/components/PlayerCard";
 import { LeagueOverview } from "@/components/LeagueOverview";
-import { LeagueTabs } from "@/components/LeagueTabs";
+import { LeagueHero } from "@/components/LeagueTabs";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const groupOf = (pos: string) => (["DL", "LB", "DB"].includes(pos) ? "IDP" : pos);
 
@@ -39,7 +38,7 @@ function MatchupPageBody({ setup, league, ctx, sp }: LeagueData) {
   const games = weekGames(ctx, week);
   const me = ctx.teams.find((t) => t.rosterId === ctx.myRosterId);
   const myGame = !!me && g.a.rosterId === me.rosterId && kind !== "past";
-  const [myTotal, setMyTotal] = useState<number | null>(null);
+  const record = (rid: number) => { const t = ctx.teams.find((x) => x.rosterId === rid); return t ? `${t.wins}–${t.losses}${t.ties ? `–${t.ties}` : ""}` : ""; };
   const { set } = useQuery();
   const oppStrength = g.b ? (kind === "current" ? ctx.liveScore.get(g.b.rosterId)?.projected : ctx.weekStrength.get(g.b.rosterId)?.get(week)) ?? null : null;
   const myStrength = kind === "current" ? ctx.liveScore.get(g.a.rosterId)?.projected ?? null : ctx.weekStrength.get(g.a.rosterId)?.get(week) ?? null;
@@ -66,33 +65,26 @@ function MatchupPageBody({ setup, league, ctx, sp }: LeagueData) {
 
   return (
     <div className="flex flex-col gap-5">
-      <PageHeader eyebrow={`${league.name} · ${formatLabel(league)} · ${ctx.scoring}`} title="Matchup">
-        <WeekNav week={week} current={Math.min(ctx.currentWeek, ctx.lastWeek)} last={ctx.lastWeek} label={label} />
-      </PageHeader>
-      <LeagueTabs view="matchup" />
-
-      <div className="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Games this week">
-        {games.map(({ a, b }) => {
-          const on = a === focus || b === focus;
-          return (
-            <Link key={a} href={`/matchup/?week=${week}&team=${a}`} className={cx("shrink-0 rounded-xl border px-3 py-2 text-xs transition-colors", on ? "border-acc bg-acc-soft" : "border-line bg-panel hover:bg-panel2")}>
-              <div className={cx("flex items-center gap-1.5 font-semibold", a === ctx.myRosterId && "text-acc-ink")}><Logo src={av(a)} name={name(a)} size={18} />{name(a)}</div>
-              <div className={cx("mt-1 flex items-center gap-1.5 text-muted", b === ctx.myRosterId && "font-semibold text-acc-ink")}><Logo src={av(b)} name={name(b)} size={18} />vs {name(b)}</div>
-            </Link>
-          );
-        })}
-      </div>
+      <LeagueHero league={league} ctx={ctx} view="matchup" />
 
       <WeekSwipe week={week} min={1} max={ctx.lastWeek} onWeek={(w) => set({ week: String(w) }, true)}>
-      <p className="-mb-2 text-center text-[11px] text-muted md:hidden">Swipe left or right to change week</p>
-      <Preview g={g} kind={kind} started={started} myTotal={myGame ? myTotal : null} oppStrength={oppStrength} myStrength={myStrength} rank={rankOf} />
+      {(() => {
+        const header = (t?: { mine: number; opp: number | null }) => (
+          <Preview g={g} kind={kind} started={started} myTotal={t ? t.mine : null} oppTotal={t ? t.opp : null} oppStrength={oppStrength} myStrength={myStrength} rank={rankOf}
+            record={record} week={week} last={ctx.lastWeek} current={Math.min(ctx.currentWeek, ctx.lastWeek)} label={label} onWeek={(w) => set({ week: String(w) }, true)} />
+        );
+        if (myGame && me) return <MyLineup ctx={ctx} me={me} week={week} opponent={g.b} header={(t) => header(t)} />;
+        return (
+          <section className="overflow-hidden rounded-2xl border border-line bg-panel">
+            {header()}
+            <div className="border-t border-line"><MatchupBoard g={g} /></div>
+          </section>
+        );
+      })()}
       {!g.b && kind !== "past" && week >= ctx.playoffStart && ctx.sim.playoffOpp?.[week] && <PlayoffEstimate ctx={ctx} rid={focus} week={week} />}
 
-      {myGame && me && <MyLineup ctx={ctx} me={me} week={week} onTotal={setMyTotal} opponent={g.b} />}
-
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
-        {!myGame && <Card title="Lineups" pad={false} className="xl:flex-[3]"><MatchupBoard g={g} /></Card>}
-        <div className="flex min-w-0 flex-col gap-4 xl:flex-[2]">
+        <div className="flex min-w-0 flex-1 flex-col gap-4">
           <Card title="Head to head by position" right={<span className="text-[11px] text-muted">{kind === "past" ? "actual pts" : "projected pts"}</span>}>
             <div className="flex flex-col gap-3">
               {positions.map((pos) => {
@@ -171,33 +163,51 @@ function MatchupPageBody({ setup, league, ctx, sp }: LeagueData) {
   );
 }
 
-/** Score preview: both teams, scores and win chance. On your own game the score follows your lineup edits. */
-function Preview({ g, kind, started, myTotal, oppStrength, myStrength, rank }: {
-  g: ReturnType<typeof gameView>; kind: string; started: boolean; myTotal: number | null;
+/**
+ * Top of the matchup card: week stepper, both teams with logos and scores, and the win-chance bar. On your own
+ * game the scores follow the lineups on screen (yours as edited / optimal, theirs as set / optimal).
+ */
+function Preview({ g, kind, started, myTotal, oppTotal, oppStrength, myStrength, rank, record, week, last, current, label, onWeek }: {
+  g: ReturnType<typeof gameView>; kind: string; started: boolean; myTotal: number | null; oppTotal: number | null;
   oppStrength: { mean: number; sd: number } | null; myStrength: { mean: number; sd: number } | null; rank: (rid: number) => number | undefined;
+  record: (rid: number) => string; week: number; last: number; current: number; label: string; onWeek: (w: number) => void;
 }) {
   const live = kind === "past" || started;
   const aScore = live ? g.a.actual : myTotal ?? g.a.projected;
-  const bScore = g.b ? (live ? g.b.actual : g.b.projected) : null;
-  const wp = kind === "past" ? null : myTotal !== null && !started && myStrength && oppStrength
-    ? winProbability({ mean: myTotal, sd: myStrength.sd }, oppStrength)
+  const bScore = g.b ? (live ? g.b.actual : oppTotal ?? g.b.projected) : null;
+  const custom = !live && (myTotal !== null || oppTotal !== null) && myStrength && oppStrength;
+  const wp = kind === "past" ? null : custom
+    ? winProbability({ mean: myTotal ?? myStrength!.mean, sd: myStrength!.sd }, { mean: oppTotal ?? oppStrength!.mean, sd: oppStrength!.sd })
     : g.winProbA;
-  const head = (t: typeof g.a | null, score: number | null, right: boolean) => t ? (
-    <div data-team={t.rosterId} className={cx("flex min-w-0 flex-1 cursor-pointer flex-col gap-1", right ? "items-end text-right" : "items-start")}>
-      <TeamLink rosterId={t.rosterId} name={t.name} avatar={t.avatar} size={28} className="max-w-full text-sm font-semibold" />
-      <div className="num font-[family-name:var(--font-display)] text-4xl font-bold leading-none">{score !== null ? score.toFixed(1) : "—"}</div>
-      <div className="text-[11px] text-muted">{live ? (kind === "past" ? "Final" : "Live") : "Projected"} · power #{rank(t.rosterId)}</div>
+  const lead = aScore !== null && bScore !== null ? (aScore > bScore ? "a" : bScore > aScore ? "b" : null) : null;
+  const side = (t: typeof g.a | null, score: number | null, right: boolean, win: boolean) => t ? (
+    <div data-team={t.rosterId} className={cx("flex min-w-0 flex-1 flex-col gap-1.5", right ? "items-end text-right" : "items-start")}>
+      <TeamLink rosterId={t.rosterId} name={t.name} avatar={t.avatar} size={40} className={cx("max-w-full text-sm font-bold", right && "flex-row-reverse")} />
+      <div className={cx("num h-display text-[44px] leading-none", !win && lead && "text-muted")}>{score !== null ? score.toFixed(1) : "—"}</div>
+      <div className="text-[11px] text-muted">{record(t.rosterId)} · power #{rank(t.rosterId)}</div>
     </div>
-  ) : <div className="flex-1 text-center text-sm text-muted">No opponent</div>;
+  ) : <div className="flex flex-1 items-center justify-center text-sm text-muted">No opponent</div>;
+  const step = "flex h-8 w-8 items-center justify-center rounded-full border border-line bg-panel2 disabled:opacity-30";
   return (
-    <section className="rounded-xl border border-line bg-panel p-4">
-      <div className="flex items-start gap-3">{head(g.a, aScore, false)}<span className="pt-8 text-xs font-bold text-muted">VS</span>{head(g.b, bScore, true)}</div>
+    <div className="p-4">
+      <div className="mb-4 flex items-center justify-center gap-3" role="group" aria-label="Choose week">
+        <button type="button" className={step} onClick={() => onWeek(week - 1)} disabled={week <= 1} aria-label="Previous week"><ChevronLeft size={16} /></button>
+        <button type="button" onClick={() => week !== current && onWeek(current)} className="min-w-36 text-center" aria-label={week !== current ? "Back to this week" : `Week ${week}`}>
+          <div className="h-display text-xl leading-none">Week {week}</div>
+          <div className={cx("mt-0.5 text-[10px] font-bold uppercase tracking-wider", label === "Live" ? "text-pos" : label === "Final" ? "text-muted" : "text-acc-ink")}>{label}{week !== current ? " · tap for this week" : ""}</div>
+        </button>
+        <button type="button" className={step} onClick={() => onWeek(week + 1)} disabled={week >= last} aria-label="Next week"><ChevronRight size={16} /></button>
+      </div>
+      <div className="flex items-start gap-3">{side(g.a, aScore, false, lead === "a")}{side(g.b, bScore, true, lead === "b")}</div>
       {kind === "past" ? (
         <div className="mt-3 text-center text-sm font-semibold">{g.result === "W" ? `${g.a.name} won` : g.result === "L" ? `${g.b?.name} won` : g.result === "T" ? "Tie" : ""}{g.a.actual !== null && g.b?.actual != null ? ` by ${Math.abs(g.a.actual - g.b.actual).toFixed(1)}` : ""}</div>
       ) : wp !== null && (
-        <div className="mt-4 flex items-center gap-3"><span className="shrink-0 text-xs text-muted">Win chance</span><WinBar pct={wp} /><span className="num w-12 text-right text-xl font-bold">{wp.toFixed(0)}%</span></div>
+        <div className="mt-4">
+          <div className="mb-1 flex justify-between text-xs font-bold"><span className={wp >= 60 ? "text-pos" : wp <= 40 ? "text-neg" : "text-acc-ink"}>{wp.toFixed(0)}%</span><span className="text-[10px] font-semibold uppercase tracking-wider text-muted">Win chance</span><span className="text-muted">{(100 - wp).toFixed(0)}%</span></div>
+          <WinBar pct={wp} />
+        </div>
       )}
-    </section>
+    </div>
   );
 }
 

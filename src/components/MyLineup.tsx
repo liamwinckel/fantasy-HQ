@@ -10,7 +10,7 @@ import { LineupLab, type LabPlayer } from "./LineupLab";
 import { MatchupSim } from "./MatchupSim";
 import { playerDist } from "@/lib/engine/ranges";
 
-export function MyLineup({ ctx, me, week, onTotal, opponent }: { ctx: LeagueContext; me: TeamInfo; week: number; onTotal?: (t: number) => void; opponent?: TeamWeek | null }) {
+export function MyLineup({ ctx, me, week, onTotal, opponent, header }: { ctx: LeagueContext; me: TeamInfo; week: number; onTotal?: (t: number) => void; opponent?: TeamWeek | null; header?: (t: { mine: number; opp: number | null }) => React.ReactNode }) {
   const data = useMemo(() => {
     const kind = weekKind(ctx, week);
     const lu = ctx.lineups.get(me.rosterId)!;
@@ -53,7 +53,7 @@ export function MyLineup({ ctx, me, week, onTotal, opponent }: { ctx: LeagueCont
   }, [ctx, me, week]);
   const oppBest = useMemo(() => (opponent && weekKind(ctx, week) === "current" ? teamWeekBest(ctx, opponent.rosterId, week) : null), [ctx, opponent, week]);
   return (
-    <LineupLab key={`${week}:${me.rosterId}`} {...data} rosterSlots={ctx.league.roster_positions.filter((s) => s !== "BN").join(" · ")} week={week} onTotal={onTotal} opponent={opponent} opponentBest={oppBest} myName={me.name} live={weekKind(ctx, week) === "current"}
+    <LineupLab key={`${week}:${me.rosterId}`} {...data} rosterSlots={ctx.league.roster_positions.filter((s) => s !== "BN").join(" · ")} week={week} onTotal={onTotal} opponent={opponent} opponentBest={oppBest} header={header} myName={me.name} live={weekKind(ctx, week) === "current"}
       sim={opponent ? (l, apply, opp) => {
         const by = new Map(data.players.map((p) => [p.id, p]));
         return <MatchupSim ctx={ctx} week={week} slots={data.slots} lineup={l} opponent={opp ?? opponent} myName={me.name} onApply={apply}

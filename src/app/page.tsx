@@ -16,9 +16,8 @@ import { powerRankings } from "@/lib/engine/power";
 import { ord } from "@/lib/engine/classify";
 import { effectiveMode } from "@/lib/settings";
 import type { League } from "@/lib/sleeper/types";
+import { leagueColour as colourOf } from "@/lib/leagueColour";
 
-const PALETTE = ["#b7791f", "#2f855a", "#3557c4", "#7c3aed", "#c2410c", "#0e7490", "#be185d", "#4d7c0f"];
-const colourOf = (id: string) => PALETTE[[...id].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7) % PALETTE.length];
 
 type Slot = { ctx: LeagueContext | null; error: string | null };
 // Survives leaving and coming back to Home, so returning shows the widgets at once instead of loading skeletons.

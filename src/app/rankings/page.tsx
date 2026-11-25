@@ -10,6 +10,7 @@ import { AiChip, label, MovePill, rankMove, ShsExplainer, shsVerdict, useCollege
 import { accuracy, snapshotWeek } from "@/lib/services/accuracy";
 import { BacktestCard } from "@/components/Backtest";
 import { playerDist } from "@/lib/engine/ranges";
+import { scoringRules } from "@/lib/engine/scoring";
 import { useEffect } from "react";
 import { formatLabel } from "@/lib/services/portfolio";
 import { rankings, type RankRow, type RankScope } from "@/lib/services/rankings";
@@ -110,7 +111,12 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
   const sortBy = (k: typeof by) => { if (k === by) setDesc(!desc); else { setBy(k); setDesc(false); } };
   const [q, setQ] = useState("");
   const [limit, setLimit] = useState(75);
-  const positions = ["ALL", ...["QB", "RB", "WR", "TE", "K", "DEF", "DL", "LB", "DB"].filter((p) => all.some((r) => r.pos === p))];
+  const dynScope = scope === "dynasty";
+  const IDP = ["DL", "LB", "DB"];
+  const hasIdp = all.some((r) => IDP.includes(r.pos));
+  const positions = ["ALL", ...["QB", "RB", "WR", "TE", "K", "DEF"].filter((p) => all.some((r) => r.pos === p)), ...(hasIdp ? ["IDP", ...IDP.filter((p) => all.some((r) => r.pos === p))] : [])];
+  const posMatch = (rp: string) => pos === "ALL" || rp === pos || (pos === "IDP" && IDP.includes(rp));
+  const rules = scoringRules(ctx.league.scoring_settings as Record<string, number>);
   // Ranks come from the full list, so filters (position, owner, search) never renumber players.
   const ranked = useMemo(() => {
     const ecr = [...all].sort((a, b) => a.rank - b.rank);
@@ -119,8 +125,9 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
   }, [all, ai]);
   const base = by === "ai" ? ranked.ai : by === "name" ? [...all].sort((a, b) => a.name.localeCompare(b.name))
     : by === "pts" ? [...all].sort((a, b) => (scope === "dynasty" ? b.value - a.value : b.pts - a.pts)) : ranked.ecr;
+  const ptsN = useMemo(() => new Map([...all].sort((a, b) => (dynScope ? b.value - a.value : b.pts - a.pts)).map((r, i) => [r.id, i + 1])), [all, dynScope]);
   const rows = (desc ? [...base].reverse() : base)
-    .filter((r) => (pos === "ALL" || r.pos === pos) && (own === "all" || (own === "fa" ? r.owner === "Free agent" : r.mine)) && (!q || r.name.toLowerCase().includes(q.toLowerCase())));
+    .filter((r) => posMatch(r.pos) && (own === "all" || (own === "fa" ? r.owner === "Free agent" : r.mine)) && (!q || r.name.toLowerCase().includes(q.toLowerCase())));
   const dates = ctx.consensusDates;
   const dyn = scope === "dynasty";
   const numLabel = dyn ? "Value" : "Pts";
@@ -142,11 +149,21 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search players" className="w-full rounded-lg border border-line bg-panel2 py-2 pl-8 pr-2 text-sm" />
         </label>
         <div className="flex flex-wrap items-center gap-1">
-          {positions.map((p) => <button key={p} type="button" onClick={() => setPos(p)} className={cx("rounded-full px-3 py-1 text-xs font-semibold", pos === p ? "bg-acc text-on-acc" : "bg-panel2 text-muted")}>{p === "ALL" ? "All" : p}</button>)}
+          {positions.map((p) => <button key={p} type="button" onClick={() => setPos(p)} className={cx("rounded-full px-3 py-1 text-xs font-semibold", pos === p ? "bg-acc text-on-acc" : "bg-panel2 text-muted")}>{p === "ALL" ? "All" : p === "DEF" ? "DST" : p}</button>)}
         </div>
         <div className="flex flex-wrap items-center gap-1">
+          {!dyn && <>
+            {([["experts", "Expert order"], ["pts", "Your scoring"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => { setBy(k); setDesc(false); }} className={cx("rounded-full px-3 py-1 text-xs font-semibold", by === k ? "bg-fg text-bg" : "bg-panel2 text-muted")}>{l}</button>)}
+            <span className="mx-1 h-4 w-px bg-line" aria-hidden />
+          </>}
           {([["all", "Everyone"], ["fa", "Free agents"], ["mine", "My team"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => setOwn(k)} className={cx("rounded-full px-3 py-1 text-xs font-semibold", own === k ? "bg-fg text-bg" : "bg-panel2 text-muted")}>{l}</button>)}
         </div>
+        {!dyn && (
+          <p className="text-[11px] leading-relaxed text-muted">
+            Points use this league&apos;s scoring: <span className="font-semibold text-fg">{rules.join(" · ")}</span>.
+            {by === "pts" ? " Ordered by projected points in that scoring." : " Expert order is converted to your scoring across positions; tap “Your scoring” to rank purely by it."}
+          </p>
+        )}
       </div>
 
       {scope === "week" && <BacktestCard ctx={ctx} />}
@@ -166,8 +183,8 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
             <Fragment key={r.id}>
             <li onClick={() => setOpen(open === r.id ? null : r.id)} className={cx("cursor-pointer", "grid grid-cols-[2.5rem_minmax(0,1fr)_3.75rem_3.5rem] items-center gap-2 px-3 py-2 sm:grid-cols-[2.5rem_minmax(0,1fr)_minmax(0,14rem)_4.5rem_4.5rem] sm:px-4", r.mine && "bg-acc-soft")}>
               <div className="text-center">
-                <div className="num text-sm font-bold">{by === "ai" ? ranked.aiN.get(r.id) : r.ecrPos !== null ? ranked.ecrN.get(r.id) : "–"}</div>
-                <div className="text-[9px] font-semibold text-muted">{r.pos}{by === "ai" ? ai.get(r.id)!.rank : r.ecrPos ?? "–"}</div>
+                <div className="num text-sm font-bold">{by === "ai" ? ranked.aiN.get(r.id) : by === "pts" ? ptsN.get(r.id) : r.ecrPos !== null ? ranked.ecrN.get(r.id) : "–"}</div>
+                <div className="text-[9px] font-semibold text-muted">{r.pos}{by === "ai" ? ai.get(r.id)!.rank : by === "pts" ? r.shsPos : r.ecrPos ?? "–"}</div>
               </div>
               <div className="flex min-w-0 items-center gap-2.5">
                 <PlayerImg id={r.id} name={r.name} pos={r.pos} size={34} />

@@ -6,7 +6,8 @@ import { TeamLink } from "@/components/TeamPeek";
 import { formatLabel } from "@/lib/services/portfolio";
 import { powerRankings, POS_ORDER } from "@/lib/engine/power";
 import { ord } from "@/lib/engine/classify";
-import { Bar, Card, ClassBadge, PageHeader, Stat, cx } from "@/components/ui";
+import { Bar, Card, ClassBadge, Logo, PageHeader, Stat, cx } from "@/components/ui";
+import { Segmented } from "@/components/client";
 import { useState, type ReactNode } from "react";
 import { Sheet } from "@/components/Sheet";
 import { DashDetail, type DashKey } from "../DashDetails";
@@ -28,6 +29,7 @@ function LeagueBody({ league, ctx }: LeagueData) {
   const n = ctx.teamsCount;
   const fmt = ctx.format;
   const mine = power.find((p) => p.rosterId === ctx.myRosterId);
+  const [posView, setPosView] = useState<"table" | "chart">("table");
   const team = (rid: number) => ctx.teams.find((t) => t.rosterId === rid)!;
   const mainPos = POS_ORDER.filter((p) => ["QB", "RB", "WR", "TE"].includes(p) && power.some((t) => t.positions[p]));
   const extraPos = POS_ORDER.filter((p) => !["QB", "RB", "WR", "TE"].includes(p) && power.some((t) => t.positions[p]));
@@ -80,7 +82,8 @@ function LeagueBody({ league, ctx }: LeagueData) {
         </ul>
       </Card>
 
-      <Card title="Positional ranks" pad={false} info={<>Each number is that team&apos;s league rank at the position (1 = strongest), based on the projected points its starters there score in the best lineup. <span className="text-pos">Green</span> = top third, <span className="text-neg">red</span> = bottom half. <b>Depth</b> = quality of the best bench players. Tap any number for the players behind it.</>}>
+      <Card title="Positional ranks" pad={false} right={<Segmented label="Positional view" value={posView} onChange={(v) => setPosView(v)} options={[{ value: "table", label: "Table" }, { value: "chart", label: "Chart" }]} />} info={<>Each number is that team&apos;s league rank at the position (1 = strongest), based on the projected points its starters there score in the best lineup. <span className="text-pos">Green</span> = top third, <span className="text-neg">red</span> = bottom half. <b>Depth</b> = quality of the best bench players. Tap any number for the players behind it.</>}>
+        {posView === "chart" ? <PosPlot ctx={ctx} power={power} positions={[...mainPos, ...extraPos]} onOpen={(rid, pos) => open({ k: "pos", rid, pos })} /> : <>
         {/* Team names stay put; the coloured blocks scroll sideways when there are more positions than fit. */}
         <div className="flex">
           <div className="w-[42%] shrink-0 border-r border-line sm:w-56">
@@ -109,6 +112,7 @@ function LeagueBody({ league, ctx }: LeagueData) {
             </div>
           </div>
         </div>
+        </>}
       </Card>
 
       {fmt === "redraft" && <PlayoffPicture ctx={ctx} power={power} onOpen={open} />}
@@ -256,6 +260,78 @@ function GroupDetail({ ctx, power, rid, pos }: { ctx: Ctx; power: Power; rid: nu
         <h3 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-muted">{pos ? `${pos} strength, every team` : "Bench depth, every team"}</h3>
         <HBars highlight={rid} fmt={(v) => v.toFixed(pos ? 1 : 0)} rows={[...power].map((p) => ({ key: p.rosterId, label: name(p.rosterId), value: pos ? p.positions[pos]?.pts ?? 0 : p.depth })).sort((a, b) => b.value - a.value)} />
       </section>
+    </div>
+  );
+}
+
+/**
+ * Positional landscape: one row per position, every team plotted by how its starters there project against the
+ * league average (centre line). Shows not just the rank but the size of the gap. Tap a dot to follow that team
+ * across every row; tap the highlighted dot again for the players behind it.
+ */
+function PosPlot({ ctx, power, positions, onOpen }: { ctx: Ctx; power: Power; positions: string[]; onOpen: (rid: number, pos: string) => void }) {
+  const [focus, setFocus] = useState<number>(ctx.myRosterId ?? power[0]?.rosterId ?? 0);
+  const team = (rid: number) => ctx.teams.find((t) => t.rosterId === rid)!;
+  const rows = positions.map((pos) => {
+    const pts = power.map((p) => ({ rid: p.rosterId, pts: p.positions[pos]?.pts ?? 0, rank: p.positions[pos]?.rank ?? 0 }));
+    const avg = pts.reduce((a, x) => a + x.pts, 0) / Math.max(1, pts.length);
+    const lo = Math.min(...pts.map((x) => x.pts)), hi = Math.max(...pts.map((x) => x.pts));
+    // Each row runs from the league's weakest group at that position to its strongest.
+    const at = (v: number) => (hi - lo > 0.01 ? (v - lo) / (hi - lo) : 0.5);
+    return { pos, avg, avgAt: at(avg), pts: pts.map((x) => ({ ...x, rel: avg > 0 ? (x.pts - avg) / avg : 0, at: at(x.pts) })) };
+  });
+  const W = 320, L = 44, R = 14, rowH = 40, top = 22;
+  const x = (t: number) => L + t * (W - L - R);
+  const H = top + rows.length * rowH + 8;
+  const f = power.find((p) => p.rosterId === focus);
+  const n = power.length;
+  const toneOf = (rank: number) => (rank <= Math.ceil(n / 3) ? "var(--pos)" : rank > n / 2 ? "var(--neg)" : "var(--acc)");
+  return (
+    <div className="px-3 pb-3 pt-2 sm:px-5">
+      <div className="mb-2 flex items-center gap-2 text-sm">
+        <Logo src={team(focus).avatar} name={team(focus).name} size={24} />
+        <span className="min-w-0 flex-1 truncate font-semibold">{team(focus).name}</span>
+        {f && <span className="shrink-0 text-xs text-muted">Power #{f.rank}</span>}
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label={`Positional strength vs league average, ${team(focus).name} highlighted`}>
+        <text x={x(0)} y={12} textAnchor="start" fontSize={9} fill="var(--neg)">weakest</text>
+        <text x={x(0.5)} y={12} textAnchor="middle" fontSize={9} fill="currentColor" opacity={0.6}>| = league avg</text>
+        <text x={x(1)} y={12} textAnchor="end" fontSize={9} fill="var(--pos)">strongest</text>
+        {rows.map((r, i) => {
+          const y = top + i * rowH + rowH / 2;
+          const me = r.pts.find((p) => p.rid === focus);
+          return (
+            <g key={r.pos}>
+              <text x={0} y={y + 4} fontSize={11} fontWeight={800} fill="currentColor">{r.pos}</text>
+              <line x1={L} x2={W - R} y1={y} y2={y} stroke="currentColor" strokeOpacity={0.12} strokeWidth={6} strokeLinecap="round" />
+              <line x1={x(r.avgAt)} x2={x(r.avgAt)} y1={y - 8} y2={y + 8} stroke="currentColor" strokeOpacity={0.45} strokeWidth={1.5} />
+              {r.pts.filter((p) => p.rid !== focus).map((p) => (
+                <circle key={p.rid} cx={x(p.at)} cy={y} r={5} fill="currentColor" fillOpacity={0.3} className="cursor-pointer" onClick={() => setFocus(p.rid)}>
+                  <title>{`${team(p.rid).name}: ${p.pts.toFixed(1)} pts (${ord(p.rank)})`}</title>
+                </circle>
+              ))}
+              {me && (
+                <g className="cursor-pointer" onClick={() => onOpen(focus, r.pos)}>
+                  <circle cx={x(me.at)} cy={y} r={9} fill={toneOf(me.rank)} stroke="var(--bg)" strokeWidth={2} />
+                  <text x={x(me.at)} y={y + 3.5} textAnchor="middle" fontSize={9} fontWeight={800} fill="#0a0a0a">{me.rank}</text>
+                  <text x={Math.min(W - R + 4, Math.max(L - 4, x(me.at)))} y={y - 12} textAnchor={me.at > 0.8 ? "end" : me.at < 0.2 ? "start" : "middle"} fontSize={9} fill="currentColor" opacity={0.8}>
+                    {`${me.rel >= 0 ? "+" : ""}${Math.round(me.rel * 100)}% · ${me.pts.toFixed(1)}`}
+                  </text>
+                </g>
+              )}
+            </g>
+          );
+        })}
+      </svg>
+      <p className="mt-1 text-[11px] text-muted">Each dot is a team, placed between the league&apos;s weakest and strongest group at that position by its starters&apos; projected points; the label is points and % vs the league average. The big dot shows its rank (green top third, red bottom half). Tap another dot to follow that team; tap the big dot for the players.</p>
+      <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1" data-no-swipe>
+        {power.map((p) => (
+          <button key={p.rosterId} type="button" onClick={() => setFocus(p.rosterId)} aria-pressed={p.rosterId === focus}
+            className={cx("flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold", p.rosterId === focus ? "border-acc bg-acc-soft" : "border-line bg-panel2")}>
+            <Logo src={team(p.rosterId).avatar} name={team(p.rosterId).name} size={18} />{team(p.rosterId).name}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

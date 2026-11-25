@@ -162,11 +162,6 @@ export function MobileTabs({ keeper }: { keeper: boolean }) {
       {open && <div className={cx("qa-scrim fixed inset-0 z-40 bg-black/55 backdrop-blur-[2px] md:hidden", closing && "qa-closing")} onClick={close} />}
       {open && (
         <div ref={card} role="dialog" aria-label="Quick actions" className={cx("qa-card fixed inset-x-3 bottom-[calc(max(env(safe-area-inset-bottom),8px)+74px)] z-50 rounded-3xl border border-line bg-panel p-3 shadow-2xl md:hidden", closing && "qa-closing")}>
-          <Link href={ASK.href} style={{ animationDelay: "60ms" }} className="qa-tile mb-2 flex items-center gap-3 rounded-2xl border border-acc/60 bg-acc-soft px-4 py-3 active:scale-[0.98]">
-            <MessageCircle size={22} className="shrink-0 text-acc-ink" aria-hidden />
-            <span className="min-w-0 flex-1"><span className="block text-sm font-bold">{ASK.label}</span><span className="block truncate text-[11px] text-muted">&ldquo;Should I start Nacua or Wilson?&rdquo;</span></span>
-            <ChevronRight size={18} className="text-muted" aria-hidden />
-          </Link>
           <div className="grid grid-cols-3 gap-2">
             {QUICK_ACTIONS.map((a, i) => (
               <Link key={a.href} href={a.href} style={{ animationDelay: `${90 + i * 30}ms` }}
