@@ -4,6 +4,7 @@
  * for dynasty, the SHS model's dynasty value vs the model value at his expert rank. +20% = we like him more.
  */
 import type { LeagueContext } from "./league";
+import { isSuperflex } from "../engine/positions";
 
 export type RankScope = "week" | "ros" | "dynasty";
 
@@ -18,6 +19,8 @@ export interface RankRow {
   value: number; // trade value (dynasty scope)
   ecr: number | null; // raw expert consensus rank at position
   ecrPos: number | null; // ordinal among players here with an ECR at that position
+  /** Dynasty only: FantasyPros dynasty overall rank (superflex list in superflex leagues). */
+  ecrAll?: number | null;
   shsPos: number; // SHS rank at position (projection, or model dynasty value)
   shsScore: number | null; // +/- % SHS vs the experts
   rank: number; // overall order shown
@@ -29,6 +32,7 @@ export function rankings(ctx: LeagueContext, scope: RankScope): RankRow[] {
   const owner = new Map<string, { name: string; mine: boolean }>();
   for (const t of ctx.teams) for (const id of t.players) owner.set(id, { name: t.rosterId === ctx.myRosterId ? "You" : t.name, mine: t.rosterId === ctx.myRosterId });
   const rows: RankRow[] = [];
+  const sf = isSuperflex(ctx.league.roster_positions);
   for (const p of ctx.players.values()) {
     const pr = ctx.projections.get(p.id);
     const v = ctx.values.get(p.id);
@@ -58,6 +62,7 @@ export function rankings(ctx: LeagueContext, scope: RankScope): RankRow[] {
       fg: r1(g("fgm")), sacks: r1(g("sack") + g("idp_sack")), tackles: r1(g("idp_tkl_solo") + g("idp_tkl_ast")),
       value: scope === "dynasty" ? v?.dynasty ?? 0 : v?.redraft ?? 0,
       ecr, ecrPos: null, shsPos: 0, shsScore: null, rank: 0,
+      ecrAll: scope === "dynasty" ? (sf ? c?.dsf ?? c?.do : c?.do) ?? null : null,
     });
   }
   // Ranks within each position: SHS (by pts / model value) and experts.
@@ -77,9 +82,14 @@ export function rankings(ctx: LeagueContext, scope: RankScope): RankRow[] {
     const ref = atRank(r.pos, r.ecrPos);
     if (ref > 0.5) r.shsScore = Math.round(Math.max(-99, Math.min(99, (r.pts / ref - 1) * 100)));
   }
-  // Overall order: experts first (converted to the common scale), then anyone the experts don't rank.
-  const key = (r: RankRow) => (r.ecrPos !== null ? atRank(r.pos, r.ecrPos) + 1e6 : r.pts);
-  rows.sort((a, b) => key(b) - key(a) || b.pts - a.pts);
+  // Overall order. Dynasty: FantasyPros' own dynasty overall list (superflex list in superflex leagues), as on their
+  // site. Week / rest of season: experts' positional ranks converted to this league's scoring. Then anyone unranked.
+  if (scope === "dynasty") {
+    rows.sort((a, b) => (a.ecrAll ?? 1e9) - (b.ecrAll ?? 1e9) || (a.ecr ?? 1e9) - (b.ecr ?? 1e9) || b.value - a.value);
+  } else {
+    const key = (r: RankRow) => (r.ecrPos !== null ? atRank(r.pos, r.ecrPos) + 1e6 : r.pts);
+    rows.sort((a, b) => key(b) - key(a) || b.pts - a.pts);
+  }
   rows.forEach((r, i) => (r.rank = i + 1));
   return rows;
 }

@@ -228,10 +228,16 @@ async function buildLeagueContext(
   const rostered = new Set(rosters.flatMap((r) => r.players));
   const players = new Map<string, PlayerLite>();
   const nowYear = new Date().getFullYear();
+  // Everyone rostered, every active player on an NFL team, and anyone the expert rankings cover, including
+  // players on injured reserve / PUP / suspended lists (they still have dynasty and rest-of-season value).
+  const ranked = consR?.data.players ?? {};
+  const HURT = new Set(["Injured Reserve", "Physically Unable to Perform", "Non Football Injury", "Suspended", "Inactive"]);
   for (const p of Object.values(allPlayers)) {
     const pos = primaryPosition(p);
     if (!leaguePositions.has(pos)) continue;
-    if (!rostered.has(p.player_id) && (!p.team || (p.status && p.status !== "Active" && pos !== "DEF"))) continue;
+    const inRankings = !!ranked[p.player_id];
+    const onTeam = !!p.team && (!p.status || p.status === "Active" || pos === "DEF" || HURT.has(p.status) && inRankings);
+    if (!rostered.has(p.player_id) && !onTeam && !inRankings) continue;
     players.set(p.player_id, toLite(p, pos, info, nowYear));
   }
 

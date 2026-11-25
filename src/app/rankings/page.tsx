@@ -11,6 +11,7 @@ import { accuracy, snapshotWeek } from "@/lib/services/accuracy";
 import { BacktestCard } from "@/components/Backtest";
 import { playerDist } from "@/lib/engine/ranges";
 import { scoringRules } from "@/lib/engine/scoring";
+import { isSuperflex } from "@/lib/engine/positions";
 import { Sparkline, TREND_MAX } from "@/components/charts";
 import { useEffect } from "react";
 import { formatLabel } from "@/lib/services/portfolio";
@@ -166,6 +167,9 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
           </>}
           {([["all", "Everyone"], ["fa", "Free agents"], ["mine", "My team"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => setOwn(k)} className={cx("rounded-full px-3 py-1 text-xs font-semibold", own === k ? "bg-fg text-bg" : "bg-panel2 text-muted")}>{l}</button>)}
         </div>
+        {dates && (
+          <p className="text-[11px] text-muted">Expert ranks as of <b className="text-fg">{scope === "week" ? dates.weekly : dates.ecr}</b> (FantasyPros via DynastyProcess, refreshed weekly{dyn ? "; dynasty order = FantasyPros dynasty " + (isSuperflex(ctx.league.roster_positions) ? "superflex" : "overall") + " list" : ""}). FantasyPros&apos; own site updates daily, so recent moves can lag a few days.</p>
+        )}
         {!dyn && (
           <p className="text-[11px] leading-relaxed text-muted">
             Points use this league&apos;s scoring: <span className="font-semibold text-fg">{rules.join(" · ")}</span>.
