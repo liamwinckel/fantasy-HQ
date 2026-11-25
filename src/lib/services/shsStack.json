@@ -1,233 +1,233 @@
 {
  "version": 2,
  "trainedOn": "2021–2026 (17,959 player-weeks)",
- "projSource": "fantasypros",
+ "projSource": "sleeper",
  "model": {
   "QB": {
    "base": {
     "experts": {
      "w": [
-      6.3068,
-      0.6164
+      7.2881,
+      0.5477
      ]
     },
     "projection": {
      "w": [
-      5.9349,
-      0.6371,
-      0.496
+      6.0027,
+      0.6124,
+      -0.1043
      ]
     },
     "opportunity": {
      "w": [
-      4.6596,
-      0.0437,
-      0.1204,
-      0.1054,
-      0.0898,
-      0.3604
+      5.6429,
+      0.0422,
+      0.1089,
+      0.1008,
+      0.1023,
+      0.301
      ]
     },
     "context": {
      "w": [
-      8.4167,
-      0.4696,
-      0.5456,
-      0.0328,
-      -0.036
+      9.0679,
+      0.4208,
+      0.5529,
+      0.051,
+      -0.0407
      ]
     }
    },
    "meta": {
     "w": [
-     -0.4616,
-     0.2111,
-     0.2409,
-     0.2454,
-     0.3336,
-     0.9514,
-     0.6162
+     -0.095,
+     0.1931,
+     0.2181,
+     0.2407,
+     0.3577,
+     -0.0597,
+     0.7057
     ]
    },
-   "range": 0.05,
+   "range": 0,
    "head": [
-    0.4331,
-    0.162,
-    0.3573,
-    0.0875,
-    0.0366,
-    0.0307
+    0.1885,
+    0.2169,
+    0.3338,
+    0.0228,
+    0.0484,
+    0.0019
    ],
-   "use": true
+   "use": false
   },
   "RB": {
    "base": {
     "experts": {
      "w": [
-      1.5518,
-      0.8473
+      1.7853,
+      0.8408
      ]
     },
     "projection": {
      "w": [
-      1.5435,
-      0.8468,
-      0
+      1.8601,
+      0.8344,
+      -0.4008
      ]
     },
     "opportunity": {
      "w": [
-      1.1382,
-      0.0693,
-      0.0952,
-      0.0745,
-      0.0517,
-      0.6001
+      1.2895,
+      0.0768,
+      0.0984,
+      0.0742,
+      0.0578,
+      0.5814
      ]
     },
     "context": {
      "w": [
-      1.7452,
-      0.8241,
-      0.279,
-      0.0088,
-      0.0067
+      1.9741,
+      0.8172,
+      0.2828,
+      0.0098,
+      0.0124
      ]
     }
    },
    "meta": {
     "w": [
-     -0.7933,
-     0.2704,
-     0.2664,
-     0.2238,
-     0.3155,
-     -2.0679,
-     -1.4866
+     -0.8785,
+     0.2391,
+     0.349,
+     0.203,
+     0.2921,
+     0.231,
+     -0.8366
     ]
    },
    "range": 0,
    "head": [
-    0.0417,
-    -0.0154,
-    0.0869,
-    0.008,
-    -0.0024,
-    -0.0156
+    0.338,
+    -0.0568,
+    0.1949,
+    0.0652,
+    -0.0136,
+    -0.0214
    ],
-   "use": false
+   "use": true
   },
   "WR": {
    "base": {
     "experts": {
      "w": [
-      1.8556,
-      0.8017
+      1.9561,
+      0.806
      ]
     },
     "projection": {
      "w": [
-      1.9063,
-      0.7969,
-      0
+      2.3668,
+      0.7724,
+      -0.1316
      ]
     },
     "opportunity": {
      "w": [
-      1.2005,
-      0.0801,
-      0.1332,
-      0.1177,
-      0.021,
-      0.5149
+      1.2791,
+      0.0839,
+      0.137,
+      0.1229,
+      0.0292,
+      0.4967
      ]
     },
     "context": {
      "w": [
-      2.1024,
-      0.7798,
-      0.1583,
-      0.0614,
-      -0.064
+      2.2163,
+      0.7824,
+      0.1715,
+      0.0657,
+      -0.0681
      ]
     }
    },
    "meta": {
     "w": [
-     -1.0222,
-     0.2868,
-     0.27,
-     0.2436,
-     0.2926,
-     -2.0506,
-     -0.7579
+     -1.1102,
+     0.283,
+     0.2716,
+     0.2514,
+     0.2947,
+     -0.07,
+     -0.6872
     ]
    },
-   "range": 0.1,
+   "range": 0,
    "head": [
-    0.0203,
-    -0.1315,
-    0.121,
-    0.0012,
-    -0.0752,
-    -0.0184
+    0.2141,
+    -0.1791,
+    0.11,
+    0.0183,
+    -0.0695,
+    -0.0066
    ],
-   "use": false
+   "use": true
   },
   "TE": {
    "base": {
     "experts": {
      "w": [
-      2.8703,
-      0.691
+      2.9265,
+      0.6891
      ]
     },
     "projection": {
      "w": [
-      2.8877,
-      0.6893,
-      0
+      3.3301,
+      0.6502,
+      -0.2492
      ]
     },
     "opportunity": {
      "w": [
-      2.3893,
-      0.1085,
-      0.1148,
-      0.0555,
-      -0.0332,
-      0.506
+      2.377,
+      0.1257,
+      0.1209,
+      0.0639,
+      -0.0181,
+      0.4639
      ]
     },
     "context": {
      "w": [
-      3.115,
-      0.6597,
-      0.2129,
-      0.1652,
-      -0.0517
+      3.1819,
+      0.6569,
+      0.2103,
+      0.1558,
+      -0.0596
      ]
     }
    },
    "meta": {
     "w": [
-     -0.5232,
-     0.2647,
-     0.2686,
-     0.2346,
-     0.2901,
-     0.1141,
-     0.2762
+     -0.3961,
+     0.2685,
+     0.2307,
+     0.2516,
+     0.2932,
+     0.2548,
+     0.6539
     ]
    },
-   "range": 0,
+   "range": 0.1,
    "head": [
-    0.3233,
-    0.1888,
-    0.5438,
-    0.0522,
-    -0.1715,
-    -0.0184
+    0.1018,
+    0.0289,
+    0.0886,
+    0.0142,
+    -0.0026,
+    -0.0216
    ],
    "use": false
   }
@@ -244,80 +244,80 @@
    "Experts": {
     "all": 67.4,
     "near": 52.6,
-    "mae": 5.42,
+    "mae": 5.41,
     "rho": 0.452,
     "n": 14768,
     "nearPairs": 40623
    },
    "Projection": {
-    "all": 67.3,
-    "near": 52.1,
-    "mae": 5.42,
-    "rho": 0.451,
+    "all": 67.2,
+    "near": 52.7,
+    "mae": 5.39,
+    "rho": 0.445,
     "n": 14768,
     "nearPairs": 40623
    },
    "SHS (current)": {
-    "all": 67.4,
-    "near": 52.6,
-    "mae": 5.42,
+    "all": 67.5,
+    "near": 52.7,
+    "mae": 5.41,
     "rho": 0.455,
     "n": 14768,
     "nearPairs": 40623
    },
    "Opportunity only": {
-    "all": 67,
-    "near": 50.7,
+    "all": 66.9,
+    "near": 50.5,
     "mae": 5.45,
-    "rho": 0.439,
+    "rho": 0.435,
     "n": 14768,
     "nearPairs": 40623
    },
    "Context only": {
     "all": 67.2,
-    "near": 51.8,
+    "near": 51.9,
     "mae": 5.45,
     "rho": 0.447,
     "n": 14768,
     "nearPairs": 40623
    },
    "One ridge (no stack)": {
-    "all": 67.2,
-    "near": 51.7,
-    "mae": 5.41,
-    "rho": 0.447,
+    "all": 67.3,
+    "near": 52.3,
+    "mae": 5.4,
+    "rho": 0.449,
     "n": 14768,
     "nearPairs": 40623
    },
    "Stack": {
-    "all": 67.3,
-    "near": 52,
-    "mae": 5.43,
-    "rho": 0.448,
+    "all": 67.4,
+    "near": 52.8,
+    "mae": 5.41,
+    "rho": 0.452,
     "n": 14768,
     "nearPairs": 40623
    },
    "Stack + range": {
-    "all": 67.2,
-    "near": 51.9,
-    "mae": 5.43,
-    "rho": 0.447,
-    "n": 14768,
-    "nearPairs": 40623
-   },
-   "Stack, ranking head": {
     "all": 67.4,
-    "near": 52.3,
-    "mae": 5.43,
+    "near": 52.6,
+    "mae": 5.41,
     "rho": 0.45,
     "n": 14768,
     "nearPairs": 40623
    },
+   "Stack, ranking head": {
+    "all": 67.5,
+    "near": 53.1,
+    "mae": 5.41,
+    "rho": 0.453,
+    "n": 14768,
+    "nearPairs": 40623
+   },
    "Stack, ranking head, capped": {
-    "all": 67.4,
-    "near": 52.3,
-    "mae": 5.43,
-    "rho": 0.452,
+    "all": 67.5,
+    "near": 53,
+    "mae": 5.41,
+    "rho": 0.453,
     "n": 14768,
     "nearPairs": 40623
    }
@@ -334,73 +334,73 @@
     },
     "Projection": {
      "all": 66.7,
-     "near": 52.1,
-     "mae": 5.45,
-     "rho": 0.448,
+     "near": 53.5,
+     "mae": 5.42,
+     "rho": 0.446,
      "n": 3230,
      "nearPairs": 8881
     },
     "SHS (current)": {
      "all": 66.8,
-     "near": 52.5,
-     "mae": 5.44,
+     "near": 52.7,
+     "mae": 5.45,
      "rho": 0.452,
      "n": 3230,
      "nearPairs": 8881
     },
     "Opportunity only": {
-     "all": 66.2,
-     "near": 49.5,
-     "mae": 5.45,
-     "rho": 0.427,
+     "all": 66.1,
+     "near": 49.2,
+     "mae": 5.44,
+     "rho": 0.423,
      "n": 3230,
      "nearPairs": 8881
     },
     "Context only": {
-     "all": 66.4,
-     "near": 50.4,
-     "mae": 5.44,
-     "rho": 0.442,
+     "all": 66.5,
+     "near": 50.9,
+     "mae": 5.42,
+     "rho": 0.444,
      "n": 3230,
      "nearPairs": 8881
     },
     "One ridge (no stack)": {
-     "all": 66.4,
-     "near": 50.6,
-     "mae": 5.42,
+     "all": 66.5,
+     "near": 51,
+     "mae": 5.37,
      "rho": 0.443,
      "n": 3230,
      "nearPairs": 8881
     },
     "Stack": {
-     "all": 66.5,
-     "near": 51.4,
-     "mae": 5.43,
-     "rho": 0.442,
+     "all": 66.8,
+     "near": 52.2,
+     "mae": 5.38,
+     "rho": 0.449,
      "n": 3230,
      "nearPairs": 8881
     },
     "Stack + range": {
-     "all": 66.5,
-     "near": 51.5,
-     "mae": 5.43,
-     "rho": 0.443,
+     "all": 66.7,
+     "near": 52.2,
+     "mae": 5.38,
+     "rho": 0.447,
      "n": 3230,
      "nearPairs": 8881
     },
     "Stack, ranking head": {
      "all": 66.8,
-     "near": 52.3,
-     "mae": 5.43,
-     "rho": 0.449,
+     "near": 52.2,
+     "mae": 5.38,
+     "rho": 0.448,
      "n": 3230,
      "nearPairs": 8881
     },
     "Stack, ranking head, capped": {
      "all": 66.8,
-     "near": 52.3,
-     "mae": 5.43,
-     "rho": 0.449,
+     "near": 52.2,
+     "mae": 5.38,
+     "rho": 0.448,
      "n": 3230,
      "nearPairs": 8881
     }
@@ -409,80 +409,80 @@
     "Experts": {
      "all": 68.1,
      "near": 52.7,
-     "mae": 5.31,
+     "mae": 5.29,
      "rho": 0.477,
      "n": 3232,
      "nearPairs": 8936
     },
     "Projection": {
-     "all": 67.9,
-     "near": 51.9,
+     "all": 67.5,
+     "near": 52.5,
      "mae": 5.31,
-     "rho": 0.476,
+     "rho": 0.46,
      "n": 3232,
      "nearPairs": 8936
     },
     "SHS (current)": {
      "all": 68,
-     "near": 52.5,
-     "mae": 5.3,
-     "rho": 0.478,
+     "near": 52.4,
+     "mae": 5.29,
+     "rho": 0.476,
      "n": 3232,
      "nearPairs": 8936
     },
     "Opportunity only": {
-     "all": 67.7,
-     "near": 51,
+     "all": 67.6,
+     "near": 50.8,
      "mae": 5.36,
-     "rho": 0.463,
+     "rho": 0.459,
      "n": 3232,
      "nearPairs": 8936
     },
     "Context only": {
-     "all": 67.8,
-     "near": 52.2,
-     "mae": 5.37,
-     "rho": 0.457,
+     "all": 67.7,
+     "near": 51.9,
+     "mae": 5.36,
+     "rho": 0.458,
      "n": 3232,
      "nearPairs": 8936
     },
     "One ridge (no stack)": {
      "all": 67.8,
-     "near": 52.1,
-     "mae": 5.32,
-     "rho": 0.461,
+     "near": 52.4,
+     "mae": 5.31,
+     "rho": 0.46,
      "n": 3232,
      "nearPairs": 8936
     },
     "Stack": {
-     "all": 68,
-     "near": 52.6,
-     "mae": 5.34,
-     "rho": 0.47,
+     "all": 67.9,
+     "near": 52.5,
+     "mae": 5.31,
+     "rho": 0.471,
      "n": 3232,
      "nearPairs": 8936
     },
     "Stack + range": {
-     "all": 68,
-     "near": 52.8,
-     "mae": 5.34,
+     "all": 67.8,
+     "near": 52.1,
+     "mae": 5.31,
      "rho": 0.465,
      "n": 3232,
      "nearPairs": 8936
     },
     "Stack, ranking head": {
      "all": 68,
-     "near": 52.4,
-     "mae": 5.34,
-     "rho": 0.468,
+     "near": 52.7,
+     "mae": 5.31,
+     "rho": 0.469,
      "n": 3232,
      "nearPairs": 8936
     },
     "Stack, ranking head, capped": {
      "all": 68,
      "near": 52.5,
-     "mae": 5.34,
-     "rho": 0.473,
+     "mae": 5.31,
+     "rho": 0.472,
      "n": 3232,
      "nearPairs": 8936
     }
@@ -491,80 +491,80 @@
     "Experts": {
      "all": 67.2,
      "near": 52.7,
-     "mae": 5.48,
+     "mae": 5.44,
      "rho": 0.443,
      "n": 3199,
      "nearPairs": 8751
     },
     "Projection": {
-     "all": 67.1,
-     "near": 51.9,
-     "mae": 5.49,
-     "rho": 0.44,
+     "all": 66.8,
+     "near": 51.6,
+     "mae": 5.43,
+     "rho": 0.438,
      "n": 3199,
      "nearPairs": 8751
     },
     "SHS (current)": {
-     "all": 67.2,
-     "near": 52.6,
-     "mae": 5.48,
-     "rho": 0.446,
+     "all": 67.3,
+     "near": 52.5,
+     "mae": 5.44,
+     "rho": 0.448,
      "n": 3199,
      "nearPairs": 8751
     },
     "Opportunity only": {
-     "all": 67,
-     "near": 51.6,
+     "all": 66.9,
+     "near": 51.7,
      "mae": 5.5,
-     "rho": 0.441,
+     "rho": 0.438,
      "n": 3199,
      "nearPairs": 8751
     },
     "Context only": {
      "all": 67,
-     "near": 52.2,
-     "mae": 5.53,
+     "near": 52.1,
+     "mae": 5.52,
      "rho": 0.444,
      "n": 3199,
      "nearPairs": 8751
     },
     "One ridge (no stack)": {
-     "all": 67.1,
-     "near": 52.3,
-     "mae": 5.49,
-     "rho": 0.446,
+     "all": 67.2,
+     "near": 52.4,
+     "mae": 5.45,
+     "rho": 0.45,
      "n": 3199,
      "nearPairs": 8751
     },
     "Stack": {
-     "all": 67,
-     "near": 51.9,
-     "mae": 5.51,
-     "rho": 0.442,
+     "all": 67.2,
+     "near": 52.7,
+     "mae": 5.48,
+     "rho": 0.446,
      "n": 3199,
      "nearPairs": 8751
     },
     "Stack + range": {
-     "all": 66.9,
-     "near": 51.6,
-     "mae": 5.51,
-     "rho": 0.44,
+     "all": 67.1,
+     "near": 52.4,
+     "mae": 5.48,
+     "rho": 0.445,
      "n": 3199,
      "nearPairs": 8751
     },
     "Stack, ranking head": {
-     "all": 67.1,
-     "near": 52,
-     "mae": 5.51,
-     "rho": 0.443,
+     "all": 67.3,
+     "near": 52.7,
+     "mae": 5.48,
+     "rho": 0.448,
      "n": 3199,
      "nearPairs": 8751
     },
     "Stack, ranking head, capped": {
-     "all": 67.1,
-     "near": 52,
-     "mae": 5.51,
-     "rho": 0.443,
+     "all": 67.2,
+     "near": 52.7,
+     "mae": 5.48,
+     "rho": 0.446,
      "n": 3199,
      "nearPairs": 8751
     }
@@ -573,80 +573,80 @@
     "Experts": {
      "all": 67.4,
      "near": 52.6,
-     "mae": 5.44,
+     "mae": 5.47,
      "rho": 0.44,
      "n": 3218,
      "nearPairs": 8861
     },
     "Projection": {
-     "all": 67.4,
-     "near": 52.4,
-     "mae": 5.43,
-     "rho": 0.439,
+     "all": 67.3,
+     "near": 53.3,
+     "mae": 5.44,
+     "rho": 0.433,
      "n": 3218,
      "nearPairs": 8861
     },
     "SHS (current)": {
      "all": 67.5,
-     "near": 52.7,
-     "mae": 5.44,
+     "near": 52.9,
+     "mae": 5.47,
      "rho": 0.442,
      "n": 3218,
      "nearPairs": 8861
     },
     "Opportunity only": {
-     "all": 67,
-     "near": 50.8,
-     "mae": 5.47,
-     "rho": 0.424,
+     "all": 66.8,
+     "near": 50.4,
+     "mae": 5.51,
+     "rho": 0.421,
      "n": 3218,
      "nearPairs": 8861
     },
     "Context only": {
-     "all": 67.4,
+     "all": 67.3,
      "near": 52.4,
-     "mae": 5.47,
+     "mae": 5.52,
      "rho": 0.439,
      "n": 3218,
      "nearPairs": 8861
     },
     "One ridge (no stack)": {
-     "all": 67.2,
-     "near": 51.6,
-     "mae": 5.43,
-     "rho": 0.436,
+     "all": 67.4,
+     "near": 52.9,
+     "mae": 5.46,
+     "rho": 0.438,
      "n": 3218,
      "nearPairs": 8861
     },
     "Stack": {
-     "all": 67.3,
-     "near": 51.8,
-     "mae": 5.44,
-     "rho": 0.436,
+     "all": 67.5,
+     "near": 53.2,
+     "mae": 5.48,
+     "rho": 0.44,
      "n": 3218,
      "nearPairs": 8861
     },
     "Stack + range": {
-     "all": 67.3,
-     "near": 51.5,
-     "mae": 5.44,
-     "rho": 0.436,
+     "all": 67.4,
+     "near": 52.9,
+     "mae": 5.48,
+     "rho": 0.439,
      "n": 3218,
      "nearPairs": 8861
     },
     "Stack, ranking head": {
-     "all": 67.4,
-     "near": 52.5,
-     "mae": 5.44,
-     "rho": 0.44,
+     "all": 67.6,
+     "near": 54.2,
+     "mae": 5.48,
+     "rho": 0.445,
      "n": 3218,
      "nearPairs": 8861
     },
     "Stack, ranking head, capped": {
-     "all": 67.4,
-     "near": 52.5,
-     "mae": 5.44,
-     "rho": 0.44,
+     "all": 67.6,
+     "near": 54.3,
+     "mae": 5.48,
+     "rho": 0.444,
      "n": 3218,
      "nearPairs": 8861
     }
@@ -655,80 +655,80 @@
     "Experts": {
      "all": 67.8,
      "near": 52.2,
-     "mae": 5.41,
+     "mae": 5.4,
      "rho": 0.452,
      "n": 1889,
      "nearPairs": 5194
     },
     "Projection": {
-     "all": 67.6,
-     "near": 52,
-     "mae": 5.4,
-     "rho": 0.451,
+     "all": 67.8,
+     "near": 52.2,
+     "mae": 5.36,
+     "rho": 0.454,
      "n": 1889,
      "nearPairs": 5194
     },
     "SHS (current)": {
      "all": 67.8,
-     "near": 52.8,
-     "mae": 5.41,
+     "near": 53.2,
+     "mae": 5.39,
      "rho": 0.457,
      "n": 1889,
      "nearPairs": 5194
     },
     "Opportunity only": {
      "all": 67.4,
-     "near": 50.9,
+     "near": 50.7,
      "mae": 5.46,
-     "rho": 0.438,
+     "rho": 0.435,
      "n": 1889,
      "nearPairs": 5194
     },
     "Context only": {
      "all": 67.7,
-     "near": 51.9,
-     "mae": 5.45,
-     "rho": 0.455,
+     "near": 52.3,
+     "mae": 5.43,
+     "rho": 0.456,
      "n": 1889,
      "nearPairs": 5194
     },
     "One ridge (no stack)": {
-     "all": 67.7,
-     "near": 51.7,
-     "mae": 5.41,
-     "rho": 0.453,
+     "all": 67.9,
+     "near": 53.1,
+     "mae": 5.38,
+     "rho": 0.457,
      "n": 1889,
      "nearPairs": 5194
     },
     "Stack": {
-     "all": 67.7,
-     "near": 52.5,
-     "mae": 5.43,
-     "rho": 0.452,
+     "all": 68,
+     "near": 53.9,
+     "mae": 5.42,
+     "rho": 0.456,
      "n": 1889,
      "nearPairs": 5194
     },
     "Stack + range": {
-     "all": 67.7,
-     "near": 52.1,
-     "mae": 5.43,
-     "rho": 0.452,
+     "all": 68,
+     "near": 53.8,
+     "mae": 5.42,
+     "rho": 0.456,
      "n": 1889,
      "nearPairs": 5194
     },
     "Stack, ranking head": {
-     "all": 67.8,
-     "near": 52.5,
-     "mae": 5.43,
-     "rho": 0.453,
+     "all": 68,
+     "near": 54,
+     "mae": 5.42,
+     "rho": 0.457,
      "n": 1889,
      "nearPairs": 5194
     },
     "Stack, ranking head, capped": {
-     "all": 67.8,
-     "near": 52.5,
-     "mae": 5.43,
-     "rho": 0.454,
+     "all": 68,
+     "near": 53.9,
+     "mae": 5.42,
+     "rho": 0.456,
      "n": 1889,
      "nearPairs": 5194
     }
@@ -739,39 +739,39 @@
     "Experts": {
      "all": 65.4,
      "near": 53.9,
-     "mae": 5.83,
+     "mae": 5.92,
      "rho": 0.428,
      "n": 2422,
      "nearPairs": 6541
     },
     "Projection": {
-     "all": 65.4,
-     "near": 54,
-     "mae": 5.77,
-     "rho": 0.43,
+     "all": 64.9,
+     "near": 52.6,
+     "mae": 5.79,
+     "rho": 0.416,
      "n": 2422,
      "nearPairs": 6541
     },
     "SHS (current)": {
-     "all": 65.4,
-     "near": 53.9,
-     "mae": 5.83,
-     "rho": 0.429,
+     "all": 65.3,
+     "near": 53.6,
+     "mae": 5.92,
+     "rho": 0.426,
      "n": 2422,
      "nearPairs": 6541
     },
     "Opportunity only": {
-     "all": 64.5,
-     "near": 52.3,
-     "mae": 5.87,
-     "rho": 0.402,
+     "all": 64.2,
+     "near": 51.6,
+     "mae": 5.92,
+     "rho": 0.397,
      "n": 2422,
      "nearPairs": 6541
     },
     "Context only": {
      "all": 65.3,
-     "near": 53.7,
-     "mae": 5.87,
+     "near": 53.6,
+     "mae": 5.9,
      "rho": 0.426,
      "n": 2422,
      "nearPairs": 6541
@@ -780,39 +780,39 @@
      "all": 65.3,
      "near": 54,
      "mae": 5.81,
-     "rho": 0.426,
+     "rho": 0.428,
      "n": 2422,
      "nearPairs": 6541
     },
     "Stack": {
-     "all": 65.2,
-     "near": 54.2,
-     "mae": 5.88,
-     "rho": 0.423,
+     "all": 65.4,
+     "near": 54.1,
+     "mae": 5.89,
+     "rho": 0.428,
      "n": 2422,
      "nearPairs": 6541
     },
     "Stack + range": {
-     "all": 65,
-     "near": 53.6,
-     "mae": 5.88,
-     "rho": 0.418,
+     "all": 65.1,
+     "near": 53.5,
+     "mae": 5.89,
+     "rho": 0.423,
      "n": 2422,
      "nearPairs": 6541
     },
     "Stack, ranking head": {
-     "all": 65.5,
-     "near": 54.7,
-     "mae": 5.88,
-     "rho": 0.432,
+     "all": 65.3,
+     "near": 54,
+     "mae": 5.89,
+     "rho": 0.428,
      "n": 2422,
      "nearPairs": 6541
     },
     "Stack, ranking head, capped": {
-     "all": 65.5,
-     "near": 54.6,
-     "mae": 5.88,
-     "rho": 0.432,
+     "all": 65.3,
+     "near": 53.9,
+     "mae": 5.89,
+     "rho": 0.428,
      "n": 2422,
      "nearPairs": 6541
     }
@@ -821,80 +821,80 @@
     "Experts": {
      "all": 71.3,
      "near": 52.6,
-     "mae": 5.16,
+     "mae": 5.14,
      "rho": 0.589,
      "n": 4496,
      "nearPairs": 12522
     },
     "Projection": {
-     "all": 71.2,
-     "near": 52,
-     "mae": 5.17,
-     "rho": 0.587,
+     "all": 71.3,
+     "near": 53.3,
+     "mae": 5.13,
+     "rho": 0.589,
      "n": 4496,
      "nearPairs": 12522
     },
     "SHS (current)": {
      "all": 71.3,
      "near": 52.4,
-     "mae": 5.16,
+     "mae": 5.14,
      "rho": 0.588,
      "n": 4496,
      "nearPairs": 12522
     },
     "Opportunity only": {
      "all": 71.1,
-     "near": 50.8,
+     "near": 51.2,
      "mae": 5.23,
      "rho": 0.583,
      "n": 4496,
      "nearPairs": 12522
     },
     "Context only": {
-     "all": 71.2,
-     "near": 51.8,
+     "all": 71.1,
+     "near": 51.4,
      "mae": 5.24,
-     "rho": 0.587,
+     "rho": 0.585,
      "n": 4496,
      "nearPairs": 12522
     },
     "One ridge (no stack)": {
-     "all": 71.2,
-     "near": 51.8,
-     "mae": 5.2,
-     "rho": 0.587,
+     "all": 71.3,
+     "near": 52.8,
+     "mae": 5.17,
+     "rho": 0.591,
      "n": 4496,
      "nearPairs": 12522
     },
     "Stack": {
-     "all": 71.1,
-     "near": 52,
-     "mae": 5.21,
-     "rho": 0.586,
+     "all": 71.4,
+     "near": 53.6,
+     "mae": 5.18,
+     "rho": 0.592,
      "n": 4496,
      "nearPairs": 12522
     },
     "Stack + range": {
-     "all": 71.1,
-     "near": 51.8,
-     "mae": 5.21,
-     "rho": 0.586,
+     "all": 71.4,
+     "near": 53.6,
+     "mae": 5.18,
+     "rho": 0.592,
      "n": 4496,
      "nearPairs": 12522
     },
     "Stack, ranking head": {
-     "all": 71.3,
-     "near": 52.4,
-     "mae": 5.21,
-     "rho": 0.588,
+     "all": 71.4,
+     "near": 53.5,
+     "mae": 5.18,
+     "rho": 0.592,
      "n": 4496,
      "nearPairs": 12522
     },
     "Stack, ranking head, capped": {
-     "all": 71.3,
-     "near": 52.4,
-     "mae": 5.21,
-     "rho": 0.588,
+     "all": 71.4,
+     "near": 53.5,
+     "mae": 5.18,
+     "rho": 0.592,
      "n": 4496,
      "nearPairs": 12522
     }
@@ -903,80 +903,80 @@
     "Experts": {
      "all": 66.1,
      "near": 51.7,
-     "mae": 5.64,
+     "mae": 5.61,
      "rho": 0.452,
      "n": 5613,
      "nearPairs": 15621
     },
     "Projection": {
-     "all": 65.9,
-     "near": 50.6,
-     "mae": 5.66,
-     "rho": 0.447,
+     "all": 65.7,
+     "near": 52.2,
+     "mae": 5.62,
+     "rho": 0.442,
      "n": 5613,
      "nearPairs": 15621
     },
     "SHS (current)": {
      "all": 66.1,
-     "near": 51.5,
-     "mae": 5.64,
-     "rho": 0.452,
+     "near": 51.6,
+     "mae": 5.61,
+     "rho": 0.451,
      "n": 5613,
      "nearPairs": 15621
     },
     "Opportunity only": {
-     "all": 65.7,
-     "near": 49.5,
-     "mae": 5.65,
-     "rho": 0.441,
+     "all": 65.6,
+     "near": 49.3,
+     "mae": 5.64,
+     "rho": 0.439,
      "n": 5613,
      "nearPairs": 15621
     },
     "Context only": {
-     "all": 65.8,
-     "near": 50.8,
-     "mae": 5.66,
+     "all": 65.9,
+     "near": 51.1,
+     "mae": 5.65,
      "rho": 0.445,
      "n": 5613,
      "nearPairs": 15621
     },
     "One ridge (no stack)": {
-     "all": 65.8,
-     "near": 50.1,
-     "mae": 5.62,
-     "rho": 0.445,
+     "all": 65.9,
+     "near": 51.2,
+     "mae": 5.59,
+     "rho": 0.448,
      "n": 5613,
      "nearPairs": 15621
     },
     "Stack": {
-     "all": 66,
-     "near": 50.8,
-     "mae": 5.62,
-     "rho": 0.45,
+     "all": 66.1,
+     "near": 51.7,
+     "mae": 5.6,
+     "rho": 0.452,
      "n": 5613,
      "nearPairs": 15621
     },
     "Stack + range": {
      "all": 66,
-     "near": 50.9,
-     "mae": 5.62,
-     "rho": 0.449,
+     "near": 51.3,
+     "mae": 5.6,
+     "rho": 0.451,
      "n": 5613,
      "nearPairs": 15621
     },
     "Stack, ranking head": {
-     "all": 66.1,
-     "near": 51.2,
-     "mae": 5.62,
-     "rho": 0.451,
+     "all": 66.2,
+     "near": 52.5,
+     "mae": 5.6,
+     "rho": 0.454,
      "n": 5613,
      "nearPairs": 15621
     },
     "Stack, ranking head, capped": {
-     "all": 66.1,
-     "near": 51.2,
-     "mae": 5.62,
-     "rho": 0.451,
+     "all": 66.2,
+     "near": 52.5,
+     "mae": 5.6,
+     "rho": 0.454,
      "n": 5613,
      "nearPairs": 15621
     }
@@ -985,80 +985,80 @@
     "Experts": {
      "all": 62.4,
      "near": 53.5,
-     "mae": 4.92,
+     "mae": 4.91,
      "rho": 0.34,
      "n": 2237,
      "nearPairs": 5939
     },
     "Projection": {
-     "all": 62.4,
-     "near": 53.8,
-     "mae": 4.92,
-     "rho": 0.34,
+     "all": 62.1,
+     "near": 52.7,
+     "mae": 4.91,
+     "rho": 0.334,
      "n": 2237,
      "nearPairs": 5939
     },
     "SHS (current)": {
-     "all": 62.6,
-     "near": 54.6,
-     "mae": 4.91,
-     "rho": 0.349,
+     "all": 62.8,
+     "near": 55.1,
+     "mae": 4.89,
+     "rho": 0.354,
      "n": 2237,
      "nearPairs": 5939
     },
     "Opportunity only": {
-     "all": 62,
-     "near": 52.3,
+     "all": 61.7,
+     "near": 51.4,
      "mae": 4.91,
-     "rho": 0.329,
+     "rho": 0.323,
      "n": 2237,
      "nearPairs": 5939
     },
     "Context only": {
-     "all": 61.9,
-     "near": 52.3,
-     "mae": 4.91,
-     "rho": 0.33,
+     "all": 62,
+     "near": 52.9,
+     "mae": 4.9,
+     "rho": 0.333,
      "n": 2237,
      "nearPairs": 5939
     },
     "One ridge (no stack)": {
-     "all": 61.9,
-     "near": 52.9,
-     "mae": 4.9,
-     "rho": 0.332,
+     "all": 61.8,
+     "near": 52.2,
+     "mae": 4.89,
+     "rho": 0.328,
      "n": 2237,
      "nearPairs": 5939
     },
     "Stack": {
-     "all": 62.1,
-     "near": 52.6,
-     "mae": 4.9,
-     "rho": 0.334,
+     "all": 62,
+     "near": 52.9,
+     "mae": 4.89,
+     "rho": 0.335,
      "n": 2237,
      "nearPairs": 5939
     },
     "Stack + range": {
      "all": 62.1,
-     "near": 52.6,
-     "mae": 4.9,
-     "rho": 0.334,
+     "near": 52.9,
+     "mae": 4.89,
+     "rho": 0.335,
      "n": 2237,
      "nearPairs": 5939
     },
     "Stack, ranking head": {
-     "all": 62,
+     "all": 62.1,
      "near": 52.7,
-     "mae": 4.9,
-     "rho": 0.33,
+     "mae": 4.89,
+     "rho": 0.339,
      "n": 2237,
      "nearPairs": 5939
     },
     "Stack, ranking head, capped": {
      "all": 62.2,
-     "near": 52.8,
-     "mae": 4.9,
-     "rho": 0.335,
+     "near": 52.7,
+     "mae": 4.89,
+     "rho": 0.339,
      "n": 2237,
      "nearPairs": 5939
     }
@@ -1077,21 +1077,21 @@
     0,
     0.05,
     0,
-    0.05
+    0
    ],
    "WR": [
+    0.3,
+    0,
     0.1,
     0.1,
-    0.2,
-    0.1,
-    0
+    0.1
    ],
    "TE": [
+    0.05,
     0,
     0,
-    0,
-    0,
-    0
+    0.05,
+    0.05
    ]
   }
  }

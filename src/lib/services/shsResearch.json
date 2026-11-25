@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-24T15:59:32.796Z",
+ "generatedAt": "2026-11-25T06:49:01.174Z",
  "projSource": "sleeper",
  "seasons": [
   2021,
@@ -104,7 +104,7 @@
    "experts": 68.2,
    "projection": 67.7,
    "ecrSleeper": 68.1,
-   "mix": 67.7,
+   "mix": 67.8,
    "shs": 68.2
   },
   {
@@ -114,7 +114,7 @@
    "experts": 67.3,
    "projection": 66.9,
    "ecrSleeper": 67.3,
-   "mix": 67,
+   "mix": 66.9,
    "shs": 67.4
   },
   {
@@ -134,7 +134,7 @@
    "experts": 67.9,
    "projection": 67.9,
    "ecrSleeper": 68.2,
-   "mix": 67.7,
+   "mix": 67.6,
    "shs": 67.9
   }
  ],

@@ -1,6 +1,6 @@
 # SHS AI research (2021–2026)
 
-Generated 2026-11-24 · 95 weeks · 17,959 player-weeks · projection source: sleeper.
+Generated 2026-11-25 · 95 weeks · 17,959 player-weeks · projection source: sleeper.
 
 ## Weekly
 
@@ -10,10 +10,10 @@ Every week was replayed with only what was known before Sunday's first kickoff. 
 |---|---|---|---|---|---|---|
 | 2021 | 17 | 66.4% | 65.3% | 65.9% | 65.7% | **66.5%** |
 | 2022 | 17 | 66.9% | 66.8% | 67% | 66.6% | **66.9%** |
-| 2023 | 17 | 68.2% | 67.7% | 68.1% | 67.7% | **68.2%** |
-| 2024 | 17 | 67.3% | 66.9% | 67.3% | 67% | **67.4%** |
+| 2023 | 17 | 68.2% | 67.7% | 68.1% | 67.8% | **68.2%** |
+| 2024 | 17 | 67.3% | 66.9% | 67.3% | 66.9% | **67.4%** |
 | 2025 | 17 | 67.6% | 67.5% | 67.7% | 67.4% | **67.6%** |
-| 2026 | 10 | 67.9% | 67.9% | 68.2% | 67.7% | **67.9%** |
+| 2026 | 10 | 67.9% | 67.9% | 68.2% | 67.6% | **67.9%** |
 | **Average** | | 67.4% | 67% | 67.4% | 67% | **67.4%** |
 
 When SHS AI disagreed with the experts on which of two players would score more, it was right 53.4% of the time (1,974 pairs).
