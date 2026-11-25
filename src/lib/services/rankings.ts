@@ -6,6 +6,7 @@
 import type { LeagueContext } from "./league";
 import { isSuperflex } from "../engine/positions";
 import { scoreSleeperStats } from "../engine/scoring";
+import { adjustedDefense } from "./shsStack";
 
 /**
  * View modifiers (Rankings only; they don't change trade values elsewhere). Defaults = this league's settings.
@@ -14,11 +15,11 @@ import { scoreSleeperStats } from "../engine/scoring";
  *          list exists, so each TE's value is raised by how much the premium adds to his scoring (see tepFactor).
  *   ppr    points per reception;  passTd  points per passing TD (week / season re-scoring).
  */
-export interface RankOpts { sf?: boolean; tep?: number; ppr?: number; passTd?: number }
+export interface RankOpts { sf?: boolean; tep?: number; ppr?: number; passTd?: number; keep?: number }
 
 export function leagueOpts(ctx: LeagueContext): Required<RankOpts> {
   const sc = ctx.league.scoring_settings as Record<string, number>;
-  return { sf: isSuperflex(ctx.league.roster_positions), tep: sc.bonus_rec_te ?? 0, ppr: sc.rec ?? 0, passTd: sc.pass_td ?? 4 };
+  return { sf: isSuperflex(ctx.league.roster_positions), tep: sc.bonus_rec_te ?? 0, ppr: sc.rec ?? 0, passTd: sc.pass_td ?? 4, keep: 0 };
 }
 
 /**
@@ -52,6 +53,8 @@ export interface RankRow {
   ecrPos: number | null; // ordinal among players here with an ECR at that position
   /** Dynasty only: FantasyPros dynasty overall rank (superflex list in superflex leagues). */
   ecrAll?: number | null;
+  /** Keeper leagues: next season's keep price (round) and surplus. */
+  keepRound?: number | null; keepSurplus?: number | null;
   shsPos: number; // SHS rank at position (projection, or model dynasty value)
   shsScore: number | null; // +/- % SHS vs the experts
   rank: number; // overall order shown
@@ -107,6 +110,7 @@ export function rankings(ctx: LeagueContext, scope: RankScope, opts: RankOpts = 
       fg: r1(g("fgm")), sacks: r1(g("sack") + g("idp_sack")), tackles: r1(g("idp_tkl_solo") + g("idp_tkl_ast")),
       value: scope === "dynasty" ? Math.round((mkt(p.id) !== null ? (100 * mkt(p.id)!) / maxMk : v?.dynasty ?? 0) * tepFactor(ctx, p.id, opt.tep) * 10) / 10 : v?.redraft ?? 0,
       ecr, ecrPos: null, shsPos: 0, shsScore: null, rank: 0,
+      keepRound: ctx.keeperCost.get(p.id)?.round ?? null, keepSurplus: ctx.keeperCost.get(p.id)?.surplus ?? null,
       ecrAll: scope === "dynasty" ? (sf ? c?.dsf ?? c?.do : c?.do) ?? null : null,
     });
   }
@@ -134,7 +138,12 @@ export function rankings(ctx: LeagueContext, scope: RankScope, opts: RankOpts = 
     // TE premium on, TEs move up by their adjusted value.
     rows.sort((a, b) => b.value - a.value || (a.ecrAll ?? 1e9) - (b.ecrAll ?? 1e9));
   } else {
-    const key = (r: RankRow) => (r.ecrPos !== null ? atRank(r.pos, r.ecrPos) + 1e6 : r.pts);
+    // Keeper cost (optional, Season view in keeper leagues): a player who'd be a bargain keep next year moves up, an
+    // overpriced one moves down. Factor = 1 + weight × 0.5 × (his surplus ÷ the league's biggest), floored at 0.7:
+    // "Some" (0.5) moves the biggest bargain up 25%, "Full" (1) up 50%.
+    const maxKeep = Math.max(1e-9, ...[...ctx.keeperCost.values()].map((k) => Math.abs(k.surplus)));
+    const kf = (r: RankRow) => (opt.keep && r.keepSurplus != null ? Math.max(0.7, 1 + opt.keep * 0.5 * (r.keepSurplus / maxKeep)) : 1);
+    const key = (r: RankRow) => (r.ecrPos !== null ? atRank(r.pos, r.ecrPos) * kf(r) + 1e6 : r.pts * kf(r));
     rows.sort((a, b) => key(b) - key(a) || b.pts - a.pts);
   }
   rows.forEach((r, i) => (r.rank = i + 1));
@@ -160,4 +169,26 @@ export function pickRows(ctx: LeagueContext, opts: RankOpts = {}): RankRow[] {
       value, ecr: null, ecrPos: null, ecrAll: p.market ? (o.sf ? p.market.e2 : p.market.e1) : null, shsPos: 0, shsScore: null, rank: 0,
     } as RankRow;
   });
+}
+
+/** This week's matchup grade: the opponent's opponent-adjusted points allowed to his position, ranked among all
+ *  defences and turned into a letter (A+ easiest … F toughest). QB / RB / WR / TE; others get none. */
+export interface Grade { letter: string; pct: number; opp: string; pos: string }
+const LETTERS = ["A+", "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "F"];
+export function matchupGrades(ctx: LeagueContext, rows: RankRow[], week: number): Map<string, Grade> {
+  const def = adjustedDefense(ctx, week);
+  const out = new Map<string, Grade>();
+  const byPos = new Map<string, { d: string; v: number }[]>();
+  for (const [k, v] of def) { const [d, pos] = k.split(":"); (byPos.get(pos) ?? byPos.set(pos, []).get(pos)!).push({ d, v }); }
+  for (const list of byPos.values()) list.sort((a, b) => b.v - a.v); // easiest first
+  for (const r of rows) {
+    if (!["QB", "RB", "WR", "TE"].includes(r.pos) || !r.team) continue;
+    const opp = ctx.nflOpponents.get(r.team)?.get(week);
+    if (!opp) { out.set(r.id, { letter: "BYE", pct: 0, opp: "", pos: r.pos }); continue; }
+    const list = byPos.get(r.pos);
+    const i = list?.findIndex((x) => x.d === opp) ?? -1;
+    if (!list || i < 0) continue;
+    out.set(r.id, { letter: LETTERS[Math.min(LETTERS.length - 1, Math.floor((i / list.length) * LETTERS.length))], pct: Math.round(list[i].v * 100), opp, pos: r.pos });
+  }
+  return out;
 }

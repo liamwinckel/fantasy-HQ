@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronRight, Search } from "lucide-react";
+import { ChevronDown, ChevronRight, Search } from "lucide-react";
 import { Sheet } from "@/components/Sheet";
 import { LeaguePage, useQuery, type LeagueData } from "@/components/AppData";
 import { PlayerImg, Segmented, TabSwitch } from "@/components/client";
-import { PlayerLink } from "@/components/PlayerCard";
+import { PlayerLink, usePlayerCard } from "@/components/PlayerCard";
 import { InfoButton, InjuryChip, NflLogo, PageHeader, cx } from "@/components/ui";
 import { AiChip, label, MovePill, rankMove, ShsExplainer, shsVerdict, useCollege, useShsWeights } from "@/components/ShsAiParts";
 import { accuracy, snapshotWeek } from "@/lib/services/accuracy";
@@ -16,7 +16,7 @@ import { isSuperflex } from "@/lib/engine/positions";
 import { Sparkline, TREND_MAX } from "@/components/charts";
 import { useEffect } from "react";
 import { formatLabel } from "@/lib/services/portfolio";
-import { leagueOpts, pickRows, rankings, type RankOpts, type RankRow, type RankScope } from "@/lib/services/rankings";
+import { leagueOpts, matchupGrades, pickRows, rankings, type Grade, type RankOpts, type RankRow, type RankScope } from "@/lib/services/rankings";
 import { shsAi, type ShsAi } from "@/lib/services/shsai";
 import { weekWeather } from "@/lib/weather";
 import { useAsync } from "@/components/AppData";
@@ -110,23 +110,27 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
   // Save this week's rankings (before kickoff) so SHS AI can be graded against what actually happens.
   useEffect(() => { if (scope === "week" && !wx.loading) snapshotWeek(ctx, all, ai).catch(() => {}); }, [ctx, all, ai, scope, wx.loading]);
   const acc = useAsync(() => accuracy(ctx), [ctx]);
+  const grades = useMemo(() => (scope === "week" ? matchupGrades(ctx, all, w0) : new Map<string, Grade>()), [ctx, all, scope, w0]);
   const dists = useMemo(() => (scope === "week" ? new Map(all.filter((r) => r.pts > 0.5).map((r) => [r.id, playerDist(ctx, r.id, Math.min(ctx.currentWeek, ctx.lastWeek))])) : new Map<string, ReturnType<typeof playerDist>>()), [ctx, all, scope]);
   const [aiInfo, setAiInfo] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
   const [pos, setPos] = useState("ALL");
-  const [own, setOwn] = useState<"all" | "fa">("all");
+  const [own, setOwn] = useState<Own>("all");
   // Tap a column title to sort by it; tap again to flip the order.
   const [by, setBy] = useState<"experts" | "ai" | "name" | "pts">("experts");
   const [desc, setDesc] = useState(false);
   const sortBy = (k: typeof by) => { if (k === by) setDesc(!desc); else { setBy(k); setDesc(false); } };
   const [q, setQ] = useState("");
   const [about, setAbout] = useState(false);
+  const [gradeInfo, setGradeInfo] = useState(false);
+  const [ptsOpen, setPtsOpen] = useState<string | null>(null);
+  const card = usePlayerCard();
   const [limit, setLimit] = useState(75);
   const dynScope = scope === "dynasty";
   const IDP = ["DL", "LB", "DB"];
   const hasIdp = all.some((r) => IDP.includes(r.pos));
-  const positions = ["ALL", ...["QB", "RB", "WR", "TE", "K", "DEF"].filter((p) => all.some((r) => r.pos === p)), ...(hasIdp ? ["IDP", ...IDP.filter((p) => all.some((r) => r.pos === p))] : []), ...(pickList.length ? ["PICK"] : [])];
-  const posMatch = (rp: string) => pos === "ALL" || rp === pos || (pos === "IDP" && IDP.includes(rp));
+  const positions = ["ALL", ...["QB", "RB", "WR", "TE"].filter((p) => all.some((r) => r.pos === p)), "FLX", ...["K", "DEF"].filter((p) => all.some((r) => r.pos === p)), ...(hasIdp ? ["IDP"] : []), ...(pickList.length ? ["PICK"] : [])];
+  const posMatch = (rp: string) => pos === "ALL" || rp === pos || (pos === "IDP" && IDP.includes(rp)) || (pos === "FLX" && ["RB", "WR", "TE"].includes(rp));
   const rules = scoringRules(ctx.league.scoring_settings as Record<string, number>);
   // Ranks come from the full list, so filters (position, owner, search) never renumber players.
   const ranked = useMemo(() => {
@@ -145,8 +149,12 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
   };
   const ptsN = useMemo(() => new Map([...list].sort((a, b) => (dynScope ? b.value - a.value : b.pts - a.pts)).map((r, i) => [r.id, i + 1])), [list, dynScope]);
   const rows = (desc ? [...base].reverse() : base)
-    .filter((r) => posMatch(r.pos) && (own === "all" || r.owner === "Free agent") && (!q || r.name.toLowerCase().includes(q.toLowerCase())));
+    .filter((r) => posMatch(r.pos) && (own === "all" || (own === "fa" ? r.owner === "Free agent" : r.mine)) && (!q || r.name.toLowerCase().includes(q.toLowerCase())));
   const dates = ctx.consensusDates;
+  // Week view adds a matchup-grade column.
+  const cols = scope === "week"
+    ? "grid-cols-[2.25rem_minmax(0,1fr)_2.1rem_3.25rem_3.4rem] sm:grid-cols-[2.5rem_minmax(0,1fr)_minmax(0,12rem)_3rem_4.5rem_4.5rem]"
+    : "grid-cols-[2.5rem_minmax(0,1fr)_3.75rem_3.5rem] sm:grid-cols-[2.5rem_minmax(0,1fr)_minmax(0,14rem)_4.5rem_4.5rem]";
   const dyn = scope === "dynasty";
   const numLabel = dyn ? "Value" : "Pts";
   return (
@@ -159,7 +167,7 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
         </>}>
         <TabSwitch label="Rankings span" value={scope} onChange={(v) => { set({ scope: v === "week" ? undefined : v }, true); setLimit(75); }}
           options={[{ value: "week", label: "Week", sub: `Week ${w0}` }, { value: "ros", label: "Season", sub: `Weeks ${w0}–${ctx.lastWeek}` }, { value: "dynasty", label: "Dynasty", sub: "Long term" }]} />
-        <Modifiers scope={scope} opt={opt} lo={lo} set={(m) => setMods({ ...mods, ...m })} reset={() => setMods({})} />
+        <Modifiers scope={scope} opt={opt} lo={lo} keeper={ctx.format === "keeper" && ctx.keeperCost.size > 0} set={(m) => setMods({ ...mods, ...m })} reset={() => setMods({})} />
       </PageHeader>
 
       {/* SHS AI results in one compact strip; tap a row for the full detail. */}
@@ -172,6 +180,7 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
 
       <div className="sticky top-0 z-20 -mx-3 flex flex-col gap-2 border-b border-line bg-bg/95 px-3 py-2.5 backdrop-blur sm:mx-0 sm:rounded-xl sm:border sm:bg-panel sm:p-3">
         <div className="flex items-center gap-2">
+        <OwnerMenu value={own} onChange={setOwn} />
         <label className="relative min-w-0 flex-1">
           <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted" />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search players" className="w-full rounded-lg border border-line bg-panel2 py-2 pl-8 pr-2 text-sm" />
@@ -191,27 +200,27 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
           </p>
         )}
         </div>}
-        <div className="flex items-center gap-2">
-          <Segmented label="Players shown" value={own} onChange={(v) => setOwn(v)} options={[{ value: "all", label: "All players" }, { value: "fa", label: "Free agents" }]} />
-          <div className="flex min-w-0 flex-1 gap-1 overflow-x-auto" data-no-swipe>
-            {positions.map((p) => <button key={p} type="button" onClick={() => setPos(p)} className={cx("shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold", pos === p ? "bg-acc text-on-acc" : "bg-panel2 text-muted")}>{p === "ALL" ? "All" : p === "DEF" ? "DST" : p === "PICK" ? "Picks" : p}</button>)}
-          </div>
+        {/* Every position on screen at once: equal-width chips that share the row. */}
+        <div className="flex gap-1">
+          {positions.map((p) => <button key={p} type="button" onClick={() => setPos(p)} aria-pressed={pos === p} className={cx("min-w-0 flex-1 rounded-full px-1 py-1.5 text-[11px] font-bold", pos === p ? "bg-acc text-on-acc" : "bg-panel2 text-muted")}>{p === "ALL" ? "All" : p === "DEF" ? "DST" : p === "PICK" ? "Picks" : p}</button>)}
         </div>
       </div>
 
 
       <section className="overflow-hidden rounded-xl border border-line bg-panel">
-        <div className="grid grid-cols-[2.5rem_minmax(0,1fr)_3.75rem_3.5rem] items-center gap-2 border-b border-line px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted sm:grid-cols-[2.5rem_minmax(0,1fr)_minmax(0,14rem)_4.5rem_4.5rem] sm:px-4">
+        <div className={cx("grid items-center gap-2 border-b border-line px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted sm:px-4", cols)}>
           <SortHead k="experts" by={by} desc={desc} onSort={sortBy}>ECR</SortHead>
           <SortHead k="name" by={by} desc={desc} onSort={sortBy} className="justify-start">Player</SortHead>
           <span className="hidden sm:block">{dyn ? "Profile" : "Projected stats"}</span>
+          {scope === "week" && <span className="flex items-center justify-center gap-0.5">Mtch<InfoButton open={gradeInfo} onClick={() => setGradeInfo(!gradeInfo)} label="What is the matchup grade?" /></span>}
           <span className="flex items-center justify-center gap-0.5"><SortHead k="ai" by={by} desc={desc} onSort={sortBy}>SHS</SortHead><InfoButton open={aiInfo} onClick={() => setAiInfo(!aiInfo)} label="What is SHS AI?" /></span>
           <SortHead k="pts" by={by} desc={desc} onSort={sortBy} className="justify-end">{numLabel}</SortHead>
         </div>
         {aiInfo && <div className="fhq-in border-b border-line bg-panel2/40 px-3 py-3 sm:px-4"><ShsExplainer scope={scope} /></div>}
+        {gradeInfo && <p className="fhq-in border-b border-line bg-panel2/40 px-3 py-3 text-xs leading-relaxed text-muted sm:px-4"><b className="text-fg">Matchup grade</b> for this week: how many fantasy points his opponent allows to his position, judged against the offences that defence has faced this season (so a defence isn&apos;t flattered by a soft schedule). <b className="text-pos">A+</b> = one of the easiest matchups in the league, <b className="text-neg">F</b> = one of the toughest. QB / RB / WR / TE only.</p>}
         <ul className="divide-y divide-line">
           {rows.slice(0, limit).map((r) => r.pos === "PICK" ? (
-            <li key={r.id} className={cx("grid grid-cols-[2.5rem_minmax(0,1fr)_3.75rem_3.5rem] items-center gap-2 px-3 py-2 sm:grid-cols-[2.5rem_minmax(0,1fr)_minmax(0,14rem)_4.5rem_4.5rem] sm:px-4", r.mine && "bg-acc-soft")}>
+            <li key={r.id} className={cx("grid items-center gap-2 px-3 py-2 sm:px-4", cols, r.mine && "bg-acc-soft")}>
               <div className="text-center"><div className="num text-sm font-bold">{ranked.ecrN.get(r.id)}</div><div className="text-[9px] font-semibold text-muted">PICK</div></div>
               <div className="flex min-w-0 items-center gap-2.5">
                 <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full border border-acc/50 bg-acc-soft text-[10px] font-extrabold text-acc-ink">{r.name.split(" ")[1] ?? "PK"}</span>
@@ -226,7 +235,7 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
             </li>
           ) : (
             <Fragment key={r.id}>
-            <li onClick={() => setOpen(open === r.id ? null : r.id)} className={cx("cursor-pointer", "grid grid-cols-[2.5rem_minmax(0,1fr)_3.75rem_3.5rem] items-center gap-2 px-3 py-2 sm:grid-cols-[2.5rem_minmax(0,1fr)_minmax(0,14rem)_4.5rem_4.5rem] sm:px-4", r.mine && "bg-acc-soft")}>
+            <li onClick={() => card.open(r.id)} className={cx("cursor-pointer grid items-center gap-2 px-3 py-2 active:bg-panel2/60 sm:px-4", cols, r.mine && "bg-acc-soft")}>
               <div className="text-center">
                 <div className="num text-sm font-bold">{by === "ai" ? ranked.aiN.get(r.id) : by === "pts" ? ptsN.get(r.id) : r.ecrPos !== null ? ranked.ecrN.get(r.id) : "–"}</div>
                 <div className="text-[9px] font-semibold text-muted">{r.pos}{by === "ai" ? ai.get(r.id)!.rank : by === "pts" ? r.shsPos : r.ecrPos ?? "–"}</div>
@@ -236,17 +245,22 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
                 <div className="min-w-0">
                   <div className="flex min-w-0 items-center gap-1.5 text-sm font-semibold"><PlayerLink id={r.id} name={r.name} className="min-w-0" /><InjuryChip status={r.injury} /></div>
                   <div className="flex min-w-0 items-center gap-1 overflow-hidden whitespace-nowrap text-[11px] text-muted"><NflLogo team={r.team} size={12} />{r.pos} · {r.team ?? "FA"}{r.opp ? ` vs ${r.opp}` : ""}<span className={cx("ml-1 truncate", r.mine ? "font-semibold text-acc-ink" : r.owner === "Free agent" ? "font-semibold text-pos" : "")}>· {r.owner}</span></div>
-                  <div className="flex min-w-0 items-center gap-1.5 text-[11px] text-muted">{trend(r.id, r.pos)}<span className="truncate sm:hidden">{statLine(r, scope)}</span></div>
+                  <div className="flex min-w-0 items-center gap-1.5 text-[11px] text-muted">{trend(r.id, r.pos)}{scope === "ros" && r.keepRound != null && <span className={cx("shrink-0 rounded px-1 text-[10px] font-bold", (r.keepSurplus ?? 0) > 0 ? "bg-pos/15 text-pos" : "bg-neg/15 text-neg")} title="Next season's keep price">Keep R{r.keepRound}</span>}<span className="truncate sm:hidden">{statLine(r, scope)}</span></div>
                 </div>
               </div>
               <div className="hidden truncate text-xs text-muted sm:block">{statLine(r, scope)}</div>
-              <div className="flex justify-center"><Shs a={ai.get(r.id)} name={r.name} open={open === r.id} onToggle={() => setOpen(open === r.id ? null : r.id)} /></div>
-              <div className="text-right">
+              {scope === "week" && <div className="flex justify-center"><GradeChip g={grades.get(r.id) ?? null} /></div>}
+              <div className="flex justify-center" onClick={(e) => e.stopPropagation()}><Shs a={ai.get(r.id)} name={r.name} open={open === r.id} onToggle={() => setOpen(open === r.id ? null : r.id)} /></div>
+              <button type="button" aria-expanded={ptsOpen === r.id} aria-label={`How ${r.name}'s ${dyn ? "value" : "points"} add up`} onClick={(e) => { e.stopPropagation(); setPtsOpen(ptsOpen === r.id ? null : r.id); setOpen(null); }}
+                className={cx("rounded-lg py-1 pr-1 text-right transition-colors", ptsOpen === r.id ? "bg-acc-soft" : "hover:bg-panel2")}>
                 <div className="num font-[family-name:var(--font-display)] text-xl font-bold leading-none">{(dyn ? r.value : r.pts).toFixed(dyn ? 0 : 1)}</div>
                 {scope === "ros" && r.games > 0 && <div className="text-[10px] text-muted">{(r.pts / r.games).toFixed(1)}/g</div>}
                 {scope === "week" && r.pts > 0.5 && (() => { const d = dists.get(r.id); return d ? <div className="num text-[10px] text-muted" title="Floor (1 week in 10 worse) – ceiling (1 in 10 better)">{d.floor.toFixed(0)}–{d.ceiling.toFixed(0)}</div> : null; })()}
-              </div>
+              </button>
             </li>
+            {ptsOpen === r.id && (
+              <li className="fhq-in bg-panel2/40 px-3 py-3 sm:px-4"><PointsBreakdown ctx={ctx} r={r} scope={scope} opt={opt} dist={dists.get(r.id) ?? null} grade={grades.get(r.id) ?? null} /></li>
+            )}
             {open === r.id && (
               <li className="fhq-in bg-panel2/40 px-3 py-3 sm:px-4">
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs">
@@ -309,8 +323,8 @@ function TrackRecord({ a }: { a: NonNullable<Awaited<ReturnType<typeof accuracy>
  * with a dot) and only change this list. Dynasty: 1QB or superflex lists and TE premium. Week / season: points per
  * reception, TE premium and passing TD points (projections are re-scored).
  */
-function Modifiers({ scope, opt, lo, set, reset }: { scope: RankScope; opt: Required<RankOpts>; lo: Required<RankOpts>; set: (m: RankOpts) => void; reset: () => void }) {
-  const changed = opt.sf !== lo.sf || opt.tep !== lo.tep || opt.ppr !== lo.ppr || opt.passTd !== lo.passTd;
+function Modifiers({ scope, opt, lo, keeper, set, reset }: { scope: RankScope; opt: Required<RankOpts>; lo: Required<RankOpts>; keeper: boolean; set: (m: RankOpts) => void; reset: () => void }) {
+  const changed = opt.sf !== lo.sf || opt.tep !== lo.tep || opt.ppr !== lo.ppr || opt.passTd !== lo.passTd || opt.keep !== lo.keep;
   const group = <T extends string | number | boolean>(label: string, value: T, league: T, options: [T, string][], on: (v: T) => void) => (
     <div className="flex min-w-0 flex-col gap-1">
       <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-muted">{label}</span>
@@ -326,17 +340,131 @@ function Modifiers({ scope, opt, lo, set, reset }: { scope: RankScope; opt: Requ
   );
   return (
     <div className="mt-3 flex flex-col gap-2">
-      <div className={cx("grid gap-2", scope === "dynasty" ? "grid-cols-2" : "grid-cols-3")}>
+      <div className={cx("grid gap-2", scope === "dynasty" ? "grid-cols-2" : scope === "ros" && keeper ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3")}>
         {scope === "dynasty" && group("Format", opt.sf, lo.sf, [[false, "1QB"], [true, "Superflex"]], (v) => set({ sf: v }))}
         {scope !== "dynasty" && group("PPR", opt.ppr, lo.ppr, ([[0, "0"], [0.5, "½"], [1, "1"]] as [number, string][]).concat([0, 0.5, 1].includes(lo.ppr) ? [] : [[lo.ppr, String(lo.ppr)]]).sort((a, b) => a[0] - b[0]), (v) => set({ ppr: v }))}
         {group("TE premium", opt.tep, lo.tep, ([[0, "None"], [0.5, "+.5"], [1, "+1"]] as [number, string][]).concat([0, 0.5, 1].includes(lo.tep) ? [] : [[lo.tep, `+${lo.tep}`]]).sort((a, b) => a[0] - b[0]), (v) => set({ tep: v }))}
+        {scope === "ros" && keeper && group("Keeper cost", opt.keep, lo.keep, [[0, "Off"], [0.5, "Some"], [1, "Full"]], (v) => set({ keep: v }))}
         {scope !== "dynasty" && group("Pass TD", opt.passTd, lo.passTd, ([[4, "4 pt"], [6, "6 pt"]] as [number, string][]).concat([4, 6].includes(lo.passTd) ? [] : [[lo.passTd, `${lo.passTd} pt`]]).sort((a, b) => a[0] - b[0]), (v) => set({ passTd: v }))}
       </div>
       <p className="text-[10px] text-muted">
         <span className="mr-1 inline-block h-1 w-1 rounded-full bg-acc align-middle" />= your league&apos;s setting.{" "}
-        {scope === "dynasty" ? "Superflex uses FantasyPros' superflex dynasty list. TE premium has no expert list, so TEs are raised by how much the premium adds to their scoring (more catches, bigger boost)." : "Changing these re-scores every projection."}
+        {scope === "ros" && keeper ? "Keeper cost moves bargain keepers (cheap round for what they're worth next year) up and overpriced ones down: Some ≈ up to 25%, Full ≈ up to 50%. " : ""}{scope === "dynasty" ? "Superflex uses FantasyPros' superflex dynasty list. TE premium has no expert list, so TEs are raised by how much the premium adds to their scoring (more catches, bigger boost)." : "Changing these re-scores every projection."}
         {changed && <button type="button" onClick={reset} className="ml-1 font-semibold text-acc-ink underline">Back to league settings</button>}
       </p>
     </div>
   );
+}
+
+type Own = "all" | "mine" | "fa";
+const OWN_LABEL: Record<Own, string> = { all: "All players", mine: "My players", fa: "Free agents" };
+/** One button that picks whose players are listed. */
+function OwnerMenu({ value, onChange }: { value: Own; onChange: (v: Own) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative shrink-0">
+      <button type="button" onClick={() => setOpen(!open)} aria-haspopup="menu" aria-expanded={open}
+        className={cx("flex h-9 items-center gap-1 rounded-lg border px-2.5 text-xs font-bold", value === "all" ? "border-line bg-panel2" : "border-acc bg-acc-soft text-acc-ink")}>
+        {OWN_LABEL[value]}<ChevronDown size={14} className={cx("transition-transform", open && "rotate-180")} />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
+          <ul role="menu" className="fhq-in absolute left-0 z-40 mt-1 w-40 overflow-hidden rounded-xl border border-line bg-panel shadow-2xl">
+            {(Object.keys(OWN_LABEL) as Own[]).map((k) => (
+              <li key={k}><button type="button" role="menuitemradio" aria-checked={value === k} onClick={() => { onChange(k); setOpen(false); }}
+                className={cx("flex w-full items-center justify-between px-3 py-2.5 text-left text-sm", value === k ? "font-bold text-acc-ink" : "hover:bg-panel2")}>{OWN_LABEL[k]}{value === k && <span>✓</span>}</button></li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  );
+}
+
+const GRADE_TONE = (g: string) => (g.startsWith("A") ? "bg-pos/20 text-pos" : g.startsWith("B") ? "bg-pos/10 text-pos" : g.startsWith("C") ? "bg-acc/15 text-acc-ink" : g.startsWith("D") ? "bg-neg/10 text-neg" : "bg-neg/20 text-neg");
+function GradeChip({ g }: { g: Grade | null }) {
+  if (!g) return <span className="text-[10px] text-muted">—</span>;
+  return <span className={cx("min-w-7 rounded-md px-1 py-0.5 text-center text-[11px] font-extrabold", g.letter === "BYE" ? "bg-panel2 text-muted" : GRADE_TONE(g.letter))} title={g.letter === "BYE" ? "Bye week" : `vs ${g.opp}: ${g.pct >= 0 ? "+" : ""}${g.pct}% points allowed to ${g.pos} (opponent-adjusted)`}>{g.letter}</span>;
+}
+
+/**
+ * What's behind the number: for week / season, his projected stat line scored in this league's settings (or the
+ * modifiers), range and matchup; for dynasty, where the value comes from.
+ */
+function PointsBreakdown({ ctx, r, scope, opt, dist, grade }: { ctx: LeagueData["ctx"]; r: RankRow; scope: RankScope; opt: Required<RankOpts>; dist: ReturnType<typeof playerDist> | null; grade: Grade | null }) {
+  if (scope === "dynasty") {
+    const c = ctx.consensus[r.id];
+    const raw = (opt.sf ? c?.v2 : c?.v1) ?? null;
+    return (
+      <div className="text-xs leading-relaxed">
+        <div className="mb-1 font-bold">Where {r.value.toFixed(0)} comes from</div>
+        {raw !== null ? <p className="text-muted">FantasyPros dynasty {opt.sf ? "superflex" : "1QB"} rank{c?.dp ? ` (${r.pos}${Math.round(c.dp)})` : ""}, turned into a trade value where the top asset = 100.{r.pos === "TE" && opt.tep ? ` TE premium +${opt.tep}: raised for his catch volume.` : ""}</p>
+          : <p className="text-muted">Not covered by the expert market, so this is the SHS model&apos;s value on the same scale.</p>}
+        <div className="mt-2 grid grid-cols-3 gap-2 text-center">
+          <div className="rounded-lg bg-panel px-2 py-1.5"><div className="text-[10px] text-muted">Age</div><b>{r.age ? Math.floor(r.age) : "—"}</b></div>
+          <div className="rounded-lg bg-panel px-2 py-1.5"><div className="text-[10px] text-muted">Experience</div><b>{r.yearsExp === 0 ? "Rookie" : r.yearsExp != null ? `${r.yearsExp} yrs` : "—"}</b></div>
+          <div className="rounded-lg bg-panel px-2 py-1.5"><div className="text-[10px] text-muted">On</div><b className="truncate">{r.owner}</b></div>
+        </div>
+      </div>
+    );
+  }
+  const w0 = Math.min(ctx.currentWeek, ctx.lastWeek);
+  const sc = { ...(ctx.league.scoring_settings as Record<string, number>), bonus_rec_te: opt.tep, rec: opt.ppr, pass_td: opt.passTd };
+  const st = ctx.projStats.get(w0)?.get(r.id);
+  const parts = st ? breakdown(st, sc, r.pos) : [];
+  const weeks = scope === "ros" ? Array.from({ length: ctx.lastWeek - w0 + 1 }, (_, i) => w0 + i).map((w) => ({ w, pts: ctx.projections.get(r.id)?.byWeek[w] ?? 0 })) : [];
+  const maxW = Math.max(1, ...weeks.map((x) => x.pts));
+  return (
+    <div className="text-xs">
+      {scope === "week" ? (
+        <>
+          <div className="mb-1.5 flex items-center justify-between"><b>How {r.pts.toFixed(1)} adds up</b>{grade && grade.letter !== "BYE" && <span className="text-muted">Matchup <GradeChip g={grade} /> vs {grade.opp}</span>}</div>
+          {parts.length ? (
+            <ul className="divide-y divide-line overflow-hidden rounded-lg bg-panel">
+              {parts.map((p) => <li key={p.label} className="flex items-center justify-between px-2.5 py-1.5"><span className="text-muted">{p.label} <span className="num text-fg">{p.qty}</span></span><b className={cx("num", p.pts < 0 && "text-neg")}>{p.pts >= 0 ? "+" : ""}{p.pts.toFixed(1)}</b></li>)}
+            </ul>
+          ) : <p className="text-muted">No stat-line projection for him this week.</p>}
+          {dist && <p className="mt-2 text-muted">Range: <b className="text-fg">{dist.floor.toFixed(1)}</b> (bad week, 1 in 10) to <b className="text-fg">{dist.ceiling.toFixed(1)}</b> (great week, 1 in 10).</p>}
+        </>
+      ) : (
+        <>
+          <div className="mb-1.5 flex items-center justify-between"><b>{r.pts.toFixed(1)} over weeks {w0}–{ctx.lastWeek}</b><span className="text-muted">{r.games ? `${(r.pts / r.games).toFixed(1)}/game` : ""}</span></div>
+          <div className="flex h-16 items-end gap-1">
+            {weeks.map((x) => (
+              <div key={x.w} className="flex min-w-0 flex-1 flex-col items-center gap-0.5">
+                <span className="num text-[9px] text-muted">{x.pts ? x.pts.toFixed(0) : "–"}</span>
+                <div className={cx("w-full rounded-t", x.pts ? "bg-acc/70" : "bg-panel2")} style={{ height: `${Math.max(3, (x.pts / maxW) * 40)}px` }} />
+                <span className="text-[9px] text-muted">{x.pts ? `W${x.w}` : "BYE"}</span>
+              </div>
+            ))}
+          </div>
+          {r.keepRound != null && <p className="mt-2 text-muted">Keeper next season: round <b className="text-fg">{r.keepRound}</b> ({(r.keepSurplus ?? 0) > 0 ? "a bargain for what he's worth" : "pricier than he's worth"}).</p>}
+        </>
+      )}
+    </div>
+  );
+}
+
+/** Projected stat line → league points, by category. */
+function breakdown(st: Record<string, number>, sc: Record<string, number>, pos: string) {
+  const L: [string, string[], (v: number) => string][] = [
+    ["Pass yds", ["pass_yd"], (v) => v.toFixed(0)], ["Pass TD", ["pass_td"], (v) => v.toFixed(1)], ["INT", ["pass_int"], (v) => v.toFixed(1)],
+    ["Rush yds", ["rush_yd"], (v) => v.toFixed(0)], ["Rush TD", ["rush_td"], (v) => v.toFixed(1)],
+    ["Receptions", ["rec"], (v) => v.toFixed(1)], ["Rec yds", ["rec_yd"], (v) => v.toFixed(0)], ["Rec TD", ["rec_td"], (v) => v.toFixed(1)],
+    ["FG made", ["fgm", "fgm_0_19", "fgm_20_29", "fgm_30_39", "fgm_40_49", "fgm_50p"], (v) => v.toFixed(1)], ["XP", ["xpm"], (v) => v.toFixed(1)],
+    ["Sacks", ["sack", "idp_sack"], (v) => v.toFixed(1)], ["Tackles", ["idp_tkl", "idp_tkl_solo", "idp_tkl_ast"], (v) => v.toFixed(1)], ["Takeaways", ["int", "fum_rec", "idp_int", "idp_fum_rec"], (v) => v.toFixed(1)],
+  ];
+  const out: { label: string; qty: string; pts: number }[] = [];
+  const used = new Set<string>();
+  for (const [label, keys, f] of L) {
+    let pts = 0, qty = 0;
+    for (const k of keys) { if (st[k] === undefined) continue; used.add(k); pts += st[k] * (sc[k] ?? 0); if (k === keys[0] || !keys.includes(keys[0]) ) qty += st[k]; }
+    if (label === "Receptions" && pos === "TE" && sc.bonus_rec_te) pts += (st.rec ?? 0) * sc.bonus_rec_te;
+    if (Math.abs(pts) >= 0.05) out.push({ label, qty: f(qty), pts });
+  }
+  let other = 0;
+  for (const [k, v] of Object.entries(st)) if (!used.has(k) && sc[k]) other += v * sc[k];
+  if (Math.abs(other) >= 0.05) out.push({ label: "Other (bonuses, fumbles, 2-pt…)", qty: "", pts: other });
+  return out;
 }

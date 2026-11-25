@@ -2,10 +2,15 @@
 
 /**
  * Home: every league as its own widget, stacked. Each shows this week's matchup (both teams, projected or live
- * scores, win chance) plus standing, PF, PA, playoff odds and power rank. Tapping a widget opens that league's matchup.
+ * scores, win chance), standing and recent form. Tapping a widget opens that league's matchup; three buttons at the
+ * bottom open its stats (PF / PA), overview (playoff odds) and league analyzer (power rank). Two views: full cards or
+ * slim strips. Press and hold a league to drag it into a new order (saved on this device).
  */
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { LayoutList, Rows3 } from "lucide-react";
+import { Reorder } from "@/components/Reorder";
 import { useApp, Loading } from "@/components/AppData";
 import { Onboarding } from "@/components/Onboarding";
 import { Logo, Notice, cx } from "@/components/ui";
@@ -22,6 +27,9 @@ import { leagueColour as colourOf } from "@/lib/leagueColour";
 
 
 type Slot = { ctx: LeagueContext | null; error: string | null };
+const ORDER_KEY = "fhq-home-order", VIEW_KEY = "fhq-home-view";
+function load<T>(k: string, d: T): T { try { const v = localStorage.getItem(k); return v ? (JSON.parse(v) as T) : d; } catch { return d; } }
+function save(k: string, v: unknown) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* private mode */ } }
 // Survives leaving and coming back to Home, so returning shows the widgets at once instead of loading skeletons.
 const seen: Record<string, Slot> = {};
 
@@ -29,6 +37,10 @@ export default function Home() {
   const app = useApp();
   const { setup } = app;
   const [slots, setSlots] = useState<Record<string, Slot>>(() => ({ ...seen }));
+  const [order, setOrder] = useState<string[]>(() => load<string[]>(ORDER_KEY, []));
+  const [view, setView] = useState<"cards" | "strips">(() => load(VIEW_KEY, "cards"));
+  const saveOrder = (k: string[]) => { setOrder(k); save(ORDER_KEY, k); };
+  const saveView = (v: "cards" | "strips") => { setView(v); save(VIEW_KEY, v); };
 
   useEffect(() => {
     if (!setup?.settings.userId) return;
@@ -50,22 +62,35 @@ export default function Home() {
   const favoured = games.filter((g) => (g!.winProbA ?? 0) >= 50).length;
   const week = ready[0] ? Math.min(ready[0].currentWeek, ready[0].lastWeek) : null;
 
+  const rank = (id: string) => { const i = order.indexOf(id); return i < 0 ? 1e6 : i; };
+  const leagues = [...setup.leagues].sort((a, b) => rank(a.league_id) - rank(b.league_id));
+  const viewBtn = (v: "cards" | "strips", Icon: typeof Rows3, label: string) => (
+    <button type="button" onClick={() => saveView(v)} aria-pressed={view === v} aria-label={label}
+      className={cx("flex h-8 w-9 items-center justify-center rounded-full transition-colors", view === v ? "bg-acc text-on-acc" : "text-muted")}><Icon size={16} /></button>
+  );
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
-      <div>
-        <div className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-acc-ink">{week ? `Week ${week}` : "This week"}</div>
-        <h1 className="h-display text-4xl leading-none">My leagues</h1>
-        <p className="mt-1 text-xs text-muted">
-          {games.length ? <>Favoured in <b className="text-fg">{favoured} of {games.length}</b> · </> : null}Tap a league to open its matchup
-        </p>
+      <div className="flex items-end justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-acc-ink">{week ? `Week ${week}` : "This week"}</div>
+          <h1 className="h-display text-4xl leading-none">My leagues</h1>
+          <p className="mt-1 text-xs text-muted">
+            {games.length ? <>Favoured in <b className="text-fg">{favoured} of {games.length}</b> · </> : null}Hold and drag to reorder
+          </p>
+        </div>
+        <div role="group" aria-label="Home view" className="flex shrink-0 rounded-full border border-line bg-panel p-0.5">
+          {viewBtn("cards", Rows3, "Full cards")}{viewBtn("strips", LayoutList, "Compact strips")}
+        </div>
       </div>
-      {setup.leagues.map((l, i) => <LeagueWidget key={l.league_id} league={l} slot={slots[l.league_id]} index={i} />)}
+      <Reorder key={view} className={cx("flex flex-col", view === "cards" ? "gap-4" : "gap-2")} onReorder={(k) => saveOrder(k)}
+        items={leagues.map((l, i) => ({ key: l.league_id, node: view === "cards" ? <LeagueWidget league={l} slot={slots[l.league_id]} index={i} /> : <LeagueStrip league={l} slot={slots[l.league_id]} index={i} /> }))} />
     </div>
   );
 }
 
 function LeagueWidget({ league, slot, index }: { league: League; slot: Slot | undefined; index: number }) {
   const { selectLeague } = useApp();
+  const router = useRouter();
   const colour = colourOf(league.league_id);
   const avatar = league.avatar ? `https://sleepercdn.com/avatars/thumbs/${league.avatar}` : null;
   const ctx = slot?.ctx ?? null;
@@ -73,10 +98,11 @@ function LeagueWidget({ league, slot, index }: { league: League; slot: Slot | un
   const href = `/matchup/?league=${league.league_id}`;
 
   const [enter] = useState(() => firstTime(`home:${league.league_id}`));
-  const shell = (body: React.ReactNode, sub: string, right?: React.ReactNode) => (
-    <Link href={href} onClick={() => selectLeague(league.league_id)} aria-label={`Open ${league.name}`}
-      className={cx(enter && "fhq-rise", "block overflow-hidden rounded-3xl border border-line bg-panel transition-transform active:scale-[0.99]")} style={{ animationDelay: `${index * 80}ms` }}>
-      <div style={{ backgroundImage: `linear-gradient(160deg, ${colour}66 0%, ${colour}1f 45%, transparent 80%)` }}>
+  const go = (to: string) => { selectLeague(league.league_id); router.push(to); };
+  const shell = (body: React.ReactNode, sub: string, right?: React.ReactNode, foot?: React.ReactNode) => (
+    <div className={cx(enter && "fhq-rise", "overflow-hidden rounded-3xl border border-line bg-panel")} style={{ animationDelay: `${index * 80}ms` }}>
+      <div role="link" tabIndex={0} aria-label={`Open ${league.name} matchup`} onClick={() => go(href)} onKeyDown={(e) => e.key === "Enter" && go(href)}
+        className="cursor-pointer transition-transform active:scale-[0.99]" style={{ backgroundImage: `linear-gradient(160deg, ${colour}66 0%, ${colour}1f 45%, transparent 80%)` }}>
         <div className="flex items-center gap-3 px-4 pb-1 pt-3.5">
           <Logo src={avatar} name={league.name} size={36} square />
           <div className="min-w-0 flex-1"><div className="truncate text-[15px] font-bold">{league.name}</div><div className="truncate text-[11px] text-muted">{sub}</div></div>
@@ -84,7 +110,8 @@ function LeagueWidget({ league, slot, index }: { league: League; slot: Slot | un
         </div>
         {body}
       </div>
-    </Link>
+      {foot}
+    </div>
   );
 
   const baseSub = `${league.total_rosters} teams · ${formatLabel(league)}`;
@@ -157,8 +184,30 @@ function LeagueWidget({ league, slot, index }: { league: League; slot: Slot | un
   const seasonAvg = done.reduce((a, x) => a + x.pts, 0) / Math.max(1, done.length);
   const last3 = done.slice(-3).reduce((a, x) => a + x.pts, 0) / Math.max(1, Math.min(3, done.length));
   const form = done.length >= 4 ? (last3 / seasonAvg - 1) * 100 : null;
-  const cell = (label: string, value: string, tone = "") => (
-    <div className="rounded-xl bg-panel2 py-2 text-center"><div className={cx("num text-sm font-bold", tone)}><Roll text={value} id={`h:${league.league_id}:${label}`} /></div><div className="text-[10px] text-muted">{label}</div></div>
+  // PF / PA with where they rank in the league (1st = most).
+  const pfRank = [...ctx.teams].sort((a, b) => b.pointsFor - a.pointsFor).findIndex((t) => t.rosterId === me.rosterId) + 1;
+  const paRank = [...ctx.teams].sort((a, b) => b.pointsAgainst - a.pointsAgainst).findIndex((t) => t.rosterId === me.rosterId) + 1;
+  const q = `?league=${league.league_id}`;
+  const btn = (to: string, label: string, children: React.ReactNode, wide = false) => (
+    <Link href={to} onClick={(e) => { e.stopPropagation(); selectLeague(league.league_id); }} aria-label={label}
+      className={cx("flex flex-col items-center justify-center rounded-xl bg-panel2 px-2 py-2 text-center transition-colors active:bg-line hover:bg-line/60", wide && "col-span-2")}>{children}</Link>
+  );
+  const foot = (
+    <div className="grid grid-cols-4 gap-1.5 px-3 pb-3">
+      {btn(`/stats/${q}`, `Stats: points for ${me.pointsFor.toFixed(0)}, ${ord(pfRank)}; against ${me.pointsAgainst.toFixed(0)}, ${ord(paRank)}`, (
+        <div className="flex w-full justify-around gap-2">
+          <span><span className="num block text-sm font-bold"><Roll text={me.pointsFor.toFixed(0)} id={`h:${league.league_id}:PF`} /></span><span className="text-[10px] text-muted">PF · {ord(pfRank)}</span></span>
+          <span className="w-px self-stretch bg-line" aria-hidden />
+          <span><span className="num block text-sm font-bold"><Roll text={me.pointsAgainst.toFixed(0)} id={`h:${league.league_id}:PA`} /></span><span className="text-[10px] text-muted">PA · {ord(paRank)}</span></span>
+        </div>
+      ), true)}
+      {btn(`/matchup/${q}&view=overview`, `Playoff odds ${po === undefined ? "unknown" : `${po.toFixed(0)}%`}: open league overview`, (
+        <><span className={cx("num text-sm font-bold", po === undefined ? "" : po >= 75 ? "text-pos" : po <= 35 ? "text-neg" : "")}>{po === undefined ? "—" : <Roll text={`${po.toFixed(0)}%`} id={`h:${league.league_id}:Playoffs`} />}</span><span className="text-[10px] text-muted">Playoffs</span></>
+      ))}
+      {btn(`/league/${q}`, `Power rank ${power ? power.rank : "unknown"}: open league analyzer`, (
+        <><span className="num text-sm font-bold">{power ? <Roll text={`#${power.rank}`} id={`h:${league.league_id}:Power`} /> : "—"}</span><span className="text-[10px] text-muted">Power</span></>
+      ))}
+    </div>
   );
   return (
     <>
@@ -179,15 +228,10 @@ function LeagueWidget({ league, slot, index }: { league: League; slot: Slot | un
               )}
             </div>
           )}
-          <div className="grid grid-cols-4 gap-1.5 px-3 pb-3">
-            {cell("PF", me.pointsFor.toFixed(0))}
-            {cell("PA", me.pointsAgainst.toFixed(0))}
-            {cell("Playoffs", po === undefined ? "—" : `${po.toFixed(0)}%`, po === undefined ? "" : po >= 75 ? "text-pos" : po <= 35 ? "text-neg" : "")}
-            {cell("Power", power ? `#${power.rank}` : "—")}
-          </div>
         </>,
         `${ctx.teamsCount} teams · ${ctx.scoring} · ${formatLabel(league)}`,
         right,
+        foot,
       )}
     </>
   );
@@ -212,6 +256,47 @@ function WidgetSkeleton() {
         <div className="flex flex-col items-end"><div className="sk h-[34px] w-[34px] rounded-full" /><div className="sk mt-2 h-8 w-24" /></div>
       </div>
       <div className="grid grid-cols-4 gap-1.5 px-3 pb-3">{[0, 1, 2, 3].map((i) => <div key={i} className="sk h-11 rounded-xl" />)}</div>
+    </div>
+  );
+}
+
+/** Compact view: one slim strip per league (logo, name, both scores, win chance). Tap to open the matchup. */
+function LeagueStrip({ league, slot, index }: { league: League; slot: Slot | undefined; index: number }) {
+  const { selectLeague } = useApp();
+  const router = useRouter();
+  const [enter] = useState(() => firstTime(`strip:${league.league_id}`));
+  const colour = colourOf(league.league_id);
+  const avatar = league.avatar ? `https://sleepercdn.com/avatars/thumbs/${league.avatar}` : null;
+  const ctx = slot?.ctx ?? null;
+  const me = ctx?.teams.find((t) => t.rosterId === ctx.myRosterId);
+  const go = () => { selectLeague(league.league_id); router.push(`/matchup/?league=${league.league_id}`); };
+  let mine: string | null = null, theirs: string | null = null, opp = "", win: number | null = null, live = false;
+  if (ctx && me && !ctx.seasonOver) {
+    const g = gameView(ctx, me.rosterId, Math.min(ctx.currentWeek, ctx.lastWeek));
+    live = ctx.matchupsThisWeek.some((m) => m.points > 0);
+    const a = live ? g.a.actual : g.a.projected, b = g.b ? (live ? g.b.actual : g.b.projected) : null;
+    mine = a != null ? a.toFixed(1) : null; theirs = b != null ? b.toFixed(1) : null; opp = g.b?.name ?? ""; win = g.winProbA;
+  }
+  const tone = win === null ? "bg-panel2 text-muted" : win >= 60 ? "bg-pos/15 text-pos" : win <= 40 ? "bg-neg/15 text-neg" : "bg-acc/15 text-acc-ink";
+  return (
+    <div role="link" tabIndex={0} onClick={go} onKeyDown={(e) => e.key === "Enter" && go()} aria-label={`Open ${league.name} matchup`}
+      className={cx(enter && "fhq-rise", "relative flex cursor-pointer items-center gap-3 overflow-hidden rounded-2xl border border-line bg-panel py-2.5 pl-4 pr-3 transition-transform active:scale-[0.99]")}
+      style={{ animationDelay: `${index * 50}ms` }}>
+      <span className="absolute inset-y-0 left-0 w-1" style={{ background: colour }} aria-hidden />
+      <Logo src={avatar} name={league.name} size={30} square />
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-sm font-bold">{league.name}</div>
+        <div className="truncate text-[11px] text-muted">{!slot ? "Loading…" : !ctx ? "Couldn't load" : !me ? "No team" : ctx.seasonOver ? "Season complete" : opp ? `${me.wins}–${me.losses}${me.ties ? `–${me.ties}` : ""} · vs ${opp}` : "No game this week"}</div>
+      </div>
+      {mine !== null && theirs !== null && (
+        <div className="num shrink-0 text-right leading-tight">
+          <div className="text-[15px] font-bold"><Roll text={mine} id={`s:${league.league_id}:me`} /></div>
+          <div className="text-[11px] text-muted"><Roll text={theirs} id={`s:${league.league_id}:op`} /></div>
+        </div>
+      )}
+      <span className={cx("num w-14 shrink-0 rounded-full py-1 text-center text-xs font-extrabold", tone)}>
+        {win === null ? "—" : <>{live && <span className="mr-0.5 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-current align-middle" />}<Roll text={`${Math.round(win)}%`} id={`s:${league.league_id}:win`} /></>}
+      </span>
     </div>
   );
 }

@@ -89,6 +89,8 @@ export interface LeagueContext {
   consensus: Record<string, Consensus>;
   /** Keeper leagues: next-season keeper surplus (pts/g above what that keeper round returns), by player. */
   keeperSurplus: Map<string, number>;
+  /** Keeper leagues: next season's keep price (round) and surplus (+ cheap for what he's worth, − overpriced) for rostered players. */
+  keeperCost: Map<string, { round: number; surplus: number }>;
   /** NFL schedule this season (kickoffs, roof, coaches, Vegas lines). */
   games: Game[];
   /** Head coach of each NFL team last season. */
@@ -645,7 +647,7 @@ async function buildLeagueContext(
     league, format, valuationMode, scoring: scoringLabel(league.scoring_settings), superflex: isSuperflex(league.roster_positions),
     teamsCount, currentWeek, playoffStart, lastWeek, inPlayoffs, seasonOver, teams, myRosterId, players, projections, values,
     replacement, waiverLevel, consensus: cons, consensusDates: consR ? { ecr: consR.data.ecrDate, weekly: consR.data.weeklyDate } : null, projStats, stats, logs, signals, lineups, weekStrength, sim, remainingSchedule: Object.fromEntries(remaining.map((r) => [r.week, r.games])), classifications, picks, matchupsThisWeek: thisWeekMatchups, matchupsByWeek: matchupWeeks, healthyStrength, showClasses, extras, nflOpponents: opponents, liveScore, transactions, txNames,
-    fetchedAt: Math.min(rostersR.fetchedAt, leagueR.fetchedAt), stale, warnings, keeperSurplus: new Map(), games,
+    fetchedAt: Math.min(rostersR.fetchedAt, leagueR.fetchedAt), stale, warnings, keeperSurplus: new Map(), keeperCost: new Map(), games,
     prevCoach: new Map((prevSchedR?.data ?? []).flatMap((g) => [[g.home, g.homeCoach ?? ""], [g.away, g.awayCoach ?? ""]] as [string, string][]).filter(([, c]) => c)),
     combine: combineR?.data ?? new Map(),
   };
@@ -655,7 +657,10 @@ async function buildLeagueContext(
       const rounds = league.settings.draft_rounds || 15;
       const rules = keeperRulesFor(getSettings(), league);
       const picks = league.draft_id ? (await sleeper.draftPicks(league.draft_id)).data : [];
-      for (const t of teams) for (const r of keeperPlan(out, t.rosterId, picks, rules, rounds)) if (r.surplus !== null && r.surplus > 0) out.keeperSurplus.set(r.playerId, r.surplus);
+      for (const t of teams) for (const r of keeperPlan(out, t.rosterId, picks, rules, rounds)) {
+        if (r.surplus !== null && r.surplus > 0) out.keeperSurplus.set(r.playerId, r.surplus);
+        if (r.surplus !== null && r.costRound !== null) out.keeperCost.set(r.playerId, { round: r.costRound, surplus: r.surplus });
+      }
       applyKeeperBonus(values, out.keeperSurplus);
     } catch { warnings.push("Keeper costs couldn't be loaded, so trade values ignore keeper value for now."); }
   }

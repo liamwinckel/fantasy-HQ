@@ -57,7 +57,15 @@ function Frame({ children }: { children: ReactNode }) {
       document.removeEventListener("visibilitychange", reset);
     };
   }, []);
-  const home = path === "/";
+  // Settings opened from Home keeps the Home header (username, not a league), and the gear toggles back home.
+  const from = useRef<string | null>(null);
+  const [cameFromHome, setCameFromHome] = useState(false);
+  useEffect(() => {
+    if (path === "/settings" || path === "/settings/") setCameFromHome(from.current === "/" || from.current === null);
+    else from.current = path;
+  }, [path]);
+  const inSettings = path === "/settings" || path === "/settings/";
+  const home = path === "/" || (inSettings && cameFromHome);
   const leagues = (setup?.leagues ?? []).map((l) => ({ id: l.league_id, name: l.name, format: formatLabel(l), avatar: l.avatar ? `https://sleepercdn.com/avatars/thumbs/${l.avatar}` : null }));
   const isKeeper = setup?.leagues.find((l) => l.league_id === leagueId)?.settings.type === 1;
   const tools = [...QUICK_ACTIONS.map((a) => ({ href: a.href, label: a.label })), ...(isKeeper ? [{ href: "/keepers", label: "Keeper Planner" }] : []), { href: "/shs", label: "SHS AI Lab" }];
@@ -103,7 +111,8 @@ function Frame({ children }: { children: ReactNode }) {
             </div>
             <div className="flex shrink-0 items-center gap-2 md:ml-auto">
               <RefreshButton compact />
-              <Link href="/settings" aria-label="Settings" className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-panel md:hidden"><Settings size={18} /></Link>
+              <Link href={inSettings ? (cameFromHome ? "/" : from.current ?? "/") : "/settings"} aria-label={inSettings ? "Close settings" : "Settings"} aria-pressed={inSettings}
+                className={cx("flex h-10 w-10 items-center justify-center rounded-full border md:hidden", inSettings ? "border-acc bg-acc text-on-acc" : "border-line bg-panel")}><Settings size={18} /></Link>
             </div>
           </header>
           <EdgeBackStage under={<Home />}>
