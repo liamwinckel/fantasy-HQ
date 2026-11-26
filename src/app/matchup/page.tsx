@@ -85,8 +85,8 @@ function MatchupPageBody({ setup, league, ctx, sp }: LeagueData) {
       })()}
       {!g.b && kind !== "past" && week >= ctx.playoffStart && ctx.sim.playoffOpp?.[week] && <PlayoffEstimate ctx={ctx} rid={focus} week={week} />}
 
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
-        <div className="flex min-w-0 flex-1 flex-col gap-4">
+      <div className="grid items-start gap-4 lg:grid-cols-2">
+        <div className="contents">
           <Card title="Head to head by position" right={<span className="text-[11px] text-muted">{kind === "past" ? "actual pts" : "projected pts"}</span>}>
             <div className="flex flex-col gap-3">
               {positions.map((pos) => {

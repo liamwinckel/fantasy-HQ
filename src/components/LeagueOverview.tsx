@@ -111,10 +111,11 @@ export function LeagueOverview({ setup, league, ctx, sp }: LeagueData) {
         <TrackRecord ctx={ctx} />
       </div>
 
-      <Card title="Season at a glance" onOpen={() => setOpen("season")}><SeasonChart ctx={ctx} rosterId={me.rosterId} selectedWeek={week} /></Card>
-
-      {/* Format-specific section */}
-      <PlayoffPicture ctx={ctx} />
+      <div className="grid items-start gap-4 lg:grid-cols-2">
+        <Card title="Season at a glance" onOpen={() => setOpen("season")}><SeasonChart ctx={ctx} rosterId={me.rosterId} selectedWeek={week} /></Card>
+        {/* Format-specific section */}
+        <PlayoffPicture ctx={ctx} />
+      </div>
       {fmt === "redraft" && <PlayoffPath ctx={ctx} me={me.rosterId} power={power} />}
       {fmt === "dynasty" && <DynastyWindowCard ctx={ctx} />}
       {fmt === "dynasty" && (
