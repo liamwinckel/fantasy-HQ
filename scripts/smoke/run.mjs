@@ -69,7 +69,11 @@ async function run(job) {
   for (const re of [/\bNaN\b/, /\bundefined\b/, /\bnull\b/, /Infinity/, /Couldn.t load/i, /Something went wrong/i, /Application error/i]) if (re.test(text)) flags.push(String(re));
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1).catch(() => false);
   if (overflow) flags.push("horizontal-overflow");
-  await page.screenshot({ path: path.join(OUT, "shots", `${job.name}.png`), fullPage: true }).catch(() => {});
+  // The app scrolls inside #fhq-scroll, not the page, so grow the viewport to the content height before the shot.
+  const h = await page.evaluate(() => { const s = document.getElementById("fhq-scroll"); return s ? s.scrollHeight + (window.innerHeight - s.clientHeight) : document.documentElement.scrollHeight; }).catch(() => 844);
+  await page.setViewportSize({ width: 390, height: Math.min(Math.max(844, h), 12000) }).catch(() => {});
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: path.join(OUT, "shots", `${job.name}.png`) }).catch(() => {});
   fs.writeFileSync(path.join(OUT, "shots", `${job.name}.txt`), text);
   results.push({ ...job, status, ms, errors: [...new Set(errors)], failed: [...new Set(failed)], flags });
   console.log(`${status === "ok" ? "✓" : "✗"} ${job.name} ${ms}ms ${flags.join(",")} errs=${errors.length} failed=${failed.length}`);
