@@ -1,0 +1,46 @@
+== The Great Games sf=true rostered=192
+#1 Josh Allen             QB age31 dyn100 model59.7 mkt10232 base29.5
+#2 Jaxon Smith-Njigba     WR age25 dyn95.4 model76.7 mkt9205 base27.2
+#3 Ja'Marr Chase          WR age27 dyn95.3 model45.1 mkt9184 base22.5
+#26 Justin Herbert         QB age29 dyn75.9 model10.9 mkt5541 base20.1
+#51 Parker Washington      WR age25 dyn58.6 model19.8 mkt3123 base17.1
+#76 Dalton Kincaid         TE age27 dyn48.1 model12.2 mkt2012 base10.3
+#101 Marvin Harrison Jr.    WR age24 dyn35.5 model1.8 mkt1023 base4.5
+#126 Chris Bell             WR age23 dyn24.3 model2.1 mkt442 base4.6
+#151 Brandon Aiyuk          WR age29 dyn18.2 model2.4 mkt233 base7.9
+#176 Pat Freiermuth         TE age28 dyn11.8 model3.3 mkt88 base8.6
+== Fantasy Football Champions League sf=false rostered=279
+#1 Jaxon Smith-Njigba     WR age25 dyn100 model94.4 mkt10184 base24.6
+#2 Ja'Marr Chase          WR age27 dyn99.9 model61.1 mkt10160 base20.3
+#3 Bijan Robinson         RB age25 dyn96.9 model58.1 mkt9491 base18.8
+#26 Zay Flowers            WR age26 dyn73.2 model34.5 mkt5092 base15.0
+#51 Ladd McConkey          WR age25 dyn61.9 model11.2 mkt3512 base11.0
+#76 D'Andre Swift          RB age28 dyn47.3 model30.1 mkt1929 base15.1
+#101 Antonio Williams       WR age22 dyn35.1 model4.8 mkt994 base9.8
+#126 Chris Godwin Jr.       WR age31 dyn26.3 model2.3 mkt523 base7.3
+#151 Matthew Stafford       QB age39 dyn20.5 model6.4 mkt300 base15.4
+#176 Chris Rodriguez Jr.    RB age27 dyn15.3 model2.2 mkt158 base6.5
+#201 Jaylin Noel            WR age24 dyn10.8 model2 mkt135 base5.2
+#226 Kaytron Allen          RB age24 dyn7.1 model1.1 mkt55 base2.8
+#251 Tyler Goodson          RB age26 dyn4.6 model1.1 mkt14 base4.1
+#275 Damien Martinez        RB age23 dyn1.6 model1.5 mkt1 base3.9
+#276 CJ Daniels             WR age25 dyn1.6 model0.9 mktundefined base2.3
+#277 Jacob Saylors          RB age26 dyn1.6 model0.6 mktundefined base1.8
+#278 Roman Wilson           WR age25 dyn1.6 model1.7 mktundefined base4.4
+#279 Tyler Lockett          WR age34 dyn1.6 model1.4 mkt1 base3.3
+== Goodell’s Goon Gang  sf=true rostered=237
+#1 Josh Allen             QB age31 dyn100 model57.1 mkt10232 base25.7
+#2 Jaxon Smith-Njigba     WR age25 dyn95.4 model82.4 mkt9205 base21.0
+#3 Ja'Marr Chase          WR age27 dyn95.3 model53.3 mkt9184 base17.1
+#26 Justin Herbert         QB age29 dyn75.9 model6.6 mkt5541 base15.7
+#51 Parker Washington      WR age25 dyn58.6 model38.9 mkt3123 base13.6
+#76 Dalton Kincaid         TE age27 dyn48.1 model3.2 mkt2012 base8.2
+#101 Marvin Harrison Jr.    WR age24 dyn35.5 model1.5 mkt1023 base3.7
+#126 Courtland Sutton       WR age31 dyn25.4 model1.8 mkt487 base5.7
+#151 Travis Kelce           TE age37 dyn18.9 model10 mkt251 base10.6
+#176 Tyreek Hill            WR age33 dyn15.5 model1.3 mkt162 base4.2
+#201 Elic Ayomanor          WR age24 dyn10.5 model2.8 mkt69 base6.2
+#226 Devin Singletary       RB age29 dyn4.6 model0.9 mkt11 base3.3
+#235 Le'Veon Moss           RB ageundefined dyn1.6 model1.4 mktundefined base3.2
+#236 Nick Chubb             RB age31 dyn1.6 model1.2 mktundefined base3.7
+#237 Roman Wilson           WR age25 dyn1.6 model1.4 mktundefined base3.7
