@@ -15,7 +15,7 @@ export interface LabPlayer {
   eligible: boolean[]; unavailable: string | null; locked: boolean;
   median: number; low: number; high: number; base: number; seasonAvg: number; last4: number; games: number;
   confidence: string; opp: string | null; onBye: boolean; matchup: number; usage: number; notes: string[];
-  snapL3: number[] | null; recent: { week: number; pts: number }[]; actual?: number | null;
+  snapL3: number[] | null; recent: { week: number; pts: number }[]; actual?: number | null; playing?: boolean;
   /** Last 6 games and this league's startable line at his position (for the trend line). */
   trend?: number[]; trendRef?: number;
   /** SHS AI ±% vs expert rank this week. */
@@ -358,7 +358,9 @@ function Versus({ slots, lineup, bench, byId, opponent, oppChanged, live, change
 }) {
   const [showBench, setShowBench] = useState(true);
   const mineCell = (p: LabPlayer | undefined, key: string, isNew = false) => {
-    const started = live && p?.locked && p.actual !== null && p.actual !== undefined;
+    // Anyone whose game has kicked off shows real points, bench included (0 until he scores).
+    const started = live && !!p && (p.locked || !!p.playing);
+    if (p && started && (p.actual === null || p.actual === undefined)) p = { ...p, actual: 0 };
     return (
       <div data-flip={key} className={cx("flex min-w-0 flex-1 items-center gap-2 rounded-lg px-1 py-0.5", isNew && "bg-acc-soft")}>
         <span className="hidden sm:block">{p ? <PlayerImg id={p.id} name={p.name} pos={p.pos} size={30} /> : <span className="block h-[30px] w-[30px] rounded-full border border-dashed border-neg" />}</span>
@@ -378,7 +380,8 @@ function Versus({ slots, lineup, bench, byId, opponent, oppChanged, live, change
   };
   const oppCell = (l: WeekLine | undefined, isNew = false) => {
     if (!l) return <div className="flex-1" />;
-    const started = live && l.actual !== null && l.actual !== 0;
+    const started = live && (!!l.playing || (l.actual !== null && l.actual !== 0));
+    if (started && l.actual === null) l = { ...l, actual: 0 };
     return (
       <div className={cx("flex min-w-0 flex-1 flex-row-reverse items-center gap-2 rounded-lg px-1 py-0.5 text-right", isNew && "bg-acc-soft")}>
         <span className="hidden sm:block">{l.playerId ? <PlayerImg id={l.playerId} name={l.name} pos={l.pos} size={30} /> : <span className="block h-[30px] w-[30px] rounded-full border border-dashed border-line" />}</span>

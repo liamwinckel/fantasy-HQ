@@ -97,6 +97,8 @@ export interface WeekLine {
   low: number | null;
   high: number | null;
   note: string; // "vs MIA", "BYE", …
+  /** This week: his NFL game has kicked off, so show points scored (starter or bench). */
+  playing?: boolean;
 }
 
 export interface TeamWeek {
@@ -151,6 +153,7 @@ function line(ctx: LeagueContext, slot: string, pid: string | null, w: number, k
     slot, playerId: pid, name: p?.name ?? pid, pos: p?.pos ?? "", team: p?.team ?? null, injury: kind === "past" ? null : p?.injury ?? null,
     actual: kind === "future" ? null : m?.players_points[pid] ?? (kind === "past" ? 0 : null),
     proj: pj?.median ?? null, low: pj?.low ?? null, high: pj?.high ?? null, note: oppNote(ctx, pid, w),
+    playing: kind === "current" && !!p?.team && ctx.startedTeams.has(p.team),
   };
 }
 

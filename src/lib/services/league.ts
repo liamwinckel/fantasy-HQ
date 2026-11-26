@@ -93,6 +93,8 @@ export interface LeagueContext {
   keeperCost: Map<string, { round: number; surplus: number }>;
   /** How far expert ranks can be trusted per player (1 = fully; lower for return-yard specialists in leagues that score returns). */
   marketTrust: Map<string, number>;
+  /** NFL teams whose game this week has kicked off (live or final). */
+  startedTeams: Set<string>;
   /** NFL schedule this season (kickoffs, roof, coaches, Vegas lines). */
   games: Game[];
   /** Head coach of each NFL team last season. */
@@ -668,7 +670,7 @@ async function buildLeagueContext(
     league, format, valuationMode, scoring: scoringLabel(league.scoring_settings), superflex: isSuperflex(league.roster_positions),
     teamsCount, currentWeek, playoffStart, lastWeek, inPlayoffs, seasonOver, teams, myRosterId, players, projections, values,
     replacement, waiverLevel, consensus: cons, consensusDates: consR ? { ecr: consR.data.ecrDate, weekly: consR.data.weeklyDate } : null, projStats, stats, logs, signals, lineups, weekStrength, sim, remainingSchedule: Object.fromEntries(remaining.map((r) => [r.week, r.games])), classifications, picks, matchupsThisWeek: thisWeekMatchups, matchupsByWeek: matchupWeeks, healthyStrength, showClasses, extras, nflOpponents: opponents, liveScore, transactions, txNames,
-    fetchedAt: Math.min(rostersR.fetchedAt, leagueR.fetchedAt), stale, warnings, keeperSurplus: new Map(), keeperCost: new Map(), marketTrust: trust, games,
+    fetchedAt: Math.min(rostersR.fetchedAt, leagueR.fetchedAt), stale, warnings, keeperSurplus: new Map(), keeperCost: new Map(), marketTrust: trust, startedTeams: new Set([...kickoff].filter(([, k]) => now >= k.start).map(([t]) => t)), games,
     prevCoach: new Map((prevSchedR?.data ?? []).flatMap((g) => [[g.home, g.homeCoach ?? ""], [g.away, g.awayCoach ?? ""]] as [string, string][]).filter(([, c]) => c)),
     combine: combineR?.data ?? new Map(),
   };

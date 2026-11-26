@@ -32,6 +32,7 @@ export function MyLineup({ ctx, me, week, onTotal, opponent, header }: { ctx: Le
         games: pr.games, confidence: pr.confidence, opp, onBye: !!p.team && ctx.nflOpponents.has(p.team) && !opp,
         matchup: kind === "current" ? pr.matchupFactor : 1, usage: pr.usageFactor, notes: kind === "current" ? pr.notes : pr.notes.filter((n) => !n.includes("this week") && !n.includes("matchup")),
         snapL3: snaps.length ? snaps.map((x) => Math.round(x * 100)) : null, recent: log.slice(-4).map((g) => ({ week: g.week, pts: g.pts })), trend: log.slice(-6).map((g) => g.pts), trendRef: ctx.replacement[p.pos],
+          playing: kind === "current" && !!p.team && ctx.startedTeams.has(p.team),
           actual: kind === "current" ? ctx.matchupsByWeek[week - 1]?.find((m) => m.roster_id === me.rosterId)?.players_points[pid] ?? null : null,
       };
     });
