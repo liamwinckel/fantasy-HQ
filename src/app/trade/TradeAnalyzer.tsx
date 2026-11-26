@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, ChevronDown, Minus, Plus, Search } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronDown, Minus, Plus, Search, X } from "lucide-react";
 import { PlayerLink } from "@/components/PlayerCard";
 import { PlayerImg, Segmented } from "@/components/client";
 import { SwipeRow } from "@/components/SwipeRow";
@@ -96,9 +96,13 @@ export function TradeAnalyzer({ leagueId, views, me, teams: rawTeams, initialPar
   const rawSend = sumOf(mine, aSends), rawGet = sumOf(theirs, bSends);
   let adjSend = 0, adjGet = 0;
   if (result && rawSend > 0 && rawGet > 0) {
-    const effS = result.market.aSends, effG = Math.max(0.01, result.market.bSends - result.rosterSpots.a.cost);
-    const q = effS / effG;
-    if (rawSend / rawGet < q) adjSend = rawGet * q - rawSend; else adjGet = rawSend / q - rawGet;
+    // The gap between the two sides after weighting, minus the gap in straight sums, goes to the side it favours.
+    // It can never exceed what the weighting actually took off (depth discount + roster cuts), so it stays bounded.
+    const effS = result.market.aSends, effG = Math.max(0, result.market.bSends - Math.max(0, result.rosterSpots.a.cost));
+    const adj = (effS - effG) - (rawSend - rawGet);
+    const cap = (rawSend - result.market.aSends) + (rawGet - result.market.bSends) + Math.abs(result.rosterSpots.a.cost);
+    const a = Math.max(-cap, Math.min(cap, adj));
+    if (a > 0) adjSend = a; else adjGet = -a;
   }
   const sendTotal = rawSend + adjSend, getTotal = rawGet + adjGet;
   const ready = aSends.length + bSends.length > 0;
@@ -122,7 +126,7 @@ export function TradeAnalyzer({ leagueId, views, me, teams: rawTeams, initialPar
 
       {/* Value bar: both totals, the weighting each side takes, and who's winning — pinned while you scroll. */}
       <div className="sticky top-0 z-20 -mx-1 rounded-2xl border border-line bg-panel/95 px-3 py-3 shadow-lg backdrop-blur sm:mx-0 sm:px-4">
-        <ValueBar send={sendTotal} get={getTotal} balance={result?.balance ?? null} partner={partnerName} />
+        <ValueBar send={sendTotal} get={getTotal} adjSend={adjSend} adjGet={adjGet} ready={!!result && rawSend + rawGet > 0} partner={partnerName} />
         <div className="mt-2.5 flex justify-center">
           {step === "build" ? (
             <button type="button" disabled={!ready || !result} onClick={() => { setStep("analysis"); document.getElementById("fhq-scroll")?.scrollTo({ top: 0 }); }}
@@ -198,8 +202,8 @@ function DealColumn({ title, team, selected, onChange, tiers, setTiers, mode, va
               ) : <div className="truncate text-[10px] text-muted">{a.sub}</div>}
             </div>
             <span className="num shrink-0 text-sm font-bold">{tv(valueOf(a))}</span>
-            <button type="button" aria-label={`Take ${a.name} out of the trade`} onClick={() => onChange(selected.filter((x) => x !== id))}
-              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-muted hover:text-neg active:scale-90"><Minus size={14} /></button>
+            <button type="button" aria-label={`Take ${a.name} out of the trade`} title="Remove from trade" onClick={() => onChange(selected.filter((x) => x !== id))}
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-neg/50 text-neg sm:h-7 sm:w-7 transition-colors hover:bg-neg hover:text-white active:scale-90"><X size={14} /></button>
           </div>
           </SwipeRow>
         );
@@ -371,7 +375,7 @@ function Result({ r, view, partner, busy, onApply, me, partnerId, deal, stack, a
       </div>
 
       <div className="flex flex-col overflow-hidden rounded-2xl border border-line bg-panel lg:block lg:columns-2 lg:gap-4 lg:overflow-visible lg:rounded-none lg:border-0 lg:bg-transparent">
-        <Fold title="Verdict & why" desk summary={<span className={cx("font-bold", r.verdictTone === "good" ? "text-pos" : r.verdictTone === "bad" ? "text-neg" : "text-fg")}>{r.verdict}</span>}>
+        <Fold title="Team-fit verdict" desk summary={<span className={cx("font-bold", r.verdictTone === "good" ? "text-pos" : r.verdictTone === "bad" ? "text-neg" : "text-fg")}>{r.verdict}</span>}>
           <div className="grid grid-cols-3 gap-1.5">
             <Mini label={`${partner} accepts`} value={`${Math.round(r.accept * 100)}%`} sub={r.accept >= 0.6 ? "Likely" : r.accept >= 0.35 ? "Coin flip" : "Unlikely"} tone={r.accept >= 0.5 ? "pos" : r.accept < 0.3 ? "neg" : null} />
             <Mini label="Title odds" value={r.odds ? `${signed(Math.round(r.odds.aTitleAfter - r.odds.aTitleBefore))}%` : "—"} sub={r.odds ? `${r.odds.aTitleBefore.toFixed(0)} → ${r.odds.aTitleAfter.toFixed(0)}%` : undefined} tone={r.odds && r.odds.aTitleAfter >= r.odds.aTitleBefore ? "pos" : "neg"} />
@@ -543,37 +547,44 @@ function Stat({ label, value, sub, tone }: { label: string; value: string; sub?:
  * and solid, the other side thin and faded; green when you win, red when you lose, blue when it's even. The faint
  * centre block is the fair range.
  */
-function ValueBar({ send, get, balance, partner }: { send: number; get: number; balance: number | null; partner: string }) {
+function ValueBar({ send, get, adjSend, adjGet, ready, partner }: { send: number; get: number; adjSend: number; adjGet: number; ready: boolean; partner: string }) {
   const total = send + get;
-  const getShare = total > 0 ? (100 * get) / total : 50;
-  const fair = balance !== null && Math.abs(balance) < 8;
+  // The bar judges value only (what each side gets, after the adjustment), so it always agrees with the two totals.
+  // How the deal fits each lineup is in Team impact.
+  const balance = ready ? (100 * (get - send)) / Math.max(1e-9, Math.max(get, send)) : null;
+  const split = total > 0 ? (100 * send) / total : 50; // where "you send" ends
+  const fair = balance !== null && Math.abs(balance) < 8; // ≈ the width of the fair band below
   const youWin = balance !== null && balance > 0 && !fair;
   const color = balance === null ? "var(--muted)" : fair ? "#4a9eff" : youWin ? "var(--pos)" : "var(--neg)";
-  const label = balance === null ? "Add players to both sides" : fair ? "Fair trade" : balance > 0 ? (balance > 40 ? "Strongly favours you" : "Favours you") : balance < -40 ? `Strongly favours ${partner}` : `Favours ${partner}`;
-  // The side getting more value is drawn solid: "You get" (right) when you're getting more.
+  const label = balance === null ? "Add players to both sides" : fair ? "Fair trade" : balance > 0 ? (balance > 30 ? "Strongly favours you" : "Favours you") : balance < -30 ? `Strongly favours ${partner}` : `Favours ${partner}`;
+  // Thick = the side getting more value; fair = both thick. Faded = the other side.
   const rightWins = get >= send;
+  const thick = (right: boolean) => fair || balance === null ? true : right === rightWins;
+  const h = (right: boolean) => (thick(right) ? 14 : 6);
+  const op = (right: boolean) => (thick(right) ? 1 : 0.35);
+  // The adjustment (consolidation premium) is drawn striped, inside the side that earned it, next to the split.
+  const aS = total > 0 ? (100 * adjSend) / total : 0, aG = total > 0 ? (100 * adjGet) / total : 0;
+  const stripe = (c: string) => `repeating-linear-gradient(135deg, ${c} 0 4px, color-mix(in srgb, ${c} 30%, transparent) 4px 7px)`;
   return (
     <div>
       <div className="mb-2 flex items-end justify-between gap-2">
-        <div className="min-w-0"><div className="text-[10px] font-bold uppercase tracking-wider text-muted">You send</div><div className="num h-display text-2xl leading-none sm:text-3xl" style={{ color: !rightWins && balance !== null ? color : undefined }}>{tv(send)}</div></div>
-        <div className="min-w-0 text-right"><div className="text-[10px] font-bold uppercase tracking-wider text-muted">You get</div><div className="num h-display text-2xl leading-none sm:text-3xl" style={{ color: rightWins && balance !== null ? color : undefined }}>{tv(get)}</div></div>
+        <div className="min-w-0"><div className="text-[10px] font-bold uppercase tracking-wider text-muted">You send</div><div className="num h-display text-2xl leading-none sm:text-3xl" style={{ color: (fair || !rightWins) && balance !== null ? color : undefined }}>{tv(send)}</div></div>
+        <div className="min-w-0 text-right"><div className="text-[10px] font-bold uppercase tracking-wider text-muted">You get</div><div className="num h-display text-2xl leading-none sm:text-3xl" style={{ color: (fair || rightWins) && balance !== null ? color : undefined }}>{tv(get)}</div></div>
       </div>
       <div className="relative h-5">
-        {/* fair range */}
-        <div className="absolute inset-y-0 left-[45%] right-[45%] rounded" style={{ background: "repeating-linear-gradient(135deg, transparent 0 4px, color-mix(in srgb, #4a9eff 35%, transparent) 4px 6px)" }} aria-hidden />
+        <div className="absolute -inset-y-0.5 left-[47.5%] right-[47.5%] rounded border border-dashed" style={{ borderColor: "color-mix(in srgb, #4a9eff 60%, transparent)", background: "color-mix(in srgb, #4a9eff 12%, transparent)" }} aria-hidden />
         {total > 0 && (
           <>
-            {/* left part: what you send */}
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 rounded-l-full transition-all duration-500"
-              style={{ width: `${100 - getShare}%`, height: rightWins ? 6 : 14, background: color, opacity: rightWins ? 0.35 : 1 }} />
-            {/* right part: what you get */}
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 rounded-r-full transition-all duration-500"
-              style={{ width: `${getShare}%`, height: rightWins ? 14 : 6, background: color, opacity: rightWins ? 1 : 0.35 }} />
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 rounded-l-full transition-all duration-500" style={{ width: `${split - aS}%`, height: h(false), background: color, opacity: op(false) }} />
+            {aS > 0 && <div className="absolute top-1/2 -translate-y-1/2 transition-all duration-500" style={{ left: `${split - aS}%`, width: `${aS}%`, height: h(false), background: stripe(color), opacity: op(false) }} />}
+            {aG > 0 && <div className="absolute top-1/2 -translate-y-1/2 transition-all duration-500" style={{ left: `${split}%`, width: `${aG}%`, height: h(true), background: stripe(color), opacity: op(true) }} />}
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 rounded-r-full transition-all duration-500" style={{ width: `${100 - split - aG}%`, height: h(true), background: color, opacity: op(true) }} />
+            <div className="absolute top-0 bottom-0 w-0.5 -translate-x-1/2 rounded bg-bg transition-all duration-500" style={{ left: `${split}%` }} />
           </>
         )}
       </div>
       <div className="mt-2 rounded-lg px-3 py-1.5 text-center text-sm font-extrabold" style={{ color, background: `color-mix(in srgb, ${color} 14%, transparent)` }}>
-        {label}
+        {label}{(adjSend > 0.5 || adjGet > 0.5) && <span className="ml-2 text-[11px] font-semibold opacity-80">· striped = value adjustment</span>}
       </div>
     </div>
   );
