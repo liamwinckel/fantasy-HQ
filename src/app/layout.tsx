@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   title: "SHS Fantasy HQ",
   description: "Personal fantasy football command centre for Sleeper leagues.",
   manifest: `${BP}/manifest.webmanifest`,
-  icons: { icon: `${BP}/favicon.png?v=5`, apple: `${BP}/apple-touch-icon.png?v=5` },
+  icons: { icon: `${BP}/favicon.png?v=6`, apple: `${BP}/apple-touch-icon.png?v=6` },
   appleWebApp: { capable: true, title: "Fantasy HQ", statusBarStyle: "black" },
 };
 export const viewport: Viewport = { themeColor: "#0a0a0a", width: "device-width", initialScale: 1, maximumScale: 1, userScalable: false, viewportFit: "cover", interactiveWidget: "resizes-content" };
