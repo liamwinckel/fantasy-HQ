@@ -24,6 +24,8 @@ const MAIN = [
 ];
 
 export function Shell({ children }: { children: ReactNode }) {
+  // After the first screen has faded in, later tab switches render instantly (see globals.css).
+  useEffect(() => { const t = setTimeout(() => document.documentElement.classList.add("fhq-booted"), 1500); return () => clearTimeout(t); }, []);
   return (
     <AppProvider>
       <PlayerCardProvider>

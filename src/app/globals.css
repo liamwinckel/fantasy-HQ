@@ -40,10 +40,12 @@ body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
 
 /* Smooth, fluid motion: content eases in, controls animate state changes. */
 @keyframes fhq-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-main > div > * { animation: fhq-in 0.28s ease-out both; }
-main > div > *:nth-child(2) { animation-delay: 0.03s; }
-main > div > *:nth-child(3) { animation-delay: 0.06s; }
-main > div > *:nth-child(4) { animation-delay: 0.09s; }
+/* Only on the app's first paint: switching tabs swaps content instantly (data is already cached),
+   so re-fading every page read as a reload flash. Shell adds .fhq-booted once the first screen is up. */
+html:not(.fhq-booted) main > div > * { animation: fhq-in 0.28s ease-out both; }
+html:not(.fhq-booted) main > div > *:nth-child(2) { animation-delay: 0.03s; }
+html:not(.fhq-booted) main > div > *:nth-child(3) { animation-delay: 0.06s; }
+html:not(.fhq-booted) main > div > *:nth-child(4) { animation-delay: 0.09s; }
 button, a, select, input { transition: background-color 0.15s, color 0.15s, border-color 0.15s, opacity 0.15s, transform 0.1s; }
 /* App shell: the document itself never scrolls. iOS likes to nudge the page when it shows the keyboard or
    restores a tab, which slid the header under the status bar (blurred) or off screen; pinning body stops that. */
