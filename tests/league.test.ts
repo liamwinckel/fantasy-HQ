@@ -160,7 +160,7 @@ describe.skipIf(!have)("league context on fixtures", () => {
     const ctx = await mod.getLeagueContext("fx4", { userId: "389682598735060992" });
     expect(ctx.format).toBe("keeper");
     const picks = (await sleeper.draftPicks(ctx.league.draft_id!)).data;
-    const rules = { maxKeepers: 3, modifier: "+1" as const, undraftedRound: 16, direction: "earlier" as const, overrides: {}, perYearKept: 0, maxYears: 0, protectedRounds: 0, horizon: 1 as const, draftedMode: "drafted" as const, undraftedMode: "round" as const, adpOffset: 0, anyPick: true, missingPick: "earlier" as const };
+    const rules = { maxKeepers: 3, modifier: "+1" as const, undraftedRound: 16, direction: "earlier" as const, overrides: {}, perYearKept: 0, maxYears: 0, protectedRounds: 0, horizon: 1 as const, draftedMode: "drafted" as const, undraftedMode: "round" as const, adpOffset: 0, undraftedOffset: 0, anyPick: true, missingPick: "earlier" as const };
     const rows = keeperPlan(ctx, 1, picks, rules, 16);
     const drafted = rows.find((r) => r.draftedRound && r.draftedRound > 1)!;
     expect(drafted.costRound).toBe(drafted.draftedRound! - 1);
@@ -170,6 +170,13 @@ describe.skipIf(!have)("league context on fixtures", () => {
     expect(rows.filter((r) => r.recommended).length).toBeLessThanOrEqual(3);
     const manual = keeperPlan(ctx, 1, picks, { ...rules, overrides: { [drafted.playerId]: 9 } }, 16);
     expect(manual.find((r) => r.playerId === drafted.playerId)!.costRound).toBe(9);
+    // Pickups: at ADP − 1, and "ADP or the set round, whichever is earlier".
+    const pu = (r: typeof rows) => r.filter((x) => x.costSource === "undrafted");
+    const atAdp = pu(keeperPlan(ctx, 1, picks, { ...rules, undraftedMode: "adp", undraftedOffset: 0 }, 16));
+    const minus1 = pu(keeperPlan(ctx, 1, picks, { ...rules, undraftedMode: "adp", undraftedOffset: -1 }, 16));
+    for (const r of minus1) { const a = atAdp.find((x) => x.playerId === r.playerId)!; if (a.costRound! > 1) expect(r.costRound).toBe(a.costRound! - 1); }
+    const early = pu(keeperPlan(ctx, 1, picks, { ...rules, undraftedMode: "earlier", undraftedRound: 10 }, 16));
+    for (const r of early) expect(r.costRound).toBe(Math.min(10, atAdp.find((x) => x.playerId === r.playerId)!.costRound!));
   });
 
   it("lineup moves only put players in slots they can play", async () => {

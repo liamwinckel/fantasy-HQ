@@ -130,7 +130,7 @@ export default function Methodology() {
 
         <Card title="Keeper Planner (keeper leagues)">
           <ul className="list-disc space-y-1.5 pl-5 text-sm leading-relaxed">
-            <li><b>Cost</b> = this season&apos;s draft round ± your modifier (same, +1, +2, +3; &quot;+&quot; moves the cost earlier by default, configurable). Undrafted players cost the round you set (default: last). Any player can be given a custom round.</li>
+            <li><b>Cost</b> = this season&apos;s draft round ± your modifier (same, +1, +2, +3; &quot;+&quot; moves the cost earlier by default, configurable). Waiver/free-agent pickups have their own rule: where he&apos;d go next season ± rounds, a set round, or whichever is earlier. Any player can be given a custom round.</li>
             <li><b>Keeper value</b> = next season&apos;s projected points per game above replacement (healthy base × age curve one year on × durability).</li>
             <li><b>Round value</b> = the next-season value of the player you&apos;d typically get with that pick: every player ranked by next-season value, taking the middle of the round.</li>
             <li><b>KEEP</b> = the best N by surplus (keeper value − round value), where N is your keeper limit.</li>

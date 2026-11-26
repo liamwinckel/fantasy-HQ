@@ -74,17 +74,19 @@ export function KeeperBoard({ leagueId, rows, rules, rounds, teams, draftType, s
               <option value="earlier">Whichever of those is earlier</option>
             </select>
           </Field>
-          <Field label="Waiver / free-agent pickups cost">
-            <select className="rounded-lg border border-line bg-panel2 px-3 py-2 text-sm text-fg" value={rules.undraftedMode} onChange={(e) => save({ undraftedMode: e.target.value })}>
-              <option value="round">A set round</option>
-              <option value="adp">Where he&apos;d go next year ± offset</option>
-            </select>
-          </Field>
           {(rules.draftedMode !== "adp") && <Stepper label="Drafted-round modifier" value={mod} min={0} max={5} onChange={(v) => save({ modifier: v })} fmt={(v) => (v === 0 ? "Same round" : `${v} round${v === 1 ? "" : "s"}`)} />}
           {(rules.draftedMode !== "adp") && <Field label="Modifier moves the cost"><Segmented label="Modifier direction" value={rules.direction} onChange={(d) => save({ direction: d })} options={[{ value: "earlier", label: "Earlier (pricier)" }, { value: "later", label: "Later" }]} /></Field>}
-          {(rules.draftedMode !== "drafted" || rules.undraftedMode === "adp") && <Stepper label="Offset from where he'd go" value={rules.adpOffset} min={-5} max={5} onChange={(v) => save({ adpOffset: v })} fmt={(v) => (v === 0 ? "Same round" : v < 0 ? `${-v} earlier` : `${v} later`)} hint="e.g. −1 = one round before where he'd be drafted" />}
-          {rules.undraftedMode === "round" && (
-            <Field label="Waiver pickups' round">
+          {rules.draftedMode !== "drafted" && <Stepper label="Drafted: offset from where he'd go" value={rules.adpOffset} min={-5} max={5} onChange={(v) => save({ adpOffset: v })} fmt={(v) => (v === 0 ? "Same round" : v < 0 ? `${-v} earlier` : `${v} later`)} hint="e.g. −1 = one round before where he'd be drafted" />}
+          <Field label="Waiver / free-agent pickups cost">
+            <select className="rounded-lg border border-line bg-panel2 px-3 py-2 text-sm text-fg" value={rules.undraftedMode} onChange={(e) => save({ undraftedMode: e.target.value })}>
+              <option value="adp">Where he&apos;d go next year ± rounds</option>
+              <option value="earlier">Where he&apos;d go, or a set round if earlier</option>
+              <option value="round">A set round</option>
+            </select>
+          </Field>
+          {rules.undraftedMode !== "round" && <Stepper label="Pickups: rounds from where he'd go" value={rules.undraftedOffset} min={-5} max={5} onChange={(v) => save({ undraftedOffset: v })} fmt={(v) => (v === 0 ? "At ADP" : v < 0 ? `${-v} earlier` : `${v} later`)} hint="e.g. −1 = kept a round before his projected round" />}
+          {rules.undraftedMode !== "adp" && (
+            <Field label={rules.undraftedMode === "earlier" ? "Pickups: set round" : "Waiver pickups' round"}>
               <select className="rounded-lg border border-line bg-panel2 px-3 py-2 text-sm text-fg" value={rules.undraftedRound} onChange={(e) => save({ undraftedRound: Number(e.target.value) })}>
                 {Array.from({ length: rounds }, (_, i) => i + 1).map((r) => <option key={r} value={r}>Round {r} · {range(r)}{r === rounds ? " (last)" : ""}</option>)}
               </select>

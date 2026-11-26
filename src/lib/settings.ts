@@ -13,7 +13,8 @@ export interface KeeperRule {
   protectedRounds?: number;
   horizon?: 1 | 2;
   draftedMode?: "drafted" | "adp" | "earlier";
-  undraftedMode?: "round" | "adp";
+  undraftedMode?: "round" | "adp" | "earlier";
+  undraftedOffset?: number;
   adpOffset?: number;
   anyPick?: boolean;
   missingPick?: "earlier" | "later" | "none";

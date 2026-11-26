@@ -20,6 +20,8 @@ export function keeperRulesFor(settings: AppSettings, league: League): KeeperRul
     draftedMode: saved.draftedMode ?? "drafted",
     undraftedMode: saved.undraftedMode ?? "round",
     adpOffset: saved.adpOffset ?? 0,
+    // Pickups used to share the drafted offset; keep that until it's set on its own.
+    undraftedOffset: saved.undraftedOffset ?? (saved.undraftedMode === "adp" ? saved.adpOffset ?? 0 : 0),
     anyPick: saved.anyPick ?? true,
     missingPick: saved.missingPick ?? "earlier",
   };

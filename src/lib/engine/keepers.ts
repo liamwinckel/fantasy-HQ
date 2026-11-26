@@ -35,8 +35,10 @@ export interface KeeperRules {
   horizon: 1 | 2;
   /** Drafted players' cost: from the round he was drafted, from where he'd go next year ("adp"), or whichever is earlier. */
   draftedMode: "drafted" | "adp" | "earlier";
-  /** Waiver / free-agent pickups' cost: a fixed round, or where he'd go next year ± offset. */
-  undraftedMode: "round" | "adp";
+  /** Waiver / free-agent pickups' cost: a fixed round, where he'd go next year ± offset, or whichever of the two is earlier. */
+  undraftedMode: "round" | "adp" | "earlier";
+  /** Pickups only: rounds added (+ later, − earlier) to where he'd go next year. */
+  undraftedOffset: number;
   /** Rounds added (+ later, − earlier) to the "where he'd go next year" round. */
   adpOffset: number;
   /** Can a keeper use any pick you own in his cost round (including picks traded to you)? */
@@ -133,7 +135,11 @@ export function keeperPlan(ctx: LeagueContext, rosterId: number, picks: DraftPic
       const fromDraft = pick.round + steps * (rules.direction === "earlier" ? -1 : 1);
       cost = rules.draftedMode === "adp" ? adp : rules.draftedMode === "earlier" ? Math.min(fromDraft, adp) : fromDraft;
       source = "drafted";
-    } else { cost = rules.undraftedMode === "adp" ? adp : rules.undraftedRound; source = "undrafted"; }
+    } else {
+      const adpPu = er + rules.undraftedOffset;
+      cost = rules.undraftedMode === "adp" ? adpPu : rules.undraftedMode === "earlier" ? Math.min(adpPu, rules.undraftedRound) : rules.undraftedRound;
+      source = "undrafted";
+    }
     if (!rules.overrides[id]) {
       if (rules.maxYears > 0 && years >= rules.maxYears) ineligible = `Kept ${years} season${years === 1 ? "" : "s"} already (limit ${rules.maxYears})`;
       else if (pick && rules.protectedRounds > 0 && pick.round <= rules.protectedRounds && !pick.is_keeper) ineligible = `Drafted in round ${pick.round}; rounds 1–${rules.protectedRounds} can't be kept`;
