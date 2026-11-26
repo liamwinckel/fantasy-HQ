@@ -9,7 +9,7 @@ import { optimizeLineup, lineupTotal, scoreStarters, type SlotAssignment } from 
 import { simulateSeason, type SimResult, type TeamWeek } from "../engine/simulate";
 import { classifyTeams, type Classification, type TeamClass, type TeamMetrics } from "../engine/classify";
 import { emptySignals, loadSignals, type Signals } from "./signals";
-import { buildPicks, marketPickName, type PickAsset, type Tier } from "../engine/picks";
+import { buildPicks, marketForPick, type PickAsset, type Tier } from "../engine/picks";
 import { easternToEpoch } from "../time";
 import { getSettings, type Mode } from "../settings";
 import { keeperPlan } from "../engine/keepers";
@@ -629,8 +629,7 @@ async function buildLeagueContext(
     const sf = isSuperflex(league.roster_positions);
     const maxMk = Math.max(1, ...[...players.keys()].map((id) => (sf ? cons[id]?.v2 : cons[id]?.v1) ?? 0));
     for (const p of picks) {
-      const known = p.tierSource !== "default";
-      const m = pm[marketPickName(p.season, p.round, p.tier, known) ?? ""] ?? pm[marketPickName(p.season, p.round, p.tier, false) ?? ""];
+      const m = marketForPick(p, pm);
       if (!m) continue;
       p.market = m;
       p.value = Math.round((1000 * (sf ? m.v2 : m.v1)) / maxMk) / 10;

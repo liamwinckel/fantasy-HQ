@@ -9,6 +9,7 @@
  *   Draft grades     hindsight: each pick against where that player actually finished among everyone drafted.
  */
 import { sleeper } from "../sleeper/client";
+import { loadNames } from "../news";
 import type { Draft, DraftPick, League, Matchup, Player, Roster, SleeperUser, Transaction } from "../sleeper/types";
 import type { LeagueContext } from "./league";
 import { scoreSleeperStats } from "../engine/scoring";
@@ -26,6 +27,8 @@ export interface History {
   seasons: SeasonHist[]; // newest first
   owners: Map<string, { name: string; avatar: string | null }>; // owner_id → latest display
   players: Record<string, Player>;
+  /** Names of players no longer in Sleeper's slim player list (retired / released), for old trades and bids. */
+  names?: Record<string, string>;
 }
 
 const MAX_SEASONS = 5;
@@ -61,13 +64,16 @@ export async function loadHistory(ctx: LeagueContext): Promise<History> {
     owners.set(u.user_id, { name: tn || u.display_name || "Manager", avatar: u.avatar ?? null });
   }
   for (const t of ctx.teams) if (t.ownerId) owners.set(t.ownerId, { name: t.name, avatar: t.avatar });
-  const players = await sleeper.players().then((r) => r.data as Record<string, Player>).catch(() => ({} as Record<string, Player>));
-  return { seasons, owners, players };
+  const [players, names] = await Promise.all([
+    sleeper.players().then((r) => r.data as Record<string, Player>).catch(() => ({} as Record<string, Player>)),
+    loadNames().then((r) => r.data).catch(() => ({} as Record<string, string>)),
+  ]);
+  return { seasons, owners, players, names };
 }
 const dedupe = (t: Transaction[]) => [...new Map(t.map((x) => [x.transaction_id, x])).values()];
 
 export const playerName = (h: History, ctx: LeagueContext, pid: string) =>
-  ctx.players.get(pid)?.name ?? ctx.txNames[pid] ?? h.players[pid]?.full_name ?? (/^[A-Z]{2,3}$/.test(pid) ? `${pid} defense` : `Player ${pid}`);
+  ctx.players.get(pid)?.name ?? ctx.txNames[pid] ?? h.players[pid]?.full_name ?? h.names?.[pid] ?? (/^[A-Z]{2,3}$/.test(pid) ? `${pid} defense` : `Player ${pid}`);
 export const playerPos = (h: History, ctx: LeagueContext, pid: string) => ctx.players.get(pid)?.pos ?? h.players[pid]?.position ?? (/^[A-Z]{2,3}$/.test(pid) ? "DEF" : "?");
 
 // =====================================================================================================

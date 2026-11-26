@@ -13,6 +13,9 @@ import type { LeagueContext } from "../services/league";
 import { optimizeLineup, lineupTotal } from "./lineup";
 
 export const POS_ORDER = ["QB", "RB", "WR", "TE", "K", "DEF", "IDP"];
+/** Whether the league has a lineup slot just for this position group (a TE only playable in FLEX isn't a "need"). */
+export const hasOwnSlot = (rosterPositions: string[], pos: string) =>
+  pos === "IDP" ? rosterPositions.some((s) => ["DL", "LB", "DB", "IDP_FLEX"].includes(s)) : rosterPositions.includes(pos);
 const group = (pos: string) => (["DL", "LB", "DB"].includes(pos) ? "IDP" : pos);
 
 export interface TeamPower {
@@ -91,7 +94,7 @@ export function powerRankings(ctx: LeagueContext, overrides?: Map<number, string
       const positions: TeamPower["positions"] = {};
       for (const p of presentPos) positions[p] = { pts: Math.round((r.pos[p] ?? 0) * 10) / 10, rank: posRank[p](r.rosterId) };
       const strengths = presentPos.filter((p) => positions[p].rank <= q);
-      const weaknesses = presentPos.filter((p) => positions[p].rank > n - q);
+      const weaknesses = presentPos.filter((p) => positions[p].rank > n - q && hasOwnSlot(rp, p));
       const dr = depthRank(r.rosterId);
       if (dr <= q) strengths.push("Depth");
       if (dr > n - q) weaknesses.push("Depth");

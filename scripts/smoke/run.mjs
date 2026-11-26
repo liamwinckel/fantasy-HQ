@@ -61,7 +61,7 @@ async function run(job) {
     }
     await page.waitForFunction(() => !document.querySelector('[aria-busy="true"], .sk'), null, { timeout: 120000 });
     await page.waitForLoadState("networkidle", { timeout: 30000 }).catch(() => {});
-    await page.waitForTimeout(800);
+    await page.waitForTimeout(3000); // let count-up and bar animations finish
   } catch (e) { status = `timeout/error: ${String(e.message).split("\n")[0]}`; }
   const ms = Date.now() - t0;
   const text = await page.evaluate(() => document.body.innerText).catch(() => "");

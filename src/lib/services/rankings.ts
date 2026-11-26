@@ -144,7 +144,8 @@ export function rankings(ctx: LeagueContext, scope: RankScope, opts: RankOpts = 
     const maxKeep = Math.max(1e-9, ...[...ctx.keeperCost.values()].map((k) => Math.abs(k.surplus)));
     const kf = (r: RankRow) => (opt.keep && r.keepSurplus != null ? Math.max(0.7, 1 + opt.keep * 0.5 * (r.keepSurplus / maxKeep)) : 1);
     const key = (r: RankRow) => (r.ecrPos !== null ? atRank(r.pos, r.ecrPos) * kf(r) + 1e6 : r.pts * kf(r));
-    rows.sort((a, b) => key(b) - key(a) || b.pts - a.pts);
+    // Equal converted points (common: projections are rounded) keep the experts' order within a position.
+    rows.sort((a, b) => key(b) - key(a) || (a.pos === b.pos ? (a.ecrPos ?? 1e9) - (b.ecrPos ?? 1e9) : 0) || b.pts - a.pts);
   }
   rows.forEach((r, i) => (r.rank = i + 1));
   return rows;

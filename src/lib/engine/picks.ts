@@ -34,6 +34,23 @@ const ORD = ["", "1st", "2nd", "3rd", "4th", "5th"];
 export const marketPickName = (season: string, round: number, tier: Tier, known: boolean) =>
   ORD[round] ? `${season} ${known ? `${tier[0].toUpperCase()}${tier.slice(1)} ` : ""}${ORD[round]}` : null;
 
+type PickMarket = NonNullable<PickAsset["market"]>;
+/**
+ * Market price for a pick. The market lists only the next two drafts, so a pick further out is priced off the
+ * furthest listed draft for the same round, 10% less per extra year (never more than a nearer pick).
+ */
+export function marketForPick(p: Pick<PickAsset, "season" | "round" | "tier" | "tierSource">, pm: Record<string, PickMarket>): PickMarket | null {
+  const exact = pm[marketPickName(p.season, p.round, p.tier, p.tierSource !== "default") ?? ""] ?? pm[marketPickName(p.season, p.round, p.tier, false) ?? ""];
+  if (exact) return exact;
+  let scale = 1;
+  for (let s = Number(p.season) - 1; s >= Number(p.season) - 3; s--) {
+    scale *= 0.9;
+    const m = pm[marketPickName(String(s), p.round, p.tier, false) ?? ""];
+    if (m) return { ...m, v1: Math.round(m.v1 * scale), v2: Math.round(m.v2 * scale) };
+  }
+  return null;
+}
+
 const BASE: Record<number, Record<Tier, number>> = {
   1: { early: 0.42, mid: 0.32, late: 0.24 },
   2: { early: 0.14, mid: 0.11, late: 0.08 },

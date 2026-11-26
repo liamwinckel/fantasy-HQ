@@ -15,7 +15,7 @@
  */
 import type { LeagueContext } from "./league";
 import { optimizeLineup, lineupTotal } from "../engine/lineup";
-import { powerRankings, type TeamPower } from "../engine/power";
+import { hasOwnSlot, powerRankings, type TeamPower } from "../engine/power";
 import { acceptChance, packageValue } from "../engine/trade";
 import { strategicPickValue, strategicPlayerValue, type TeamClass } from "../engine/classify";
 
@@ -53,7 +53,7 @@ export function teamProfiles(ctx: LeagueContext): TeamProfile[] {
   const n = ctx.teamsCount;
   return power.map((p) => {
     const t = ctx.teams.find((x) => x.rosterId === p.rosterId)!;
-    const needs = Object.entries(p.positions).filter(([pos, r]) => SKILL.includes(pos) && r.rank > n / 2).sort((a, b) => b[1].rank - a[1].rank).map(([pos]) => pos);
+    const needs = Object.entries(p.positions).filter(([pos, r]) => SKILL.includes(pos) && r.rank > n / 2 && hasOwnSlot(ctx.league.roster_positions, pos)).sort((a, b) => b[1].rank - a[1].rank).map(([pos]) => pos);
     const surplus = Object.entries(p.positions).filter(([pos, r]) => SKILL.includes(pos) && r.rank <= Math.ceil(n / 3)).map(([pos]) => pos);
     // A bench player good enough to start for most teams also counts as surplus at his position.
     const starters = new Set(ctx.lineups.get(t.rosterId)?.optimal.map((s) => s.playerId));

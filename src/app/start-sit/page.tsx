@@ -9,6 +9,7 @@ import { PlayerLink } from "@/components/PlayerCard";
 import { Sheet } from "@/components/Sheet";
 import { startSit } from "@/lib/services/startSit";
 import { Plus, X, Search } from "lucide-react";
+import { surname } from "@/lib/names";
 
 export default function StartSitPage() {
   return <LeaguePage>{(d) => <Body {...d} />}</LeaguePage>;
@@ -34,7 +35,7 @@ function Body({ league, ctx, sp }: LeagueData) {
     for (const pos of ["QB", "RB", "WR", "TE"]) {
       const st = me.starters.filter((id) => ctx.players.get(id)?.pos === pos).sort((a, b) => proj(a) - proj(b));
       const bn = me.players.filter((id) => !me.starters.includes(id) && ctx.players.get(id)?.pos === pos && !me.reserve.includes(id)).sort((a, b) => proj(b) - proj(a));
-      if (st[0] && bn[0]) out.push({ label: `${pos}: ${ctx.players.get(st[0])!.name.split(" ").pop()} or ${ctx.players.get(bn[0])!.name.split(" ").pop()}`, ids: [st[0], bn[0], ...(bn[1] && pos !== "QB" ? [bn[1]] : [])] });
+      if (st[0] && bn[0]) out.push({ label: `${pos}: ${surname(ctx.players.get(st[0])!.name)} or ${surname(ctx.players.get(bn[0])!.name)}`, ids: [st[0], bn[0], ...(bn[1] && pos !== "QB" ? [bn[1]] : [])] });
     }
     return out;
   }, [ctx, me]);

@@ -62,7 +62,7 @@ function MatchupPageBody({ setup, league, ctx, sp }: LeagueData) {
   // Swing players: widest projected range among both lineups (upcoming weeks)
   const swing = kind === "past" ? [] : [...(g.a.starters ?? []), ...(g.b?.starters ?? [])]
     .filter((l) => l.playerId && l.high !== null && l.low !== null)
-    .map((l) => ({ ...l, spread: (l.high ?? 0) - (l.low ?? 0), team: g.a.starters.includes(l) ? g.a.name : g.b?.name }))
+    .map((l) => ({ ...l, spread: (l.high ?? 0) - (l.low ?? 0), owner: g.a.starters.includes(l) ? g.a.name : g.b?.name }))
     .sort((x, y) => y.spread - x.spread).slice(0, 5);
 
   return (
@@ -110,7 +110,7 @@ function MatchupPageBody({ setup, league, ctx, sp }: LeagueData) {
               <ul className="flex flex-col gap-2.5 text-sm">
                 {swing.map((l) => (
                   <li key={l.playerId} className="flex items-center justify-between gap-2">
-                    <div className="min-w-0"><PlayerLink id={l.playerId!} name={l.name} className="font-semibold" /><div className="flex items-center gap-1 truncate text-xs text-muted"><NflLogo team={l.team} size={13} />{l.team} · {l.pos}</div></div>
+                    <div className="min-w-0"><PlayerLink id={l.playerId!} name={l.name} className="font-semibold" /><div className="flex items-center gap-1 truncate text-xs text-muted"><NflLogo team={l.team} size={13} />{l.owner} · {l.pos}</div></div>
                     <span className="num shrink-0 text-xs text-muted">{l.low?.toFixed(1)} – <b className="text-fg">{l.proj?.toFixed(1)}</b> – {l.high?.toFixed(1)}</span>
                   </li>
                 ))}

@@ -102,15 +102,18 @@ export function keeperPlan(ctx: LeagueContext, rosterId: number, picks: DraftPic
   // Next season, or next two seasons blended (the second counts 60%) when keepers can be held longer.
   const nextPpg = (id: string) => (rules.horizon === 2 ? (ppgAt(id, 1) + 0.6 * ppgAt(id, 2)) / 1.6 : ppgAt(id, 1));
   const surplusOf = (id: string) => Math.max(0, nextPpg(id) - (ctx.replacement[ctx.players.get(id)?.pos ?? ""] ?? 0) * 0.9);
-  // Draft pool: every relevant player, ranked by next-season surplus.
-  const pool = [...ctx.players.keys()].filter((id) => ctx.players.get(id)!.team).map(surplusOf).sort((a, b) => b - a);
+  // Draft pool: every relevant player, ranked by next-season surplus. Players with no surplus (below replacement)
+  // are ordered by their points per game, so they don't all land in the same "would go" round.
+  const order = (id: string) => surplusOf(id) + (surplusOf(id) > 0 ? 1000 : nextPpg(id) / 1000);
+  const ranked = [...ctx.players.keys()].filter((id) => ctx.players.get(id)!.team).map((id) => [surplusOf(id), order(id)] as const).sort((a, b) => b[1] - a[1]);
+  const pool = ranked.map((x) => x[0]);
   // Typical value of a pick in round r: the player ranked in the middle of that round.
   const roundValue = (r: number) => pool[Math.min(pool.length - 1, Math.max(0, Math.round((r - 1) * T2 + T2 / 2) - 1))] ?? 0;
   // Where he'd go next season: his place in that value order, converted to a round.
   const expectedRound = (id: string) => {
-    const v = surplusOf(id);
-    let idx = pool.findIndex((x) => x <= v);
-    if (idx < 0) idx = pool.length;
+    const v = order(id);
+    let idx = ranked.findIndex((x) => x[1] <= v);
+    if (idx < 0) idx = ranked.length;
     return Math.min(rounds, Math.floor(idx / T2) + 1);
   };
   const byPlayer = new Map(picks.map((p) => [p.player_id, p]));

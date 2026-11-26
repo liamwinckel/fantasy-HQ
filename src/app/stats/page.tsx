@@ -8,6 +8,7 @@ import { PlayerImg } from "@/components/client";
 import { PlayerLink } from "@/components/PlayerCard";
 import { Card, InjuryChip, NflLogo, PageHeader, Tag, cx, signed, Info } from "@/components/ui";
 import { formatLabel } from "@/lib/services/portfolio";
+import { canFill, startingSlots } from "@/lib/engine/positions";
 import { defenseTable, playerStats, scheduleTable, SOS_POS, teamStats, type PlayerStatRow, type SosPos } from "@/lib/services/stats";
 
 const TABS = [
@@ -60,6 +61,8 @@ function PosChips({ pos, setPos, options }: { pos: string; setPos: (p: string) =
 
 function Sos({ ctx, sched }: { ctx: Ctx; sched: ReturnType<typeof scheduleTable> }) {
   const [pos, setPos] = useState<SosPos>("RB");
+  // Only positions this league can start (no K / DEF chips in leagues without those slots).
+  const sosPos = SOS_POS.filter((p) => startingSlots(ctx.league.roster_positions).some((slot) => canFill(slot, [p])));
   const [sort, setSort] = useState<"ros" | "playoffs" | "team">("ros");
   const rows = [...sched.rows].sort((a, b) => sort === "team" ? a.team.localeCompare(b.team) : sort === "ros" ? (a.rosRank[pos] ?? 99) - (b.rosRank[pos] ?? 99) : (a.playoffRank[pos] ?? 99) - (b.playoffRank[pos] ?? 99));
   const me = ctx.teams.find((t) => t.rosterId === ctx.myRosterId);
@@ -102,7 +105,8 @@ function Sos({ ctx, sched }: { ctx: Ctx; sched: ReturnType<typeof scheduleTable>
         </Card>
       )}
 
-      <Card title="NFL strength of schedule" info={<>Upcoming opponents for each NFL team at the chosen position: green = defences that allow more fantasy points than average (good matchups), red = fewer.</>} right={<PosChips pos={pos} setPos={(p) => setPos(p as SosPos)} options={SOS_POS} />} pad={false}>
+      <Card title="NFL strength of schedule" info={<>Upcoming opponents for each NFL team at the chosen position: green = defences that allow more fantasy points than average (good matchups), red = fewer.</>} pad={false}>
+        <div className="px-4 pb-3 sm:px-5"><PosChips pos={pos} setPos={(p) => setPos(p as SosPos)} options={sosPos} /></div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead><tr className="text-left text-[11px] uppercase tracking-wider text-muted">

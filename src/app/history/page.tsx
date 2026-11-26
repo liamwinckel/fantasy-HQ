@@ -107,15 +107,21 @@ function Trades({ d, ctx }: { d: Loaded; ctx: LeagueContext }) {
 }
 
 function Drafts({ d, ctx }: { d: Loaded; ctx: LeagueContext }) {
-  const seasons = d.drafts.map((x) => x.season);
-  const [season, setSeason] = useState(seasons.find((s, i) => i > 0 || d.drafts.length === 1) ?? seasons[0] ?? "");
+  // A season can have two drafts (e.g. a startup and a rookie draft), so tabs are keyed by draft, not season.
+  const tabs = d.drafts.map((x) => {
+    const same = d.drafts.filter((y) => y.season === x.season);
+    const big = Math.max(...same.map((y) => y.rounds));
+    const kind = same.length < 2 ? "" : same.every((y) => y.rounds === big) ? ` · ${same.indexOf(x) + 1}` : x.rounds === big ? " startup" : " rookie";
+    return { value: x.draftId, label: `${x.season}${kind}` };
+  });
+  const [draftId, setDraftId] = useState(d.drafts.find((s, i) => i > 0 || d.drafts.length === 1)?.draftId ?? d.drafts[0]?.draftId ?? "");
   const [open, setOpen] = useState<string | null>(null);
-  const g = d.drafts.find((x) => x.season === season) ?? d.drafts[0];
+  const g = d.drafts.find((x) => x.draftId === draftId) ?? d.drafts[0];
   const myOwner = ctx.teams.find((t) => t.rosterId === ctx.myRosterId)?.ownerId ?? "";
   if (!g) return <Notice>No completed drafts found for this league on Sleeper.</Notice>;
   return (
     <div className="flex flex-col gap-4">
-      {seasons.length > 1 && <div className="mx-auto max-w-full overflow-x-auto"><Segmented label="Draft season" options={seasons.map((s) => ({ value: s, label: s }))} value={season} onChange={setSeason} /></div>}
+      {tabs.length > 1 && <div className="mx-auto max-w-full overflow-x-auto"><Segmented label="Draft season" options={tabs} value={draftId} onChange={setDraftId} /></div>}
       <Card title={`${g.season} draft grades`} info={<>Hindsight grades. Every drafted player is scored by what he became ({g.basis.toLowerCase()}), then re-ranked. Each pick is compared
         with the player who finished at that same spot: <b className="text-fg">+</b> means you got more than the slot was worth. Keepers are left out. Grades are curved within the league.</>} pad={false}>
         <ul className="divide-y divide-line">
@@ -125,7 +131,7 @@ function Drafts({ d, ctx }: { d: Loaded; ctx: LeagueContext }) {
                 <GradeChip g={t.grade} size="lg" />
                 <div className="min-w-0 flex-1">
                   <div className={cx("truncate font-bold", t.owner === myOwner && "text-acc-ink")}>{ownerName(d, t.owner)}</div>
-                  <div className="truncate text-xs text-muted">{t.best ? <>Steal: <b className="text-pos">{t.best.name}</b> (R{t.best.round})</> : null}{t.worst && t.worst.surplus < 0 ? <> · Miss: <b className="text-neg">{t.worst.name}</b> (R{t.worst.round})</> : null}</div>
+                  <div className="truncate text-xs text-muted">{t.best ? <>Steal: <b className="text-pos">{t.best.name}</b> (R{t.best.round})</> : null}{t.worst && t.worst.surplus < 0 && t.worst !== t.best ? <> · Miss: <b className="text-neg">{t.worst.name}</b> (R{t.worst.round})</> : null}</div>
                 </div>
                 <span className={cx("num shrink-0 text-sm font-bold", t.surplus >= 0 ? "text-pos" : "text-neg")}>{t.surplus >= 0 ? "+" : ""}{t.surplus.toFixed(0)}</span>
               </button>

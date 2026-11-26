@@ -10,7 +10,7 @@
 import type { LeagueContext } from "./league";
 import type { PlayerLite, Projection } from "../engine/projections";
 import { optimizeLineup, lineupTotal } from "../engine/lineup";
-import { powerRankings } from "../engine/power";
+import { hasOwnSlot, powerRankings } from "../engine/power";
 
 export interface WaiverPlayer {
   player: PlayerLite;
@@ -100,7 +100,7 @@ export function waiverReport(ctx: LeagueContext, rosterId: number): WaiverReport
   const power = powerRankings(ctx).find((p) => p.rosterId === rosterId);
   const half = Math.ceil(ctx.teamsCount / 2);
   const needs = Object.entries(power?.positions ?? {})
-    .filter(([pos, r]) => r.rank > half && !["K", "DEF"].includes(pos))
+    .filter(([pos, r]) => r.rank > half && !["K", "DEF"].includes(pos) && hasOwnSlot(ctx.league.roster_positions, pos))
     .sort((a, b) => b[1].rank - a[1].rank)
     .map(([pos, r]) => ({ pos, rank: r.rank, reason: `${ordinal(r.rank)} of ${ctx.teamsCount} at ${pos}` }));
   // Holes this week: starters who won't play.
