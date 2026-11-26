@@ -1,6 +1,6 @@
 import { sleeper } from "../sleeper/client";
 import type { League, Matchup, Player, Roster, SleeperUser, Transaction } from "../sleeper/types";
-import { combine, consensus, contracts, injuryReports, type CombineRow, playerInfo, schedule, snapCounts, weeklyStats, type Contract, type Game, type WeekStat } from "../nflverse";
+import { combine, consensus, contracts, injuryReports, type CombineRow, playerInfo, returnStats, schedule, snapCounts, weeklyStats, type Contract, type Game, type WeekStat } from "../nflverse";
 import { canFill, isSuperflex, playerPositions, primaryPosition, starterDemand, startingSlots } from "../engine/positions";
 import { scoreSleeperStats, scoreStatLine, scoringLabel } from "../engine/scoring";
 import { applySleeper, opportunityOf, priorFor, project, type GameLog, type PlayerLite, type Projection } from "../engine/projections";
@@ -181,7 +181,9 @@ async function buildLeagueContext(
 
   // NFLverse: failures degrade gracefully to Sleeper-only data.
   const prevSeason = String(Number(season) - 1);
-  const [statsR, schedR, infoR, snapsR, prevStatsR, contractsR, injNowR, injPrevR, consR, combineR, prevSchedR] = await Promise.all([
+  const sc = league.scoring_settings;
+  const scoresReturns = !!(sc.kr_yd || sc.pr_yd || sc.kr_td || sc.pr_td);
+  const [statsR, schedR, infoR, snapsR, prevStatsR, contractsR, injNowR, injPrevR, consR, combineR, prevSchedR, returnsR] = await Promise.all([
     weeklyStats(season).catch((e) => { warnings.push(`NFLverse stats unavailable: ${e.message}`); return null; }),
     schedule(season).catch((e) => { warnings.push(`NFL schedule unavailable: ${e.message}`); return null; }),
     playerInfo().catch(() => null),
@@ -193,8 +195,15 @@ async function buildLeagueContext(
     consensus().catch(() => null),
     combine().catch(() => null),
     schedule(prevSeason).catch(() => null),
+    scoresReturns ? returnStats(season).catch(() => null) : Promise.resolve(null),
   ]);
   const stats: WeekStat[] = statsR?.data ?? [];
+  // Return yards/TDs (nflverse has none), scored with this league's settings, for games not already scored by Sleeper.
+  const returnPts = (pid: string, w: number) => {
+    const r = returnsR?.data.weeks[String(w)]?.[pid];
+    if (!r) return 0;
+    return returnsR!.data.keys.reduce((a, k, i) => a + (r[i] ?? 0) * (sc[k] ?? 0), 0);
+  };
   const games: Game[] = schedR?.data ?? [];
 
   // Matchups: every regular-season week (future weeks carry the schedule pairings) + playoff weeks reached.
@@ -284,11 +293,12 @@ async function buildLeagueContext(
       const sleeperVal = sp?.get(w);
       let played: boolean;
       if (p.pos === "DEF") played = !!teamPlayed.get(p.id)?.has(w) && (sleeperVal !== undefined || !games.length);
-      else played = !!s || (sleeperVal !== undefined && sleeperVal !== 0);
+      else played = !!s || (sleeperVal !== undefined && sleeperVal !== 0) || (scoresReturns && returnPts(p.id, w) > 0);
       if (!played) continue;
       let pts: number, source: GameLog["source"];
       if (sleeperVal !== undefined) { pts = sleeperVal; source = "sleeper"; }
-      else if (s) { pts = scoreStatLine(s, league.scoring_settings, p.pos); source = "nflverse"; }
+      else if (s) { pts = scoreStatLine(s, league.scoring_settings, p.pos) + (scoresReturns ? returnPts(p.id, w) : 0); source = "nflverse"; }
+      else if (scoresReturns && returnPts(p.id, w) > 0) { pts = returnPts(p.id, w); source = "nflverse"; }
       else continue;
       log.push({ week: w, pts, source, opportunity: s ? opportunityOf(p.pos, s) : null, snapPct: snaps?.get(w) ?? null });
     }

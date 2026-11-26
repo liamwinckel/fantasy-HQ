@@ -92,6 +92,29 @@ async function main() {
     const body = FX && !fs.existsSync(path.join(FX, "combine.csv")) ? "pfr_id\n" : await text(`${REL}/combine/combine.csv`, "combine.csv");
     write("combine.json", columns(parseCombine(body, pfrToGsis).filter((c) => (c.draftYear ?? 0) >= s - 15)));
   }]);
+  // Kick/punt return stats from Sleeper's weekly stats (nflverse has none): week → playerId → [kr_yd, pr_yd, kr_td, pr_td].
+  // Lets return-yard leagues score returners' past games correctly.
+  jobs.push(["sleeper returns", async () => {
+    if (FX) return;
+    const st = (await (await fetch("https://api.sleeper.app/v1/state/nfl")).json()) as { week: number; season: string; season_type: string };
+    const last = st.season === String(s) ? (st.season_type === "regular" ? st.week : st.season_type === "post" ? 18 : 0) : 18;
+    const out: Record<string, Record<string, number[]>> = {};
+    for (let w = 1; w <= Math.min(18, last); w++) {
+      try {
+        const r = await fetch(`https://api.sleeper.app/v1/stats/nfl/regular/${s}/${w}`);
+        if (!r.ok) continue;
+        const wk = (await r.json()) as Record<string, Record<string, number>>;
+        const m: Record<string, number[]> = {};
+        for (const [pid, x] of Object.entries(wk)) {
+          if (!/^\d+$/.test(pid) || !x) continue;
+          const v = [x.kr_yd ?? 0, x.pr_yd ?? 0, x.kr_td ?? 0, x.pr_td ?? 0];
+          if (v.some((n) => n)) m[pid] = v;
+        }
+        if (Object.keys(m).length) out[String(w)] = m;
+      } catch { /* skip week */ }
+    }
+    write(`returns-${s}.json`, JSON.stringify({ season: s, keys: ["kr_yd", "pr_yd", "kr_td", "pr_td"], weeks: out }));
+  }]);
   jobs.push(["players", async () => write("players.json", columns(parsePlayers(await text(`${REL}/players/players.csv`, "players.csv")).filter((p) => recent.has(p.gsis) || (p.rookieSeason ?? 0) >= s - 1)))]);
   jobs.push(["contracts", async () => {
     const all = parseContracts(await gz(`${REL}/contracts/historical_contracts.csv.gz`, "contracts.csv.gz"));

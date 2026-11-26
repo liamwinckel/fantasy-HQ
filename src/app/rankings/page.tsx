@@ -153,8 +153,8 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
   const dates = ctx.consensusDates;
   // Week view adds a matchup-grade column.
   const cols = scope === "week"
-    ? "grid-cols-[2.25rem_minmax(0,1fr)_2.1rem_3.25rem_3.4rem] sm:grid-cols-[2.5rem_minmax(0,1fr)_minmax(0,12rem)_3rem_4.5rem_4.5rem]"
-    : "grid-cols-[2.5rem_minmax(0,1fr)_3.75rem_3.5rem] sm:grid-cols-[2.5rem_minmax(0,1fr)_minmax(0,14rem)_4.5rem_4.5rem]";
+    ? "grid-cols-[2rem_2.5rem_minmax(0,1fr)_1.9rem_3.1rem] sm:grid-cols-[2.5rem_4.5rem_minmax(0,1fr)_minmax(0,12rem)_3rem_4.5rem]"
+    : "grid-cols-[2rem_2.5rem_minmax(0,1fr)_3.5rem] sm:grid-cols-[2.5rem_4.5rem_minmax(0,1fr)_minmax(0,14rem)_4.5rem]";
   const dyn = scope === "dynasty";
   const numLabel = dyn ? "Value" : "Pts";
   return (
@@ -208,12 +208,12 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
 
 
       <section className="overflow-hidden rounded-xl border border-line bg-panel">
-        <div className={cx("grid items-center gap-2 border-b border-line px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted sm:px-4", cols)}>
+        <div className={cx("grid items-center gap-1.5 sm:gap-2 border-b border-line px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted sm:px-4", cols)}>
           <SortHead k="experts" by={by} desc={desc} onSort={sortBy}>ECR</SortHead>
+          <SortHead k="ai" by={by} desc={desc} onSort={sortBy} className="justify-center">SHS</SortHead>
           <SortHead k="name" by={by} desc={desc} onSort={sortBy} className="justify-start">Player</SortHead>
           <span className="hidden sm:block">{dyn ? "Profile" : "Projected stats"}</span>
-          {scope === "week" && <span className="flex items-center justify-center gap-0.5">Mtch<InfoButton open={gradeInfo} onClick={() => setGradeInfo(!gradeInfo)} label="What is the matchup grade?" /></span>}
-          <span className="flex items-center justify-center gap-0.5"><SortHead k="ai" by={by} desc={desc} onSort={sortBy}>SHS</SortHead><InfoButton open={aiInfo} onClick={() => setAiInfo(!aiInfo)} label="What is SHS AI?" /></span>
+          {scope === "week" && <button type="button" onClick={() => setGradeInfo(!gradeInfo)} className="text-center uppercase" aria-label="What is the matchup grade?">Mtch</button>}
           <SortHead k="pts" by={by} desc={desc} onSort={sortBy} className="justify-end">{numLabel}</SortHead>
         </div>
         {aiInfo && <div className="fhq-in border-b border-line bg-panel2/40 px-3 py-3 sm:px-4"><ShsExplainer scope={scope} /></div>}
@@ -222,6 +222,7 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
           {rows.slice(0, limit).map((r) => r.pos === "PICK" ? (
             <li key={r.id} className={cx("grid items-center gap-2 px-3 py-2 sm:px-4", cols, r.mine && "bg-acc-soft")}>
               <div className="text-center"><div className="num text-sm font-bold">{ranked.ecrN.get(r.id)}</div><div className="text-[9px] font-semibold text-muted">PICK</div></div>
+              <div />
               <div className="flex min-w-0 items-center gap-2.5">
                 <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full border border-acc/50 bg-acc-soft text-[10px] font-extrabold text-acc-ink">{r.name.split(" ")[1] ?? "PK"}</span>
                 <div className="min-w-0">
@@ -230,27 +231,27 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
                 </div>
               </div>
               <div className="hidden text-xs text-muted sm:block">Rookie pick</div>
-              <div />
+              {scope === "week" && <div />}
               <div className="text-right"><div className="num font-[family-name:var(--font-display)] text-xl font-bold leading-none">{r.value.toFixed(0)}</div></div>
             </li>
           ) : (
             <Fragment key={r.id}>
-            <li onClick={() => card.open(r.id)} className={cx("cursor-pointer grid items-center gap-2 px-3 py-2 active:bg-panel2/60 sm:px-4", cols, r.mine && "bg-acc-soft")}>
+            <li onClick={() => card.open(r.id)} className={cx("cursor-pointer grid items-center gap-1.5 px-3 sm:gap-2 py-2 active:bg-panel2/60 sm:px-4", cols, r.mine && "bg-acc-soft")}>
               <div className="text-center">
                 <div className="num text-sm font-bold">{by === "ai" ? ranked.aiN.get(r.id) : by === "pts" ? ptsN.get(r.id) : r.ecrPos !== null ? ranked.ecrN.get(r.id) : "–"}</div>
                 <div className="text-[9px] font-semibold text-muted">{r.pos}{by === "ai" ? ai.get(r.id)!.rank : by === "pts" ? r.shsPos : r.ecrPos ?? "–"}</div>
               </div>
+              <div className="flex justify-center" onClick={(e) => e.stopPropagation()}><Shs a={ai.get(r.id)} name={r.name} open={open === r.id} onToggle={() => setOpen(open === r.id ? null : r.id)} /></div>
               <div className="flex min-w-0 items-center gap-2.5">
-                <PlayerImg id={r.id} name={r.name} pos={r.pos} size={34} />
+                <PlayerImg id={r.id} name={r.name} pos={r.pos} size={30} />
                 <div className="min-w-0">
                   <div className="flex min-w-0 items-center gap-1.5 text-sm font-semibold"><PlayerLink id={r.id} name={r.name} className="min-w-0" /><InjuryChip status={r.injury} /></div>
                   <div className="flex min-w-0 items-center gap-1 overflow-hidden whitespace-nowrap text-[11px] text-muted"><NflLogo team={r.team} size={12} />{r.pos} · {r.team ?? "FA"}{r.opp ? ` vs ${r.opp}` : ""}<span className={cx("ml-1 truncate", r.mine ? "font-semibold text-acc-ink" : r.owner === "Free agent" ? "font-semibold text-pos" : "")}>· {r.owner}</span></div>
-                  <div className="flex min-w-0 items-center gap-1.5 text-[11px] text-muted">{trend(r.id, r.pos)}{scope === "ros" && r.keepRound != null && <span className={cx("shrink-0 rounded px-1 text-[10px] font-bold", (r.keepSurplus ?? 0) > 0 ? "bg-pos/15 text-pos" : "bg-neg/15 text-neg")} title="Next season's keep price">Keep R{r.keepRound}</span>}<span className="truncate sm:hidden">{statLine(r, scope)}</span></div>
+                  <div className="flex min-w-0 items-center gap-1.5 text-[11px] text-muted">{trend(r.id, r.pos)}{scope === "ros" && r.keepRound != null && <span className={cx("shrink-0 rounded px-1 text-[10px] font-bold", (r.keepSurplus ?? 0) > 0 ? "bg-pos/15 text-pos" : "bg-neg/15 text-neg")} title="Next season's keep price">Keep R{r.keepRound}</span>}</div>
                 </div>
               </div>
               <div className="hidden truncate text-xs text-muted sm:block">{statLine(r, scope)}</div>
               {scope === "week" && <div className="flex justify-center"><GradeChip g={grades.get(r.id) ?? null} /></div>}
-              <div className="flex justify-center" onClick={(e) => e.stopPropagation()}><Shs a={ai.get(r.id)} name={r.name} open={open === r.id} onToggle={() => setOpen(open === r.id ? null : r.id)} /></div>
               <button type="button" aria-expanded={ptsOpen === r.id} aria-label={`How ${r.name}'s ${dyn ? "value" : "points"} add up`} onClick={(e) => { e.stopPropagation(); setPtsOpen(ptsOpen === r.id ? null : r.id); setOpen(null); }}
                 className={cx("rounded-lg py-1 pr-1 text-right transition-colors", ptsOpen === r.id ? "bg-acc-soft" : "hover:bg-panel2")}>
                 <div className="num font-[family-name:var(--font-display)] text-xl font-bold leading-none">{(dyn ? r.value : r.pts).toFixed(dyn ? 0 : 1)}</div>

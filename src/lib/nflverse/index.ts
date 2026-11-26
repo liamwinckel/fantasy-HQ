@@ -62,6 +62,10 @@ export const pfrAdv = (season: string, force = false) =>
 export interface EcrWeekly { season: number; weeks: Record<string, { at: string; rows: [string, number, number | null][] }> }
 export const ecrWeekly = (season: string, force = false) =>
   cached(`data:ecrweekly:${season}`, "nflverse", 6 * HOUR, get(`ecr-weekly-${season}.json`), (b) => JSON.parse(b) as EcrWeekly, { force });
+/** Kick/punt return stats per week from Sleeper (nflverse has none): week → playerId → values for `keys`. */
+export interface ReturnsFile { season: number; keys: string[]; weeks: Record<string, Record<string, number[]>> }
+export const returnStats = (season: string, force = false) =>
+  cached(`data:returns:${season}`, "nflverse", 6 * HOUR, get(`returns-${season}.json`), (b) => JSON.parse(b) as ReturnsFile, { force });
 /** Prediction-market lines; refreshed hourly on game days, so cache briefly. */
 export const markets = (force = false) =>
   cached("data:markets", "nflverse", 20 * 60_000, get("markets.json"), (b) => JSON.parse(b) as MarketsFile, { force });

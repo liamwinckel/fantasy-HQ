@@ -20,3 +20,14 @@ describe("expected scoring bonuses", () => {
     expect(expectedBonuses({ rush_yd: 120, bonus_rush_yd_100: 0.7 }, { bonus_rush_yd_100: 3 })).toBe(0);
   });
 });
+
+describe("return yards in projections", () => {
+  it("scores a returner's def_kr_yd / def_pr_yd projection with the league's kr_yd / pr_yd", async () => {
+    const { scoreSleeperStats } = await import("@/lib/engine/scoring");
+    const sc = { rec: 0.5, rec_yd: 0.1, kr_yd: 0.04, pr_yd: 0.04 };
+    const pts = scoreSleeperStats({ rec: 1, rec_yd: 10, def_kr_yd: 75, def_pr_yd: 10 }, sc, "WR");
+    expect(pts).toBeCloseTo(0.5 + 1 + 3 + 0.4, 5);
+    // a team defense keeps its own def_ keys
+    expect(scoreSleeperStats({ def_kr_yd: 75 }, sc, "DEF")).toBe(0);
+  });
+});

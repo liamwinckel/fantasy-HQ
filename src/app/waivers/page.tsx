@@ -36,11 +36,10 @@ function WaiverPageBody({ setup, league, ctx, sp }: LeagueData) {
 
   return (
     <div className="flex flex-col gap-5">
-      <PageHeader eyebrow={`${league.name} · ${formatLabel(league)} · ${ctx.scoring}`} title="Waiver Assistant" />
-      <Info className="-mt-2 self-center" label="About this tool">
+      <PageHeader eyebrow={`${league.name} · ${formatLabel(league)} · ${ctx.scoring}`} title="Waiver Assistant" info={<>
         The league&apos;s top projected free agents (Sleeper projections in your scoring), ranked by what they&apos;d add to <b className="text-fg">your</b> best lineup this week and for the rest of the season.
         Injured, suspended and players not projected to play are left out. If your roster is full, the suggested drop is taken off first, so the gain is net of losing him.
-      </Info>
+      </>} />
 
       <Card title="Your needs" info={<>Positions where your best lineup is weakest compared with the rest of the league, and how thin your bench is there.</>} right={<Tag kind="MODEL" />}>
         <div className="flex flex-wrap gap-2 text-sm">
@@ -90,15 +89,13 @@ function WaiverPageBody({ setup, league, ctx, sp }: LeagueData) {
           {r.drops.length === 0 && <li className="px-5 py-4 text-sm text-muted">Nobody outside your best lineups is worse than the best free agent at his position.</li>}
         </ul>
       </Card>
-      <Info className="">{isFaab(league) ? "FAAB bids are suggestions from your league's own bidding history and Sleeper's trending adds." : "This league doesn't use FAAB."} Waiver claims are made in Sleeper.</Info>
     </div>
   );
 }
 
 function ListCard({ title, hint, items, stat, statLabel, ai }: { title: string; hint: string; items: WaiverPlayer[]; stat: (w: WaiverPlayer) => string; statLabel: string; ai: Map<string, ShsAi> }) {
   return (
-    <Card title={title}>
-      <Info className="-mt-1 mb-3">{hint}</Info>
+    <Card title={title} info={hint}>
       {items.length === 0 && <p className="text-sm text-muted">None right now.</p>}
       <ul className="flex flex-col gap-3">
         {items.map((w) => (

@@ -188,8 +188,16 @@ export function waiverReport(ctx: LeagueContext, rosterId: number): WaiverReport
     if (!starter) continue;
     // Next man up: first healthy RB behind the starter.
     const next = sorted.filter((p) => p.id !== starter.id && healthy(p))[0];
-    if (!next || rostered.has(next.id) || (next.depth != null && next.depth > 3)) continue;
+    if (!next || rostered.has(next.id)) continue;
     const starterBase = ctx.projections.get(starter.id)?.base ?? 0;
+    // Only real handcuffs: the listed No. 2 behind a starter worth backing up, who actually plays (touches, snaps or
+    // a projection), not a practice-squad name at the bottom of a depth chart.
+    if (next.depth != null && next.depth > 2) continue;
+    if (starterBase < 8) continue;
+    const log = (ctx.logs.get(next.id) ?? []).slice(-4);
+    const touches = log.filter((g) => (g.opportunity ?? 0) >= 2 || (g.snapPct ?? 0) >= 0.15).length;
+    const nb = ctx.projections.get(next.id)?.base ?? 0;
+    if (touches < 2 && nb < 4) continue;
     const mineStarter = myRbs.has(starter.id);
     hcCands.push({ p: next, starter, mineStarter, score: (mineStarter ? 100 : 0) + starterBase + 0.5 * (ctx.projections.get(next.id)?.base ?? 0) });
   }
@@ -206,7 +214,9 @@ export function waiverReport(ctx: LeagueContext, rosterId: number): WaiverReport
     if (!cur || (ctx.projections.get(p.id)?.base ?? 0) > (ctx.projections.get(cur.id)?.base ?? 0)) bestFa.set(p.pos, p);
   }
   const dyn = ctx.valuationMode === "dynasty";
-  const drops = mine.filter((id) => !needed.has(id)).map((id) => {
+  // Keeper leagues: a player worth keeping next season isn't a drop candidate, whatever he scores now.
+  const keepWorth = (id: string) => ctx.format === "keeper" && (ctx.keeperCost.get(id)?.surplus ?? 0) > 0;
+  const drops = mine.filter((id) => !needed.has(id) && !keepWorth(id)).map((id) => {
     const p = ctx.players.get(id)!;
     const pr = ctx.projections.get(id)!;
     const fa = bestFa.get(p.pos);

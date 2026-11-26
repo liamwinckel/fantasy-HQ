@@ -177,6 +177,9 @@ export async function tradeGrades(h: History, ctx: LeagueContext): Promise<Trade
     if (!trades.length) continue;
     // Weekly starter points this season (who actually helped which team).
     const weeks: Matchup[][] = s.current ? ctx.matchupsByWeek : await Promise.all(Array.from({ length: 17 }, (_, i) => sleeper.pastMatchups(s.leagueId, i + 1).then((r) => r.data).catch(() => [] as Matchup[])));
+    // Redraft/keeper picks: worth what a player taken at that spot is worth today (the redraft value at that overall rank).
+    const byValue = [...ctx.values.values()].map((v) => v.redraft).sort((a, b) => b - a);
+    const slotValue = (round: number, slot: number | null) => byValue[Math.min(byValue.length - 1, Math.max(0, (round - 1) * ctx.teamsCount + (slot ?? Math.ceil(ctx.teamsCount / 2)) - 1))] ?? 0;
     const startedFor = (rid: number, pid: string, from: number) => {
       let pts = 0;
       weeks.forEach((ms, i) => { if (i + 1 < from) return; const m = ms.find((x) => x.roster_id === rid); if (m?.starters.includes(pid)) pts += m.players_points[pid] ?? 0; });
@@ -191,9 +194,10 @@ export async function tradeGrades(h: History, ctx: LeagueContext): Promise<Trade
         for (const pk of t.draft_picks.filter((p) => p.owner_id === rid)) {
           const became = draftedFrom(pk.season, pk.round, pk.roster_id ?? 0);
           const future = ctx.picks.find((p) => p.season === pk.season && p.round === pk.round && p.originalRosterId === pk.roster_id);
+          const pv = dyn ? future?.value ?? 0 : s.current || Number(pk.season) > Number(s.season) ? slotValue(pk.round, future?.estimatedSlot ?? null) : 0;
           got.push(became
-            ? { id: became, name: `${pk.season} R${pk.round} → ${playerName(h, ctx, became)}`, pos: "PICK", pts: 0, value: dyn ? ctx.values.get(became)?.dynasty ?? 0 : 0, note: "pick used" }
-            : { id: `${pk.season}-${pk.round}-${pk.roster_id}`, name: future?.label ?? `${pk.season} round ${pk.round}`, pos: "PICK", pts: 0, value: dyn ? future?.value ?? 0 : 0 });
+            ? { id: became, name: `${pk.season} R${pk.round} → ${playerName(h, ctx, became)}`, pos: "PICK", pts: 0, value: (dyn ? ctx.values.get(became)?.dynasty : ctx.values.get(became)?.redraft) ?? 0, note: "pick used" }
+            : { id: `${pk.season}-${pk.round}-${pk.roster_id}`, name: future?.label ?? `${pk.season} round ${pk.round}`, pos: "PICK", pts: 0, value: pv, note: dyn ? undefined : "valued as a player taken at that pick" });
         }
         return { owner: ownerOf(s, rid), rosterId: rid, got, pts: got.reduce((a, g) => a + g.pts, 0), value: got.reduce((a, g) => a + g.value, 0), grade: "C", share: 0.5 };
       });
@@ -210,7 +214,7 @@ export async function tradeGrades(h: History, ctx: LeagueContext): Promise<Trade
       out.push({
         id: t.transaction_id, season: s.season, week, sides,
         verdict: margin < 0.08 ? "Even so far" : `${h.owners.get(best[0].owner)?.name ?? "Team"} ${margin > 0.3 ? "won big" : "is winning"}`,
-        basis: dyn ? "65% value today, 35% starter points since" : s.current ? "Starter points since + rest-of-season value" : "Starter points gained after the trade",
+        basis: dyn ? "65% value today, 35% starter points since" : s.current ? `Starter points since + value today in your scoring${ctx.format === "keeper" ? " (incl. keeper value)" : ""}; picks valued as a player taken there` : "Starter points gained after the trade",
       });
     }
   }

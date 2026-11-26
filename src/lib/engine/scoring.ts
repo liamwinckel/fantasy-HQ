@@ -53,7 +53,10 @@ export function scoringLabel(sc: Record<string, number>): string {
 export function scoreSleeperStats(st: Record<string, number>, sc: Record<string, number>, position: string): number {
   let pts = 0;
   for (const [k, v] of Object.entries(st)) {
-    const w = sc[k];
+    let w = sc[k];
+    // Sleeper's projections file a returner's kick/punt return stats under def_kr_* / def_pr_* (the team-defense
+    // keys), while leagues score individual returners with kr_* / pr_*. Score them with the player's settings.
+    if (!w && position !== "DEF" && /^def_(kr|pr)_/.test(k) && !(k.slice(4) in st)) w = sc[k.slice(4)];
     if (w) pts += v * w;
   }
   pts += expectedBonuses(st, sc);

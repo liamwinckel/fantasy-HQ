@@ -50,10 +50,9 @@ export function Info({ children, className, label }: { children: ReactNode; clas
   const [open, setOpen] = useState(false);
   return (
     <div className={cx("text-xs", className)}>
-      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="inline-flex items-center gap-1.5 font-semibold text-muted hover:text-fg">
-        <span className={cx("inline-flex h-5 w-5 items-center justify-center rounded-full border text-[11px] font-bold", open ? "border-acc bg-acc text-on-acc" : "border-line")}>i</span>
-        {label ?? (open ? "Hide" : "How this works")}
-      </button>
+      {/* Just a small ⓘ: explanations are there on tap, not in the way. */}
+      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} aria-label={label ?? "How this works"} title={label ?? "How this works"}
+        className={cx("inline-flex h-4 w-4 items-center justify-center rounded-full border text-[9px] font-bold transition-colors", open ? "border-acc bg-acc text-on-acc" : "border-line text-muted opacity-70 hover:opacity-100")}>i</button>
       {open && <div className="fhq-in mt-2 rounded-lg bg-panel2/60 px-3 py-2.5 leading-relaxed text-muted">{children}</div>}
     </div>
   );

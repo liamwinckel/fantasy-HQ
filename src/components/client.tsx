@@ -30,13 +30,14 @@ export function Segmented<T extends string>({ options, value, onChange, label, s
   const i = Math.max(0, options.findIndex((o) => o.value === value));
   const n = options.length;
   return (
-    <div role="group" aria-label={label} className="relative isolate flex rounded-lg border border-line bg-panel2 p-0.5">
+    // Equal-width columns (the widest label sets the width), so the sliding highlight always lines up with its label.
+    <div role="group" aria-label={label} className="relative isolate grid rounded-lg border border-line bg-panel2 p-0.5" style={{ gridTemplateColumns: `repeat(${n}, 1fr)` }}>
       {/* sliding highlight */}
       <span aria-hidden className="absolute inset-y-0.5 left-0.5 -z-10 rounded-md bg-acc transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
         style={{ width: `calc((100% - 4px) / ${n})`, transform: `translateX(${i * 100}%)` }} />
       {options.map((o) => (
         <button key={o.value} type="button" onClick={() => onChange(o.value)} aria-pressed={value === o.value}
-          className={cx("flex-1 whitespace-nowrap rounded-md font-semibold transition-colors duration-200", size === "lg" ? "px-4 py-2.5 text-sm" : "px-3 py-1.5 text-[13px]",
+          className={cx("whitespace-nowrap rounded-md font-semibold transition-colors duration-200", size === "lg" ? "px-4 py-2.5 text-sm" : "px-3 py-1.5 text-[13px]",
             value === o.value ? "text-on-acc" : "text-muted hover:text-fg")}>
           {o.label}
         </button>
@@ -183,9 +184,9 @@ export function MobileTabs({ keeper }: { keeper: boolean }) {
           <button ref={btn} type="button" onClick={toggle} aria-label={open ? "Close quick actions" : "Quick actions"} aria-expanded={open}
             className={cx("qa-btn -mt-6 flex h-16 w-16 items-center justify-center rounded-full border-4 border-bg shadow-lg", open && !closing ? "rotate-90 bg-acc" : "bg-panel2")}>
             {open && !closing
-              ? <X size={28} className="text-on-acc" strokeWidth={2.5} />
+              ? <X size={24} className="text-on-acc" strokeWidth={2.5} />
               // eslint-disable-next-line @next/next/no-img-element
-              : <img src={`${BASE_PATH}/shs-h.png`} alt="" width={40} height={40} className="h-10 w-10 object-contain" />}
+              : <img src={`${BASE_PATH}/shs-h.png`} alt="" width={32} height={32} className="h-8 w-8 object-contain" />}
           </button>
         </div>
         {TABS.slice(2).map(tab)}

@@ -40,11 +40,10 @@ function HistoryBody({ league, ctx }: LeagueData) {
   const tabs: { value: Tab; label: string }[] = [{ value: "trades", label: "Trades" }, { value: "drafts", label: "Drafts" }, { value: "managers", label: "Managers" }, ...(q.data?.market ? [{ value: "faab" as Tab, label: "FAAB" }] : [])];
   return (
     <div className="flex flex-col gap-5">
-      <PageHeader eyebrow={`${league.name} · ${formatLabel(league)}`} title="League History" />
-      <Info className="-mt-2 self-center" label="About this page">
+      <PageHeader eyebrow={`${league.name} · ${formatLabel(league)}`} title="League History" info={<>
         Every season of this league on Sleeper{q.data ? ` (${q.data.h.seasons.map((s) => s.season).reverse().join(", ")})` : ""}: trades graded by what each side actually got, drafts graded in hindsight,
         how each manager plays the waiver wire{faab ? " and what your league really pays in FAAB" : ""}. Everything comes from Sleeper&apos;s public data for this league.
-      </Info>
+      </>} />
       {q.loading && !q.data ? <Loading label="Reading every season of this league" /> : q.error ? <Notice tone="warn">Couldn&apos;t load this league&apos;s history ({q.error}).</Notice> : q.data && (
         <>
           <div className="mx-auto w-full max-w-sm"><Segmented label="History section" options={tabs} value={tab} onChange={setTab} /></div>
@@ -116,12 +115,9 @@ function Drafts({ d, ctx }: { d: Loaded; ctx: LeagueContext }) {
   if (!g) return <Notice>No completed drafts found for this league on Sleeper.</Notice>;
   return (
     <div className="flex flex-col gap-4">
-      {seasons.length > 1 && <div className="mx-auto w-full max-w-[14rem]"><Segmented label="Draft season" options={seasons.map((s) => ({ value: s, label: s }))} value={season} onChange={setSeason} /></div>}
-      <Info className="self-center" label="How drafts are graded">
-        Hindsight grades. Every drafted player is scored by what he became ({g.basis.toLowerCase()}), then re-ranked. Each pick is compared
-        with the player who finished at that same spot: <b className="text-fg">+</b> means you got more than the slot was worth. Keepers are left out. Grades are curved within the league.
-      </Info>
-      <Card pad={false}>
+      {seasons.length > 1 && <div className="mx-auto max-w-full overflow-x-auto"><Segmented label="Draft season" options={seasons.map((s) => ({ value: s, label: s }))} value={season} onChange={setSeason} /></div>}
+      <Card title={`${g.season} draft grades`} info={<>Hindsight grades. Every drafted player is scored by what he became ({g.basis.toLowerCase()}), then re-ranked. Each pick is compared
+        with the player who finished at that same spot: <b className="text-fg">+</b> means you got more than the slot was worth. Keepers are left out. Grades are curved within the league.</>} pad={false}>
         <ul className="divide-y divide-line">
           {g.teams.map((t) => (
             <li key={t.owner}>

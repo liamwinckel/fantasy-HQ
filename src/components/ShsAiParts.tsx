@@ -102,7 +102,7 @@ export function MovePill({ move, pct, big }: { move: number | null; pct?: number
   const text = flat ? "=" : move !== null ? String(Math.abs(val)) : `${Math.abs(val)}%`;
   return (
     <span className={cx("inline-flex items-center justify-center gap-0.5 rounded-full font-bold tabular-nums leading-none",
-      big ? "h-9 min-w-14 px-3 text-lg" : "h-[22px] min-w-[2.6rem] px-2 text-[11px]",
+      big ? "h-9 min-w-14 px-3 text-lg" : "h-[22px] min-w-[2.3rem] px-1.5 text-[11px]",
       flat ? "bg-panel2 text-muted" : up ? "bg-pos/15 text-pos" : "bg-neg/15 text-neg")}>
       {!flat && <Chevron up={up} />}{text}
     </span>

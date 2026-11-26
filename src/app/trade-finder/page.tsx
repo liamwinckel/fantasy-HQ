@@ -37,12 +37,11 @@ function TradeFinderPageBody({ league, ctx, sp }: LeagueData) {
 
   return (
     <div className="flex flex-col gap-5">
-      <PageHeader eyebrow={`${league.name} · ${formatLabel(league)} · ${ctx.scoring}`} title="Trade Finder" />
-      <Info className="-mt-2 self-center" label="About this tool">
+      <PageHeader eyebrow={`${league.name} · ${formatLabel(league)} · ${ctx.scoring}`} title="Trade Finder" info={<>
         Every team&apos;s strengths and needs, and trades that fill a hole on <b className="text-fg">both</b> sides. {dyn
           ? "Dynasty: deals must add value for each team's strategy (contender vs rebuilder) and stay close in value."
           : "Redraft: deals must improve your best lineups for the rest of the season without gutting theirs, and stay close in value."}
-      </Info>
+      </>} />
 
       <Card title="Team needs" info={<>Each team&apos;s rank at each position (1 = strongest). <span className="text-pos">Green</span> = top third, <span className="text-neg">red</span> = bottom half (a need). You need: <b className="text-neg">{mine.needs.join(", ") || "nothing urgent"}</b>; you can spare: <b className="text-pos">{mine.surplus.join(", ") || "little depth"}</b>. Tap Deals to see trades with that team.</>} pad={false}>
         <ul className="divide-y divide-line">
@@ -101,7 +100,6 @@ function TradeFinderPageBody({ league, ctx, sp }: LeagueData) {
           );
         })}
       </div>
-      <Info className="">Suggestions use real rosters and picks each team actually owns. Nothing is sent to Sleeper, and other managers&apos; preferences are unknown.</Info>
     </div>
   );
 }
