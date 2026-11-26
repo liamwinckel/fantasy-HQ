@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, ChevronDown, Minus, Plus, Search } from "lucide-react";
 import { PlayerLink } from "@/components/PlayerCard";
 import { PlayerImg, Segmented } from "@/components/client";
+import { SwipeRow } from "@/components/SwipeRow";
 import { Card, ClassBadge, InjuryChip, Logo, NflLogo, cx, signed } from "@/components/ui";
 import { evaluateTrade, type BalanceSuggestion, type PowerShift, type TradeResult } from "@/lib/engine/trade";
 import { getLeagueContext } from "@/lib/services/league";
@@ -176,7 +177,8 @@ function DealColumn({ title, team, selected, onChange, tiers, setTiers, mode, va
         const a = byId.get(id);
         if (!a) return null;
         return (
-          <div key={id} className="fhq-in flex h-12 items-center gap-1.5 rounded-lg bg-panel2 px-2">
+          <SwipeRow key={id} onRemove={() => onChange(selected.filter((x) => x !== id))}>
+          <div className="fhq-in flex h-12 items-center gap-1.5 rounded-lg bg-panel2 px-2">
             <div className="min-w-0 flex-1">
               <div className="flex min-w-0 items-center gap-1 text-xs font-semibold sm:text-sm">{a.kind === "player" ? <PlayerLink id={a.id.slice(2)} name={a.name} className="truncate" /> : <span className="truncate">{a.name}</span>}<InjuryChip status={a.injury} /></div>
               {a.kind === "pick" && mode === "dynasty" ? (
@@ -192,6 +194,7 @@ function DealColumn({ title, team, selected, onChange, tiers, setTiers, mode, va
             <button type="button" aria-label={`Take ${a.name} out of the trade`} onClick={() => onChange(selected.filter((x) => x !== id))}
               className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-muted hover:text-neg active:scale-90"><Minus size={14} /></button>
           </div>
+          </SwipeRow>
         );
       })}
       {adjust >= 0.5 && (
