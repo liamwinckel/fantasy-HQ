@@ -181,6 +181,8 @@ export const ecrToValue = (ecr: number) => 100 * Math.exp(-(Math.max(1, ecr) - 1
  */
 /** Power applied to dynasty values (share of the top asset) to flatten the market's steep mid/low tail. */
 export const DYNASTY_CURVE = 0.45;
+/** A raw dynasty value (share of the top asset, 0–100) on the bent curve that player values use. Picks too. */
+export const bendDynasty = (v: number) => (v > 0 ? Math.round(1000 * Math.pow(Math.min(1, v / 100), DYNASTY_CURVE)) / 10 : 0);
 
 export function blendWithMarket(values: Map<string, PlayerValue>, players: PlayerLite[], cons: Record<string, Consensus>, superflex: boolean, trust?: Map<string, number>) {
   // How far the market can be trusted for a player (1 = fully). Expert ranks use standard scoring, so a player who

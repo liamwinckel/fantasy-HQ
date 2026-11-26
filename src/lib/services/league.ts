@@ -4,7 +4,7 @@ import { combine, consensus, contracts, injuryReports, type CombineRow, playerIn
 import { canFill, isSuperflex, playerPositions, primaryPosition, starterDemand, startingSlots } from "../engine/positions";
 import { scoreSleeperStats, scoreStatLine, scoringLabel } from "../engine/scoring";
 import { applySleeper, opportunityOf, priorFor, project, type GameLog, type PlayerLite, type Projection } from "../engine/projections";
-import { applyKeeperBonus, blendWithMarket, computeValues, replacementLevels, type Consensus, type PlayerValue } from "../engine/values";
+import { applyKeeperBonus, bendDynasty, blendWithMarket, computeValues, replacementLevels, type Consensus, type PlayerValue } from "../engine/values";
 import { optimizeLineup, lineupTotal, scoreStarters, type SlotAssignment } from "../engine/lineup";
 import { simulateSeason, type SimResult, type TeamWeek } from "../engine/simulate";
 import { classifyTeams, type Classification, type TeamClass, type TeamMetrics } from "../engine/classify";
@@ -646,7 +646,7 @@ async function buildLeagueContext(
       const m = marketForPick(p, pm);
       if (!m) continue;
       p.market = m;
-      p.value = Math.round((1000 * (sf ? m.v2 : m.v1)) / maxMk) / 10;
+      p.value = bendDynasty((100 * (sf ? m.v2 : m.v1)) / maxMk);
     }
   }
   for (const m of metrics) m.capital = picks.filter((p) => p.ownerRosterId === m.rosterId).reduce((a, p) => a + (p.value || pickProxy(p)), 0);

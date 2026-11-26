@@ -11,6 +11,7 @@
  */
 
 import type { TradedPick } from "../sleeper/types";
+import { bendDynasty } from "./values";
 
 export type Tier = "early" | "mid" | "late";
 
@@ -62,7 +63,8 @@ export function pickValue(opts: { round: number; tier: Tier; teams: number; supe
   const sf = opts.superflex && opts.round === 1 ? 1.12 : 1;
   const size = Math.pow(12 / Math.max(4, opts.teams), 0.25);
   const disc = opts.yearsOut <= 0 ? 1 : opts.yearsOut === 1 ? 0.9 : 0.82;
-  return Math.round(base * sf * size * disc * 1000) / 10;
+  // Same bent curve as player values, so a pick and a player of equal market worth get the same number.
+  return bendDynasty(base * sf * size * disc * 100);
 }
 
 export function tierForSlot(slot: number, teams: number): Tier {
