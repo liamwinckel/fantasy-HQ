@@ -8,7 +8,7 @@ import { powerRankings, POS_ORDER } from "@/lib/engine/power";
 import { ord } from "@/lib/engine/classify";
 import { Bar, Card, ClassBadge, Logo, PageHeader, Stat, cx } from "@/components/ui";
 import { Segmented } from "@/components/client";
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useInView } from "@/components/motion";
 import { Sheet } from "@/components/Sheet";
 import { DashDetail, type DashKey } from "../DashDetails";
@@ -60,6 +60,12 @@ function LeagueBody({ league, ctx }: LeagueData) {
         </div>
       )}
 
+      {fmt === "keeper" && (
+        <Card title="Keepers">
+          <p className="text-sm text-muted">Plan next year&apos;s keepers and what they&apos;ll cost.</p>
+          <Link href="/keepers" className="mt-3 inline-block rounded-lg bg-acc px-4 py-2 text-sm font-bold text-on-acc">Open Keeper Planner</Link>
+        </Card>
+      )}
       <Card title="Power rankings" pad={false} info={<><b>Power</b> = overall team strength (0–100): 45% best-lineup strength now, 35% rest-of-season strength, 20% points per game, scaled so the best team ≈ 100. <b>Proj.</b> = projected final regular-season record: current wins plus the average of the remaining games across the simulated seasons. <b>Playoff % / Title %</b> = how often the team makes the playoffs / wins it all in thousands of simulated seasons. Tap any number for the detail.</>}>
         <div className="grid grid-cols-[1.5rem_minmax(0,1fr)_2.75rem_2.75rem_3rem] items-center gap-2 border-b border-line px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted sm:grid-cols-[2rem_minmax(0,1fr)_3.5rem_3.5rem_8rem_4rem_4rem] sm:px-5">
           <span>#</span><span>Team</span><span>Record</span><span title="Projected final regular-season record">Proj.</span><span className="text-right sm:text-left" title="Power score, 0–100 (best team ≈ 100)">Power</span><span className="hidden text-right sm:block">Playoff %</span><span className="hidden text-right sm:block">Title %</span>
@@ -105,16 +111,16 @@ function LeagueBody({ league, ctx }: LeagueData) {
             </ul>
           </div>
           <div className="min-w-0 flex-1 overflow-x-auto overscroll-x-contain" data-no-swipe>
-            <div className="min-w-max">
+            <div className="min-w-max lg:min-w-0">
               <div className="flex h-9 items-center gap-1 border-b border-line px-2 text-center text-[10px] font-semibold uppercase tracking-wider text-muted">
-                {[...mainPos, ...extraPos].map((pos) => <span key={pos} className="w-11">{pos}</span>)}<span className="w-12">Depth</span>{showPicks && <span className="w-12">Picks</span>}
+                {[...mainPos, ...extraPos].map((pos) => <span key={pos} className="w-11 lg:w-auto lg:flex-1">{pos}</span>)}<span className="w-12 lg:w-auto lg:flex-1">Depth</span>{showPicks && <span className="w-12 lg:w-auto lg:flex-1">Picks</span>}
               </div>
               <ul className="divide-y divide-line">
                 {power.map((p) => (
                   <li key={p.rosterId} className={cx("flex h-11 items-center gap-1 px-2", p.rosterId === ctx.myRosterId && "bg-acc-soft")}>
-                    {[...mainPos, ...extraPos].map((pos) => { const r = p.positions[pos]?.rank ?? 0; return <CellBtn key={pos} onClick={() => open({ k: "pos", rid: p.rosterId, pos })} title={`${p.positions[pos]?.pts.toFixed(1) ?? 0} projected pts`} className={cx("num w-11 rounded py-1.5 text-center text-xs font-bold", tone(r))}>{r || "—"}</CellBtn>; })}
-                    <CellBtn onClick={() => open({ k: "depth", rid: p.rosterId })} className={cx("num w-12 rounded py-1.5 text-center text-xs font-bold", tone(p.depthRank))}>{p.depthRank}</CellBtn>
-                    {showPicks && <CellBtn onClick={() => open({ k: "picks", rid: p.rosterId })} title={`${(capital.get(p.rosterId) ?? 0).toFixed(0)} pick value`} className={cx("num w-12 rounded py-1.5 text-center text-xs font-bold", tone(pickRank(p.rosterId)))}>{pickRank(p.rosterId)}</CellBtn>}
+                    {[...mainPos, ...extraPos].map((pos) => { const r = p.positions[pos]?.rank ?? 0; return <CellBtn key={pos} onClick={() => open({ k: "pos", rid: p.rosterId, pos })} title={`${p.positions[pos]?.pts.toFixed(1) ?? 0} projected pts`} className={cx("num w-11 rounded py-1.5 text-center text-xs font-bold lg:w-auto lg:flex-1 lg:text-sm", tone(r))}>{r || "—"}</CellBtn>; })}
+                    <CellBtn onClick={() => open({ k: "depth", rid: p.rosterId })} className={cx("num w-12 rounded py-1.5 text-center text-xs font-bold lg:w-auto lg:flex-1 lg:text-sm", tone(p.depthRank))}>{p.depthRank}</CellBtn>
+                    {showPicks && <CellBtn onClick={() => open({ k: "picks", rid: p.rosterId })} title={`${(capital.get(p.rosterId) ?? 0).toFixed(0)} pick value`} className={cx("num w-12 rounded py-1.5 text-center text-xs font-bold lg:w-auto lg:flex-1 lg:text-sm", tone(pickRank(p.rosterId)))}>{pickRank(p.rosterId)}</CellBtn>}
                   </li>
                 ))}
               </ul>
@@ -125,12 +131,6 @@ function LeagueBody({ league, ctx }: LeagueData) {
       </Card>
 
       {fmt === "redraft" && <PlayoffPicture ctx={ctx} power={power} onOpen={open} />}
-      {fmt === "keeper" && (
-        <Card title="Keepers">
-          <p className="text-sm text-muted">Plan next year&apos;s keepers and what they&apos;ll cost.</p>
-          <Link href="/keepers" className="mt-3 inline-block rounded-lg bg-acc px-4 py-2 text-sm font-bold text-on-acc">Open Keeper Planner</Link>
-        </Card>
-      )}
       {fmt === "dynasty" && <DynastyOutlook ctx={ctx} power={power} onOpen={open} />}
       <Sheet open={detail !== null} onClose={() => setDetail(null)} full={detail?.k === "record"}
         title={detail ? (detail.k === "pos" ? `${detail.pos} group` : detail.k === "depth" ? "Bench depth" : detail.k === "picks" ? "Draft picks" : detail.k === "sched" ? "Schedule left" : TITLES[detail.k] ?? "") : ""} sub={detail ? team(detail.rid).name : ""}>
@@ -313,12 +313,21 @@ function PosPlot({ ctx, power, positions, onOpen }: { ctx: Ctx; power: Power; po
     const at = (v: number) => (hi - lo > 0.01 ? (v - lo) / (hi - lo) : 0.5);
     return { pos, avg, avgAt: at(avg), pts: pts.map((x) => ({ ...x, rel: avg > 0 ? (x.pts - avg) / avg : 0, at: at(x.pts) })) };
   });
-  const W = 320, L = 44, R = 14, rowH = 40, top = 22;
+  // Wider screens get a wider plot instead of a blown-up one: scale is capped at 1.4×.
+  const box = useRef<HTMLDivElement>(null);
+  const [boxW, setBoxW] = useState(320);
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => setBoxW(e.contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const W = Math.max(320, Math.round(boxW / 1.4)), L = 44, R = 14, rowH = 40, top = 22;
   const x = (t: number) => L + t * (W - L - R);
   const H = top + rows.length * rowH + 8;
   const f = power.find((p) => p.rosterId === focus);
   // Dots start on the league-average tick and slide out to their spots the first time the chart is on screen.
-  const box = useRef<HTMLDivElement>(null);
   const seen = useInView(box);
   const slide = (at: number, row: number): React.CSSProperties => ({ transform: `translateX(${x(at)}px)`, transition: `transform 750ms cubic-bezier(0.22,1,0.36,1) ${seen ? row * 60 : 0}ms` });
   const n = power.length;
