@@ -26,13 +26,31 @@ export interface AssetLine {
   drivers: { label: string; value: string; tone: "pos" | "neg" | "neutral" }[];
 }
 
+
 /**
- * "Four quarters don't make a dollar": package value = (Σ vᵢ^1.8)^(1/1.8).
- * One 80 stays 80; four 20s are worth ~43, not 80; 50 + 40 is worth ~66, not 90 — which is how trades actually
- * clear in real leagues: the side getting the best player wins unless the other side is clearly paid more.
- * Applies to players and draft picks alike. A single lineup slot can't hold four depth players.
+ * Both sides of a deal, valued the way Keep-Trade-Cut does it: pieces are matched one-for-one from the top, and
+ * the extra pieces on the side sending more of them count at a discount that grows the further they sit below the
+ * best asset in the deal (an extra worth 40% of the star counts ~20% of its value). That discount — the value
+ * adjustment — is capped at 90% of the best asset on the other side, so piling on real value always wins in the end.
+ * Same piece counts: no adjustment. Returns each side's effective value.
  */
-export const CONSOLIDATION_POWER = 1.8;
+export function packages(a: number[], b: number[]): { a: number; b: number; adjA: number; adjB: number } {
+  const A = a.map((v) => Math.max(0, v)).sort((x, y) => y - x), B = b.map((v) => Math.max(0, v)).sort((x, y) => y - x);
+  const sum = (xs: number[]) => xs.reduce((t, v) => t + v, 0);
+  const rawA = sum(A), rawB = sum(B);
+  const top = Math.max(1e-9, A[0] ?? 0, B[0] ?? 0);
+  const n = Math.min(A.length, B.length);
+  const shrink = (big: number[], other: number[]) => {
+    if (!other.length) return sum(big);
+    const raw = sum(big);
+    const weighted = sum(big.slice(0, n)) + big.slice(n).reduce((t, v) => t + v * 0.5 * (v / top), 0);
+    return Math.max(weighted, raw - 0.9 * other[0]);
+  };
+  const effA = A.length > B.length ? shrink(A, B) : rawA;
+  const effB = B.length > A.length ? shrink(B, A) : rawB;
+  // adjX = the value adjustment shown on side X (it's the other side's discount, credited here).
+  return { a: r1(effA), b: r1(effB), adjA: r1(rawB - effB), adjB: r1(rawA - effA) };
+}
 
 /**
  * How likely the other manager is to accept, judged the way real managers judge trades: by market value
@@ -40,16 +58,12 @@ export const CONSOLIDATION_POWER = 1.8;
  * player in the deal ("stud tax"). Returns 0.03–0.95.
  */
 export function acceptChance(theyGive: number[], theyGet: number[]): number {
-  const give = packageValue(theyGive), get = packageValue(theyGet);
+  const pk = packages(theyGive, theyGet), give = pk.a, get = pk.b;
   if (give <= 0) return get > 0 ? 0.95 : 0.5;
   const studTheirs = Math.max(0, ...theyGive) > Math.max(0, ...theyGet);
   const premium = 0.03 + (studTheirs ? 0.07 : 0);
   const x = (get / give - (1 + premium)) / 0.07;
   return Math.max(0.03, Math.min(0.95, 1 / (1 + Math.exp(-x))));
-}
-export function packageValue(values: number[]): number {
-  const s = values.reduce((t, v) => t + Math.pow(Math.max(0, v), CONSOLIDATION_POWER), 0);
-  return Math.round(Math.pow(s, 1 / CONSOLIDATION_POWER) * 10) / 10;
 }
 
 export interface PowerShift {
@@ -192,7 +206,11 @@ export function evaluateTrade(ctx: LeagueContext, req: TradeRequest): TradeResul
     ...req.bSends.map((id) => line(id, req.teamB)),
   ].filter((x): x is AssetLine => !!x);
   const sum = (from: number, f: (a: AssetLine) => number) => assets.filter((a) => a.from === from).reduce((t, a) => t + f(a), 0);
-  const pkg = (from: number, f: (a: AssetLine) => number) => packageValue(assets.filter((a) => a.from === from).map(f));
+  // Both sides are valued together (the adjustment depends on what's on the other side).
+  const pkg = (from: number, f: (a: AssetLine) => number) => {
+    const p = packages(assets.filter((a) => a.from === req.teamA).map(f), assets.filter((a) => a.from === req.teamB).map(f));
+    return from === req.teamA ? p.a : p.b;
+  };
   const aSendsRaw = sum(req.teamA, (a) => a.market);
   const bSendsRaw = sum(req.teamB, (a) => a.market);
   const aSendsMkt = pkg(req.teamA, (a) => a.market);
@@ -419,7 +437,8 @@ export function evaluateTrade(ctx: LeagueContext, req: TradeRequest): TradeResul
       const av = assets.filter((a) => a.from === req.teamA && a.id !== removeId).map((a) => a.market);
       const bv = assets.filter((a) => a.from === req.teamB && a.id !== removeId).map((a) => a.market);
       if (add !== null) (side === "a" ? av : bv).push(add);
-      return r1(packageValue(bv) - packageValue(av));
+      const p = packages(av, bv);
+      return r1(p.b - p.a);
     };
     void vals;
     const adds = pool

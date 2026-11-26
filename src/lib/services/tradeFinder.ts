@@ -16,7 +16,7 @@
 import type { LeagueContext } from "./league";
 import { optimizeLineup, lineupTotal } from "../engine/lineup";
 import { hasOwnSlot, powerRankings, type TeamPower } from "../engine/power";
-import { acceptChance, packageValue } from "../engine/trade";
+import { acceptChance, packages } from "../engine/trade";
 import { strategicPickValue, strategicPlayerValue, type TeamClass } from "../engine/classify";
 
 export interface TeamProfile {
@@ -138,10 +138,11 @@ export function findTrades(ctx: LeagueContext, me: number, limit = 12, onlyPartn
       const theirAfter = [...theirIds.filter((x) => !get.includes(x)), ...give];
       const myRos = weeks.length ? (ros(myAfter) - myBase) / weeks.length : 0;
       const theirRos = weeks.length ? (ros(theirAfter) - theirBase) / weeks.length : 0;
-      const pkgGive = packageValue(give.map(val));
-      const pkgGet = packageValue(get.map(val));
-      let myValue = dynasty ? packageValue(get.map((x) => strat(mine.cls, x))) - packageValue(give.map((x) => strat(mine.cls, x))) : pkgGet - pkgGive;
-      let theirValue = dynasty ? packageValue(give.map((x) => strat(partner.cls, x))) - packageValue(get.map((x) => strat(partner.cls, x))) : pkgGive - pkgGet;
+      const pv = packages(give.map(val), get.map(val));
+      const pkgGive = pv.a, pkgGet = pv.b;
+      const net = (f: (x: string) => number) => { const p = packages(give.map(f), get.map(f)); return p.b - p.a; };
+      let myValue = dynasty ? net((x) => strat(mine.cls, x)) : pkgGet - pkgGive;
+      let theirValue = dynasty ? -net((x) => strat(partner.cls, x)) : pkgGive - pkgGet;
       const extraPick: { id: string; name: string; pos: string; value: number }[] = [];
       // Dynasty: even out a modest gap with a pick from the side getting the better deal.
       if (dynasty && Math.abs(pkgGet - pkgGive) > 4) {

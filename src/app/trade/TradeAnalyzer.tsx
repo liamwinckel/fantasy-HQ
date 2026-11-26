@@ -96,13 +96,9 @@ export function TradeAnalyzer({ leagueId, views, me, teams: rawTeams, initialPar
   const rawSend = sumOf(mine, aSends), rawGet = sumOf(theirs, bSends);
   let adjSend = 0, adjGet = 0;
   if (result && rawSend > 0 && rawGet > 0) {
-    // The gap between the two sides after weighting, minus the gap in straight sums, goes to the side it favours.
-    // It can never exceed what the weighting actually took off (depth discount + roster cuts), so it stays bounded.
-    const effS = result.market.aSends, effG = Math.max(0, result.market.bSends - Math.max(0, result.rosterSpots.a.cost));
-    const adj = (effS - effG) - (rawSend - rawGet);
-    const cap = (rawSend - result.market.aSends) + (rawGet - result.market.bSends) + Math.abs(result.rosterSpots.a.cost);
-    const a = Math.max(-cap, Math.min(cap, adj));
-    if (a > 0) adjSend = a; else adjGet = -a;
+    // The engine discounts the extra pieces on the bigger side; KTC shows that discount as a credit on the other side.
+    adjSend = Math.max(0, result.market.bSendsRaw - result.market.bSends);
+    adjGet = Math.max(0, result.market.aSendsRaw - result.market.aSends);
   }
   const sendTotal = rawSend + adjSend, getTotal = rawGet + adjGet;
   const ready = aSends.length + bSends.length > 0;
@@ -584,8 +580,9 @@ function ValueBar({ send, get, adjSend, adjGet, ready, partner }: { send: number
         )}
       </div>
       <div className="mt-2 rounded-lg px-3 py-1.5 text-center text-sm font-extrabold" style={{ color, background: `color-mix(in srgb, ${color} 14%, transparent)` }}>
-        {label}{(adjSend > 0.5 || adjGet > 0.5) && <span className="ml-2 text-[11px] font-semibold opacity-80">· striped = value adjustment</span>}
+        {label}
       </div>
+      {(adjSend > 0.5 || adjGet > 0.5) && <div className="mt-1 text-center text-[10px] text-muted">Striped = value adjustment (+{tv(Math.max(adjSend, adjGet))}) for consolidating into fewer, better pieces</div>}
     </div>
   );
 }

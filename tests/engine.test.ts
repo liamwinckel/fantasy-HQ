@@ -8,7 +8,7 @@ import { availabilityFor, project, type PlayerLite, type Projection } from "@/li
 import { simulateSeason, winProbability } from "@/lib/engine/simulate";
 import { classifyTeams, strategicPickValue, strategicPlayerValue, type TeamMetrics } from "@/lib/engine/classify";
 import type { WeekStat } from "@/lib/nflverse";
-import { packageValue, acceptChance } from "@/lib/engine/trade";
+import { packages, acceptChance } from "@/lib/engine/trade";
 
 const p = (id: string, pos: string, points: number) => ({ id, positions: [pos], points });
 
@@ -183,15 +183,23 @@ describe("classification", () => {
 
 describe("four quarters for a dollar", () => {
   it("consolidates packages so depth can't add up to a star", () => {
-    expect(packageValue([80])).toBeCloseTo(80, 0);
-    expect(packageValue([20, 20, 20, 20])).toBeLessThan(55);
-    expect(packageValue([20, 20, 20, 20])).toBeGreaterThan(38);
+    // One-for-one: straight values.
+    expect(packages([80], [70])).toMatchObject({ a: 80, b: 70, adjA: 0, adjB: 0 });
+    // Four quarters don't make a dollar…
+    const q = packages([80], [20, 20, 20, 20]);
+    expect(q.b).toBeLessThan(40);
+    expect(q.adjA).toBeGreaterThan(40);
+    // …but piling on real value always wins: the adjustment is capped below the star's own value.
+    const whole = packages([100], [40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40]);
+    expect(whole.b).toBeGreaterThan(whole.a * 4);
+    expect(whole.adjA).toBeLessThanOrEqual(90);
+    // KTC-like: Bijan (999) for Love (550) + Adams (425) + Dowdle (352) favours Bijan's side clearly.
+    const k = packages([999], [550, 425, 352]);
+    expect(k.a / k.b).toBeGreaterThan(1.25);
     // The best player in a deal needs a premium to move.
     expect(acceptChance([80], [50, 40])).toBeLessThan(0.2);
     expect(acceptChance([50], [55])).toBeGreaterThan(0.5);
-    expect(packageValue([50, 40])).toBeLessThan(90);
-    expect(packageValue([50, 40])).toBeGreaterThan(50);
-    expect(packageValue([])).toBe(0);
+    expect(packages([], []).a).toBe(0);
   });
 });
 
