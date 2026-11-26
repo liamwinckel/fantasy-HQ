@@ -5,7 +5,7 @@ import Link from "next/link";
 import { formatLabel } from "@/lib/services/portfolio";
 import { pickValue } from "@/lib/engine/picks";
 import { Notice, PageHeader } from "@/components/ui";
-import { TradeAnalyzer, type TeamOpt } from "./TradeAnalyzer";
+import { TradeAnalyzer, type TeamOpt, type View } from "./TradeAnalyzer";
 
 export default function TradePage() {
   return <LeaguePage>{(d) => <TradePageBody {...d} />}</LeaguePage>;
@@ -14,7 +14,8 @@ export default function TradePage() {
 function TradePageBody({ setup, league, ctx, sp }: LeagueData) {
   if (ctx.myRosterId === null) return <Notice tone="warn">You don&apos;t own a team in {league.name}.</Notice>;
   const leagueId = league.league_id;
-  const mode = ctx.valuationMode;
+  // Value views on offer: dynasty and redraft everywhere; keeper leagues add keeper (rest of season + keep value).
+  const views: View[] = ctx.format === "keeper" ? ["keeper", "redraft", "dynasty"] : ctx.valuationMode === "dynasty" ? ["dynasty", "redraft"] : ["redraft", "dynasty"];
   const teams: TeamOpt[] = ctx.teams.map((t) => {
     const cls = ctx.showClasses ? ctx.classifications.get(t.rosterId) : undefined;
     return {
@@ -27,13 +28,14 @@ function TradePageBody({ setup, league, ctx, sp }: LeagueData) {
           const v = ctx.values.get(pid);
           return {
             id: `p:${pid}`, kind: "player" as const, name: p.name, pos: p.pos, team: p.team, sub: `${p.pos}${p.team ? ` · ${p.team}` : ""}${p.age ? ` · ${Math.floor(p.age)}` : ""}`,
-            value: v ? (mode === "redraft" ? v.redraft : v.dynasty) : 0, injury: p.injury,
+            value: 0, injury: p.injury,
+            values: { redraft: v ? v.redraftOnly ?? v.redraft : 0, keeper: v?.redraft ?? 0, dynasty: v?.dynasty ?? 0 },
           };
-        }).sort((a, b) => b.value - a.value),
+        }),
         ...ctx.picks.filter((k) => k.ownerRosterId === t.rosterId).map((k) => ({
           id: `k:${k.key}`, kind: "pick" as const, name: `${k.season} Round ${k.round}`, pos: "PICK", team: null,
           sub: `${k.originalRosterId === t.rosterId ? "Own" : `via ${ctx.teams.find((x) => x.rosterId === k.originalRosterId)?.name ?? "?"}`} · ${k.tier}${k.tierSource === "estimated" ? " (est.)" : k.tierSource === "default" ? " (slot unknown)" : ""}`,
-          value: mode === "dynasty" ? k.value : 0, injury: null, tier: k.tier,
+          value: 0, injury: null, tier: k.tier, values: { redraft: 0, keeper: 0, dynasty: k.value },
           tierValues: { early: pickValue({ round: k.round, tier: "early", teams: ctx.teamsCount, superflex: ctx.superflex, yearsOut: Number(k.season) - Number(ctx.league.season) - 1 }),
             mid: pickValue({ round: k.round, tier: "mid", teams: ctx.teamsCount, superflex: ctx.superflex, yearsOut: Number(k.season) - Number(ctx.league.season) - 1 }),
             late: pickValue({ round: k.round, tier: "late", teams: ctx.teamsCount, superflex: ctx.superflex, yearsOut: Number(k.season) - Number(ctx.league.season) - 1 }) },
@@ -55,7 +57,7 @@ function TradePageBody({ setup, league, ctx, sp }: LeagueData) {
       <TradeAnalyzer
         key={`${leagueId}:${sp.partner ?? ""}:${sp.a ?? ""}:${sp.b ?? ""}`}
         leagueId={leagueId}
-        mode={mode}
+        views={views}
         me={ctx.myRosterId}
         teams={teams}
         initialPartner={partner}

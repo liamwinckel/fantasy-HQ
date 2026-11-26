@@ -27,6 +27,8 @@ export interface PlayerValue {
   posRankDynasty: number;
   /** SHS model alone, before blending with the market (0–100 scale of the model). */
   redraftModel?: number;
+  /** Keeper leagues: rest-of-season value alone, before next season's keep value was added. */
+  redraftOnly?: number;
   dynastyModel?: number;
 }
 
@@ -245,6 +247,7 @@ export function blendWithMarket(values: Map<string, PlayerValue>, players: Playe
 export function applyKeeperBonus(values: Map<string, PlayerValue>, surplus: Map<string, number>) {
   const maxRaw = Math.max(1e-9, ...[...values.values()].map((v) => v.rosVorp));
   const perPoint = maxRaw / 100; // raw rest-of-season points per value point
+  for (const v of values.values()) v.redraftOnly = v.redraft;
   for (const [id, s] of surplus) { const v = values.get(id); if (v && s > 0) v.redraft = round1(v.redraft + (s * 17 * 0.4) / perPoint); }
   const maxR = Math.max(1e-9, ...[...values.values()].map((v) => v.redraft));
   for (const v of values.values()) v.redraft = round1((100 * v.redraft) / maxR);

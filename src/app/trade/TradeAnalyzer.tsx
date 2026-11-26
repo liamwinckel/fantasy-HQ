@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, Minus, Plus, Search } from "lucide-react";
 import { PlayerLink } from "@/components/PlayerCard";
-import { PlayerImg } from "@/components/client";
+import { PlayerImg, Segmented } from "@/components/client";
 import { Card, ClassBadge, InjuryChip, Logo, NflLogo, Tag, cx, signed, Info } from "@/components/ui";
 import { evaluateTrade, type BalanceSuggestion, type PositionShift, type PowerShift, type TradeResult } from "@/lib/engine/trade";
 import { getLeagueContext } from "@/lib/services/league";
@@ -19,17 +19,28 @@ const tv = (x: number) => Math.round(x * 9.99).toLocaleString();
 
 export interface Asset {
   id: string; kind: "player" | "pick"; name: string; pos: string; team: string | null; sub: string; value: number; injury: string | null;
-  tier?: Tier; tierValues?: Record<Tier, number>;
+  tier?: Tier; tierValues?: Record<Tier, number>; values: Record<View, number>;
 }
+/** Which values to trade on. Keeper = rest of season plus next season's keep value. */
+export type View = "redraft" | "keeper" | "dynasty";
+const VIEW_LABEL: Record<View, string> = { redraft: "Redraft", keeper: "Keeper", dynasty: "Dynasty" };
 export interface TeamOpt {
   rosterId: number; name: string; manager: string; avatar: string | null; record: string; cls: string | null; conf: number | null;
   overridden: boolean; playoff: number; title: number; assets: Asset[];
 }
 
-export function TradeAnalyzer({ leagueId, mode, me, teams, initialPartner, initialA, initialB }: {
-  leagueId: string; mode: "redraft" | "dynasty"; me: number; teams: TeamOpt[]; initialPartner: number; initialA: string[]; initialB: string[];
+export function TradeAnalyzer({ leagueId, views, me, teams: rawTeams, initialPartner, initialA, initialB }: {
+  leagueId: string; views: View[]; me: number; teams: TeamOpt[]; initialPartner: number; initialA: string[]; initialB: string[];
 }) {
-  const { ctx, setup } = useApp();
+  const { ctx: baseCtx, setup } = useApp();
+  const [view, setView] = useState<View>(views[0]);
+  const mode: "redraft" | "dynasty" = view === "dynasty" ? "dynasty" : "redraft";
+  // Same league, valued the chosen way: pure redraft in a keeper league drops next season's keep value.
+  const ctx = useMemo(() => {
+    if (!baseCtx || view !== "redraft" || baseCtx.format !== "keeper") return baseCtx;
+    return { ...baseCtx, values: new Map([...baseCtx.values].map(([id, v]) => [id, { ...v, redraft: v.redraftOnly ?? v.redraft }])) };
+  }, [baseCtx, view]);
+  const teams = useMemo(() => rawTeams.map((t) => ({ ...t, assets: t.assets.map((a) => ({ ...a, value: a.values[view] })).sort((a, b) => b.value - a.value) })), [rawTeams, view]);
   const [partner, setPartner] = useState(initialPartner);
   const [aSends, setA] = useState<string[]>(initialA);
   const [bSends, setB] = useState<string[]>(initialB);
@@ -78,6 +89,10 @@ export function TradeAnalyzer({ leagueId, mode, me, teams, initialPartner, initi
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end gap-3">
+        <div className="flex w-full flex-col gap-1 text-[11px] uppercase tracking-wider text-muted sm:w-auto">
+          Values
+          <Segmented label="Trade values" options={views.map((v) => ({ value: v, label: VIEW_LABEL[v] }))} value={view} onChange={setView} />
+        </div>
         <label className="flex w-full flex-col gap-1 text-[11px] uppercase tracking-wider text-muted sm:w-auto">
           Trade partner
           <select value={partner} onChange={(e) => { setPartner(Number(e.target.value)); setB([]); }}
@@ -97,7 +112,7 @@ export function TradeAnalyzer({ leagueId, mode, me, teams, initialPartner, initi
       {err && <div className="rounded-lg border border-neg px-3 py-2 text-sm text-neg">{err}</div>}
       {!result && !err && <Card><p className="text-sm text-muted">Add players or picks to either side to see who wins, how both teams change, and how to make it fair.</p></Card>}
       {result && <AiTake ai={ai} aSends={aSends} bSends={bSends} teams={teams} me={me} partner={partner} partnerName={theirs?.name ?? "Partner"} mode={mode} />}
-      {result && <Result r={result} partner={theirs?.name ?? "Partner"} busy={busy} onApply={apply} me={me} partnerId={partner} />}
+      {result && <Result r={result} view={view} partner={theirs?.name ?? "Partner"} busy={busy} onApply={apply} me={me} partnerId={partner} />}
     </div>
   );
 }
@@ -259,7 +274,7 @@ function Positions({ title, rows }: { title: string; rows: PositionShift[] }) {
   );
 }
 
-function Result({ r, partner, busy, onApply, me, partnerId }: { r: TradeResult; partner: string; busy: boolean; onApply: (s: BalanceSuggestion) => void; me: number; partnerId: number }) {
+function Result({ r, view, partner, busy, onApply, me, partnerId }: { r: TradeResult; view: View; partner: string; busy: boolean; onApply: (s: BalanceSuggestion) => void; me: number; partnerId: number }) {
   const meP = r.power.find((p) => p.rosterId === me);
   const themP = r.power.find((p) => p.rosterId === partnerId);
   const [rosOpen, setRosOpen] = useState(false);
@@ -289,7 +304,7 @@ function Result({ r, partner, busy, onApply, me, partnerId }: { r: TradeResult; 
           <div className="flex flex-1 flex-col gap-4">
             <Spectrum balance={r.balance} partner={partner} />
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
-              <span>Confidence {r.confidence}%</span><span>·</span><span>{r.mode === "dynasty" ? "Dynasty" : "Redraft"} valuation</span><Tag kind="MODEL" />
+              <span>Confidence {r.confidence}%</span><span>·</span><span>{VIEW_LABEL[view]} valuation</span><Tag kind="MODEL" />
             </div>
             <ul className="flex flex-col gap-1 text-sm leading-relaxed">{r.explanation.map((e) => <li key={e}>{e}</li>)}</ul>
           </div>
