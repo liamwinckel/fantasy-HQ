@@ -25,6 +25,7 @@ import { effectiveMode } from "@/lib/settings";
 import type { League } from "@/lib/sleeper/types";
 import { leagueColour as colourOf } from "@/lib/leagueColour";
 import { HomeCheck } from "@/components/HomeCheck";
+import { OnToday } from "@/components/OnToday";
 
 
 type Slot = { ctx: LeagueContext | null; error: string | null };
@@ -84,6 +85,7 @@ export default function Home() {
         </div>
       </div>
       {ready.length > 0 && <HomeCheck ctxs={ready} />}
+      {ready.length > 0 && <OnToday ctxs={ready} />}
       <Reorder key={view} className={cx("grid grid-cols-1 items-start", view === "cards" ? "gap-4 lg:grid-cols-2 lg:gap-5" : "gap-2 lg:grid-cols-2 lg:gap-x-4 2xl:grid-cols-3")} onReorder={(k) => saveOrder(k)}
         items={leagues.map((l, i) => ({ key: l.league_id, node: view === "cards" ? <LeagueWidget league={l} slot={slots[l.league_id]} index={i} /> : <LeagueStrip league={l} slot={slots[l.league_id]} index={i} /> }))} />
     </div>
