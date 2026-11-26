@@ -141,8 +141,15 @@ export function TradeAnalyzer({ leagueId, views, me, teams: rawTeams, initialPar
             <DealColumn title="You send" team={mine} selected={aSends} onChange={setA} tiers={tiers} setTiers={setTiers} mode={mode} valueOf={valueOf} active={pickSide === "a"} onPick={() => setPickSide("a")} adjust={adjSend} />
             {theirs && <DealColumn title="You get" team={theirs} selected={bSends} onChange={setB} tiers={tiers} setTiers={setTiers} mode={mode} valueOf={valueOf} active={pickSide === "b"} onPick={() => setPickSide("b")} adjust={adjGet} />}
           </div>
-          {theirs && <Picker team={pickSide === "a" ? mine : theirs} tabs={[{ v: "a", label: "Your roster" }, { v: "b", label: `${partnerName}` }]} side={pickSide} setSide={setPickSide}
-            selected={pickSide === "a" ? aSends : bSends} onAdd={(id) => (pickSide === "a" ? setA([...aSends, id]) : setB([...bSends, id]))} mode={mode} />}
+          {theirs && <div className="lg:hidden"><Picker team={pickSide === "a" ? mine : theirs} tabs={[{ v: "a", label: "Your roster" }, { v: "b", label: `${partnerName}` }]} side={pickSide} setSide={setPickSide}
+            selected={pickSide === "a" ? aSends : bSends} onAdd={(id) => (pickSide === "a" ? setA([...aSends, id]) : setB([...bSends, id]))} mode={mode} /></div>}
+          {/* Desktop: both rosters open side by side under their deal columns. */}
+          {theirs && (
+            <div className="hidden grid-cols-2 items-start gap-4 lg:grid">
+              <Picker team={mine} title="Your roster" selected={aSends} onAdd={(id) => setA([...aSends, id])} mode={mode} />
+              <Picker team={theirs} title={`${partnerName}'s roster`} selected={bSends} onAdd={(id) => setB([...bSends, id])} mode={mode} />
+            </div>
+          )}
         </>
       )}
 
@@ -211,8 +218,8 @@ function DealColumn({ title, team, selected, onChange, tiers, setTiers, mode, va
 }
 
 /** One roster picker for both sides, so the two columns stay tidy. */
-function Picker({ team, tabs, side, setSide, selected, onAdd, mode }: {
-  team: TeamOpt; tabs: { v: "a" | "b"; label: string }[]; side: "a" | "b"; setSide: (s: "a" | "b") => void; selected: string[]; onAdd: (id: string) => void; mode: "redraft" | "dynasty";
+function Picker({ team, tabs, side, setSide, title, selected, onAdd, mode }: {
+  team: TeamOpt; tabs?: { v: "a" | "b"; label: string }[]; side?: "a" | "b"; setSide?: (s: "a" | "b") => void; title?: string; selected: string[]; onAdd: (id: string) => void; mode: "redraft" | "dynasty";
 }) {
   const [q, setQ] = useState("");
   const [pos, setPos] = useState("ALL");
@@ -221,11 +228,12 @@ function Picker({ team, tabs, side, setSide, selected, onAdd, mode }: {
   return (
     <Card pad={false}>
       <div className="flex flex-col gap-2 p-3 sm:p-4">
-        <div className="grid grid-cols-2 gap-1 rounded-xl bg-panel2 p-1">
+        {title && <div className="text-xs font-bold uppercase tracking-wider text-muted">{title}</div>}
+        {tabs && setSide && <div className="grid grid-cols-2 gap-1 rounded-xl bg-panel2 p-1">
           {tabs.map((t) => (
             <button key={t.v} type="button" onClick={() => setSide(t.v)} className={cx("truncate rounded-lg px-2 py-1.5 text-xs font-bold", side === t.v ? "bg-acc text-on-acc" : "text-muted")}>{t.label}</button>
           ))}
-        </div>
+        </div>}
         <label className="relative">
           <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted" />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" aria-label={`Search ${team.name} roster`} className="w-full rounded-lg border border-line bg-panel2 py-2 pl-8 pr-2.5 text-sm" />
@@ -233,7 +241,7 @@ function Picker({ team, tabs, side, setSide, selected, onAdd, mode }: {
         <div className="flex gap-1 overflow-x-auto">
           {positions.map((p) => <button key={p} type="button" onClick={() => setPos(p)} className={cx("shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold", pos === p ? "bg-acc text-on-acc" : "bg-panel2 text-muted")}>{p === "ALL" ? "All" : p}</button>)}
         </div>
-        <ul className="flex flex-col gap-0.5">
+        <ul className={cx("flex flex-col gap-0.5", title && "max-h-[60vh] overflow-y-auto overscroll-contain")}>
           {pool.map((a) => (
             <li key={a.id}>
               <button type="button" onClick={() => onAdd(a.id)} className="flex w-full items-center gap-2.5 rounded-lg px-1.5 py-1.5 text-left hover:bg-panel2 active:bg-panel2">
@@ -356,10 +364,14 @@ function Result({ r, view, partner, busy, onApply, me, partnerId, deal, stack, a
   const fairBand = Math.max(3, 0.08 * Math.max(r.market.aSends, r.market.bSends));
   return (
     <div className={cx("flex flex-col gap-3 transition-opacity", busy && "opacity-60")}>
-      <TeamImpact r={r} me={me} partnerId={partnerId} partner={partner} />
+      <div className="lg:hidden"><TeamImpact r={r} me={me} partnerId={partnerId} partner={partner} /></div>
+      <div className="hidden grid-cols-2 items-start gap-4 lg:grid">
+        <TeamImpact r={r} me={me} partnerId={partnerId} partner={partner} fixed="a" />
+        <TeamImpact r={r} me={me} partnerId={partnerId} partner={partner} fixed="b" />
+      </div>
 
-      <div className="flex flex-col overflow-hidden rounded-2xl border border-line bg-panel">
-        <Fold title="Verdict & why" summary={<span className={cx("font-bold", r.verdictTone === "good" ? "text-pos" : r.verdictTone === "bad" ? "text-neg" : "text-fg")}>{r.verdict}</span>}>
+      <div className="flex flex-col overflow-hidden rounded-2xl border border-line bg-panel lg:block lg:columns-2 lg:gap-4 lg:overflow-visible lg:rounded-none lg:border-0 lg:bg-transparent">
+        <Fold title="Verdict & why" desk summary={<span className={cx("font-bold", r.verdictTone === "good" ? "text-pos" : r.verdictTone === "bad" ? "text-neg" : "text-fg")}>{r.verdict}</span>}>
           <div className="grid grid-cols-3 gap-1.5">
             <Mini label={`${partner} accepts`} value={`${Math.round(r.accept * 100)}%`} sub={r.accept >= 0.6 ? "Likely" : r.accept >= 0.35 ? "Coin flip" : "Unlikely"} tone={r.accept >= 0.5 ? "pos" : r.accept < 0.3 ? "neg" : null} />
             <Mini label="Title odds" value={r.odds ? `${signed(Math.round(r.odds.aTitleAfter - r.odds.aTitleBefore))}%` : "—"} sub={r.odds ? `${r.odds.aTitleBefore.toFixed(0)} → ${r.odds.aTitleAfter.toFixed(0)}%` : undefined} tone={r.odds && r.odds.aTitleAfter >= r.odds.aTitleBefore ? "pos" : "neg"} />
@@ -367,9 +379,9 @@ function Result({ r, view, partner, busy, onApply, me, partnerId, deal, stack, a
           </div>
           <ul className="mt-3 flex flex-col gap-1.5 text-sm leading-relaxed text-muted">{r.explanation.map((e) => <li key={e}>{e}</li>)}</ul>
         </Fold>
-        <Fold title="The deal" summary={<span className="text-muted">{r.assets.length} asset{r.assets.length === 1 ? "" : "s"}</span>}>{deal}</Fold>
-        <Fold title="How the value adds up" summary={<span className="num text-muted">{tv(r.market.aSends)} vs {tv(Math.max(0, r.market.bSends - r.rosterSpots.a.cost))}</span>}>{stack}</Fold>
-        <Fold title="Make it fair" summary={<span className="text-muted">{r.suggestions.length ? `${r.suggestions.length} idea${r.suggestions.length > 1 ? "s" : ""}` : Math.abs(r.market.netForA) <= fairBand ? "Already fair" : "—"}</span>}>
+        <Fold title="The deal" desk summary={<span className="text-muted">{r.assets.length} asset{r.assets.length === 1 ? "" : "s"}</span>}>{deal}</Fold>
+        <Fold title="How the value adds up" desk summary={<span className="num text-muted">{tv(r.market.aSends)} vs {tv(Math.max(0, r.market.bSends - r.rosterSpots.a.cost))}</span>}>{stack}</Fold>
+        <Fold title="Make it fair" desk summary={<span className="text-muted">{r.suggestions.length ? `${r.suggestions.length} idea${r.suggestions.length > 1 ? "s" : ""}` : Math.abs(r.market.netForA) <= fairBand ? "Already fair" : "—"}</span>}>
           {r.suggestions.length === 0 ? (
             <p className="text-sm text-muted">{Math.abs(r.market.netForA) <= fairBand ? "Values are already within a fair range." : "No single asset closes the gap neatly. Try a smaller piece or swap the main player."}</p>
           ) : (
@@ -428,10 +440,12 @@ function Result({ r, view, partner, busy, onApply, me, partnerId, deal, stack, a
 }
 
 /** A section of the readout that opens in place. */
-function Fold({ title, summary, open: start = false, children }: { title: string; summary: React.ReactNode; open?: boolean; children: React.ReactNode }) {
+function Fold({ title, summary, open: start = false, desk = false, children }: { title: string; summary: React.ReactNode; open?: boolean; desk?: boolean; children: React.ReactNode }) {
   const [open, setOpen] = useState(start);
+  // On wide screens there's room: some sections start open.
+  useEffect(() => { if (desk && window.matchMedia("(min-width: 1024px)").matches) setOpen(true); }, [desk]);
   return (
-    <div className="border-t border-line first:border-t-0">
+    <div className="border-t border-line first:border-t-0 lg:mb-4 lg:break-inside-avoid lg:rounded-2xl lg:border lg:bg-panel lg:first:border-t">
       <button type="button" onClick={() => setOpen(!open)} className="flex w-full items-center gap-3 px-4 py-3 text-left" aria-expanded={open}>
         <span className="flex-1 text-sm font-bold">{title}</span>
         <span className="truncate text-xs">{summary}</span>
@@ -445,9 +459,10 @@ function Fold({ title, summary, open: start = false, children }: { title: string
 }
 
 /** Straight after the verdict: a team before → after, starter by starter, with power and positional ranks. */
-function TeamImpact({ r, me, partnerId, partner }: { r: TradeResult; me: number; partnerId: number; partner: string }) {
+function TeamImpact({ r, me, partnerId, partner, fixed }: { r: TradeResult; me: number; partnerId: number; partner: string; fixed?: "a" | "b" }) {
   const { ctx } = useApp();
-  const [who, setWho] = useState<"a" | "b">("a");
+  const [pick, setWho] = useState<"a" | "b">("a");
+  const who = fixed ?? pick;
   const rows = who === "a" ? r.lineups.a : r.lineups.b;
   const pw = r.power.find((p) => p.rosterId === (who === "a" ? me : partnerId));
   const ros = who === "a" ? { before: r.lineup.aRosBefore, after: r.lineup.aRosAfter } : { before: r.lineup.bRosBefore, after: r.lineup.bRosAfter };
@@ -458,8 +473,8 @@ function TeamImpact({ r, me, partnerId, partner }: { r: TradeResult; me: number;
   return (
     <Card pad={false}>
       <div className="flex items-center gap-2 px-4 pt-3">
-        <span className="flex-1 whitespace-nowrap text-sm font-bold">Team impact</span>
-        <div className="grid grid-cols-2 gap-0.5 rounded-lg bg-panel2 p-0.5 text-xs font-bold">
+        <span className="flex-1 truncate whitespace-nowrap text-sm font-bold">{fixed ? `${fixed === "a" ? "Your team" : partner} after the trade` : "Team impact"}</span>
+        <div className={cx(fixed && "hidden", "grid grid-cols-2 gap-0.5 rounded-lg bg-panel2 p-0.5 text-xs font-bold")}>
           {(["a", "b"] as const).map((k) => <button key={k} type="button" onClick={() => setWho(k)} className={cx("max-w-[8rem] truncate rounded-md px-3 py-1", who === k ? "bg-acc text-on-acc" : "text-muted")}>{k === "a" ? "You" : partner}</button>)}
         </div>
       </div>
