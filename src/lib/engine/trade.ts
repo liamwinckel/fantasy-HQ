@@ -30,7 +30,7 @@ export interface AssetLine {
 /**
  * Both sides of a deal, valued the way Keep-Trade-Cut does it: pieces are matched one-for-one from the top, and
  * the extra pieces on the side sending more of them count at a discount that grows the further they sit below the
- * best asset in the deal (an extra worth 40% of the star counts ~20% of its value). That discount — the value
+ * best asset in the deal (an extra worth 60% of the star counts ~2/3 of its value, one worth 25% about 1/3). That discount — the value
  * adjustment — is capped at 90% of the best asset on the other side, so piling on real value always wins in the end.
  * Same piece counts: no adjustment. Returns each side's effective value.
  */
@@ -43,7 +43,9 @@ export function packages(a: number[], b: number[]): { a: number; b: number; adjA
   const shrink = (big: number[], other: number[]) => {
     if (!other.length) return sum(big);
     const raw = sum(big);
-    const weighted = sum(big.slice(0, n)) + big.slice(n).reduce((t, v) => t + v * 0.5 * (v / top), 0);
+    // Extra pieces count by how close they are to the star: (value / star)^0.8 of their value — a near-star
+    // extra counts almost fully, a depth piece at 25% of the star counts ~1/3, a throw-in barely registers.
+    const weighted = sum(big.slice(0, n)) + big.slice(n).reduce((t, v) => t + v * Math.pow(v / top, 0.8), 0);
     return Math.max(weighted, raw - 0.9 * other[0]);
   };
   const effA = A.length > B.length ? shrink(A, B) : rawA;

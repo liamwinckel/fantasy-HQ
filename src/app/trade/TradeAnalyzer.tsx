@@ -548,7 +548,10 @@ function ValueBar({ send, get, adjSend, adjGet, ready, partner }: { send: number
   // The bar judges value only (what each side gets, after the adjustment), so it always agrees with the two totals.
   // How the deal fits each lineup is in Team impact.
   const balance = ready ? (100 * (get - send)) / Math.max(1e-9, Math.max(get, send)) : null;
-  const split = total > 0 ? (100 * send) / total : 50; // where "you send" ends
+  // Where the split sits: pushed out non-linearly so lopsided deals look lopsided (a 2:1 deal reaches ~80%,
+  // giving away your whole team reaches the end), while near-even deals stay near the middle.
+  const lean = total > 0 ? (send - get) / Math.max(send, get) : 0; // -1 … 1, + = you send more
+  const split = 50 + 50 * Math.sign(lean) * Math.pow(Math.min(1, Math.abs(lean)), 0.7);
   const fair = balance !== null && Math.abs(balance) < 8; // ≈ the width of the fair band below
   const youWin = balance !== null && balance > 0 && !fair;
   const color = balance === null ? "var(--muted)" : fair ? "#4a9eff" : youWin ? "var(--pos)" : "var(--neg)";
@@ -559,7 +562,7 @@ function ValueBar({ send, get, adjSend, adjGet, ready, partner }: { send: number
   const h = (right: boolean) => (thick(right) ? 14 : 6);
   const op = (right: boolean) => (thick(right) ? 1 : 0.35);
   // The adjustment (consolidation premium) is drawn striped, inside the side that earned it, next to the split.
-  const aS = total > 0 ? (100 * adjSend) / total : 0, aG = total > 0 ? (100 * adjGet) / total : 0;
+  const aS = send > 0 ? (split * adjSend) / send : 0, aG = get > 0 ? ((100 - split) * adjGet) / get : 0;
   const stripe = (c: string) => `repeating-linear-gradient(135deg, ${c} 0 4px, color-mix(in srgb, ${c} 30%, transparent) 4px 7px)`;
   return (
     <div>

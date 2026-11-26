@@ -168,7 +168,7 @@ export function findTrades(ctx: LeagueContext, me: number, limit = 12, onlyPartn
           (myRos > -8 || mine.cls === "Rebuilder" || mine.cls === "Tanking") &&
           // A contender won't give up this season's points; a pretender only a little.
           (partner.cls === "Contender" ? theirRos > -1 : partner.cls === "Pretender" ? theirRos > -2.5 : true) && accept >= 0.35
-        : (onlyPartner !== null ? myRos > 0.1 && theirRos > -1.5 : myRos > 0.3 && theirRos > -0.8) && accept >= 0.35;
+        : (onlyPartner !== null ? myRos > 0.1 && theirRos > -1.5 : myRos > 0.3 && theirRos > -0.8) && accept >= 0.35 && fairness < 0.4;
       if (!ok) continue;
       const myGainNorm = dynasty ? myValue / total + myRos / 20 : myRos / 3 + 0.5 * myValue / total;
       const theirGainNorm = dynasty ? theirValue / total : theirRos / 3 + theirValue / total;
