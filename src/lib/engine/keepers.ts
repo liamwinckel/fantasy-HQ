@@ -118,8 +118,10 @@ export function keeperPlan(ctx: LeagueContext, rosterId: number, picks: DraftPic
     const model = pr.base * ratio * (ctx.extras.get(id)?.durability ?? 1);
     const mkt = marketPpg(id);
     if (mkt === null) return model;
-    // Half model, half market (less market for return specialists, whose value the experts' scoring can't see).
-    const w = 0.5 * (ctx.marketTrust?.get(id) ?? 1);
+    // Half model, half market; the market counts for more when this season is a small sample (injury, lost year),
+    // and less for return specialists, whose value the experts' scoring can't see.
+    const thin = Math.max(0, Math.min(1, (8 - (pr.games ?? 8)) / 8));
+    const w = (0.5 + 0.3 * thin) * (ctx.marketTrust?.get(id) ?? 1);
     const am = (y: number) => (p.age === null ? 1 : ageMultiplier(p.pos, p.age + y));
     return (1 - w) * model + w * mkt * (yearsAhead > 1 ? am(yearsAhead) / Math.max(0.01, am(1)) : 1);
   };
