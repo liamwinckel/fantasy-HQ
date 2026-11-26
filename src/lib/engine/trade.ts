@@ -116,6 +116,8 @@ export interface TradeResult {
   explanation: string[];
   /** Team build: who would start at each lineup spot before and after (healthy points per game). */
   build: { a: BuildRow[]; b: BuildRow[] };
+  /** Full starting lineups before → after, slot by slot in lineup order (unchanged spots included). */
+  lineups: { a: BuildRow[]; b: BuildRow[] };
   confidence: number;
   limitations: string[];
 }
@@ -296,7 +298,7 @@ export function evaluateTrade(ctx: LeagueContext, req: TradeRequest): TradeResul
   }
 
   // Team build: the lineup each side would actually field, spot by spot (healthy points per game).
-  const buildRows = (before: string[], after: string[]): BuildRow[] => {
+  const buildRows = (before: string[], after: string[], all = false): BuildRow[] => {
     const lu = (roster: string[]) => optimizeLineup(ctx.league.roster_positions, roster.map((pid) => ({
       id: pid, positions: ctx.players.get(pid)?.positions ?? [], points: ctx.projections.get(pid)?.base ?? 0,
     })));
@@ -322,15 +324,17 @@ export function evaluateTrade(ctx: LeagueContext, req: TradeRequest): TradeResul
       const xb = sb.get(slot) ?? [], xa = sa.get(slot) ?? [];
       for (let i = 0; i < Math.max(xb.length, xa.length); i++) {
         const k = (seen.get(slot) ?? 0) + 1; seen.set(slot, k);
-        if ((xb[i] ?? null) === (xa[i] ?? null)) continue;
+        const same = (xb[i] ?? null) === (xa[i] ?? null);
+        if (same && !all) continue;
         const before = nm(xb[i] ?? null), after = nm(xa[i] ?? null);
         const label = slot.replace("SUPER_FLEX", "SFLEX").replace("REC_FLEX", "W/T FLEX").replace("WRRB_FLEX", "W/R FLEX");
         rows.push({ slot: (totals.get(slot) ?? 1) > 1 ? `${label}${k}` : label, before, after, delta: r1(after.ppg - before.ppg) });
       }
     }
-    return rows.sort((x, y) => x.delta - y.delta);
+    return all ? rows : rows.sort((x, y) => x.delta - y.delta);
   };
   const build = { a: buildRows(aBefore, aAfter), b: buildRows(bBefore, bAfter) };
+  const lineups = { a: buildRows(aBefore, aAfter, true), b: buildRows(bBefore, bAfter, true) };
 
   // Verdict
   const scaleA = Math.max(5, Math.abs(sum(req.teamA, (a) => a.toA)) + Math.abs(sum(req.teamB, (a) => a.toA)));
@@ -439,7 +443,7 @@ export function evaluateTrade(ctx: LeagueContext, req: TradeRequest): TradeResul
     mode, classA, classB, assets, balance, power, positionsA: posShift(req.teamA), positionsB: posShift(req.teamB), suggestions,
     market: { aSends: r1(aSendsMkt), bSends: r1(bSendsMkt), aSendsRaw: r1(aSendsRaw), bSendsRaw: r1(bSendsRaw), netForA, pctForA },
     rosterSpots,
-    strategic: { aNet, bNet }, lineup, accept, odds, verdict, verdictTone, explanation, confidence, build,
+    strategic: { aNet, bNet }, lineup, accept, odds, verdict, verdictTone, explanation, confidence, build, lineups,
     limitations: [
       "Values come from SHS Fantasy HQ's own model, not a market consensus.",
       "Projections are internal estimates built from this season's production and usage.",
