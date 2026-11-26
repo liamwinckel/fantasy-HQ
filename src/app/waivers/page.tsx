@@ -13,6 +13,10 @@ import { PlayerImg } from "@/components/client";
 import { PlayerLink } from "@/components/PlayerCard";
 import { AiChip, useShsAiMap } from "@/components/ShsAiParts";
 import type { ShsAi } from "@/lib/services/shsai";
+import { useAsync } from "@/components/AppData";
+import { sleeper } from "@/lib/sleeper/client";
+import { budgetOf, faabMarket, isFaab, loadHistory, suggestBid, type FaabSuggestion } from "@/lib/services/history";
+import type { LeagueContext } from "@/lib/services/league";
 
 export default function WaiverPage() {
   return <LeaguePage>{(d) => <WaiverPageBody {...d} />}</LeaguePage>;
@@ -23,8 +27,11 @@ function WaiverPageBody({ setup, league, ctx, sp }: LeagueData) {
   const dyn = ctx.valuationMode === "dynasty";
   const aiWeek = useShsAiMap(ctx, "week");
   const aiRos = useShsAiMap(ctx, dyn ? "dynasty" : "ros");
+  const faab = useFaab(ctx);
   if (!me) return <Notice tone="warn">You don&apos;t own a team in {league.name}.</Notice>;
   const r = waiverReport(ctx, me.rosterId);
+  const topGain = Math.max(1, ...r.topAdds.map((w) => w.rosGain));
+  const bids = faab ? new Map(r.topAdds.map((w, i) => [w.player.id, faab.suggest(w.player.id, i + 1, w.player.pos, Math.max(0, w.rosGain) / topGain)])) : null;
   const valueLabel = ctx.valuationMode === "dynasty" ? "Dynasty trade value" : "Trade value";
 
   return (
@@ -43,6 +50,8 @@ function WaiverPageBody({ setup, league, ctx, sp }: LeagueData) {
         </div>
       </Card>
 
+      {faab && bids && <BidSheet faab={faab} rows={r.topAdds.map((w) => ({ w, s: bids.get(w.player.id)! }))} />}
+
       <Card title="Best adds for your team" info={<>Free agents ranked by how much they improve your best lineup (this week and rest of season, in projected points), not by how good they are in general. Drop = the player SHS would release to make room.</>} right={<Tag kind="SLEEPER" />} pad={false}>
         <WaiverBoard
           leagueId={league.league_id}
@@ -55,7 +64,7 @@ function WaiverPageBody({ setup, league, ctx, sp }: LeagueData) {
           rows={r.topAdds.map((w) => ({
             id: w.player.id, name: w.player.name, pos: w.player.pos, team: w.player.team, age: w.player.age, injury: w.player.injury,
             median: w.proj.median, base: w.proj.base, weekGain: w.weekGain, rosGain: w.rosGain, value: w.value, reasons: w.reasons, dropId: w.drop?.id ?? null, dropName: w.drop?.name ?? null, fills: w.fills,
-            aiWeek: aiWeek.get(w.player.id)?.pct ?? null, aiRos: aiRos.get(w.player.id)?.pct ?? null, aiRosLabel: dyn ? "dyn" : "ROS",
+            aiWeek: aiWeek.get(w.player.id)?.pct ?? null, aiRos: aiRos.get(w.player.id)?.pct ?? null, aiRosLabel: dyn ? "dyn" : "ROS", faab: bids?.get(w.player.id) ?? null,
           }))}
         />
       </Card>
@@ -81,7 +90,7 @@ function WaiverPageBody({ setup, league, ctx, sp }: LeagueData) {
           {r.drops.length === 0 && <li className="px-5 py-4 text-sm text-muted">Nobody outside your best lineups is worse than the best free agent at his position.</li>}
         </ul>
       </Card>
-      <Info className="">FAAB bid suggestions aren&apos;t shown: there&apos;s no reliable free data on what your league bids. Waiver claims are made in Sleeper.</Info>
+      <Info className="">{isFaab(league) ? "FAAB bids are suggestions from your league's own bidding history and Sleeper's trending adds." : "This league doesn't use FAAB."} Waiver claims are made in Sleeper.</Info>
     </div>
   );
 }
@@ -140,6 +149,67 @@ function WaiverPlanner({ ctx, rosterId }: { ctx: LeagueData["ctx"]; rosterId: nu
       </ul>
       {plan.drop && plan.targets.length > 0 && <p className="mt-2 text-xs text-muted">Roster full? Your least valuable bench player is <b className="text-fg">{plan.drop.name}</b>.</p>}
       <p className="mt-1 text-[11px] text-muted">Bars = points added to your best lineup, weeks {plan.weeks[0]?.week}–{plan.weeks.at(-1)?.week}.</p>
+    </Card>
+  );
+}
+
+// ------------------------------------------------------------------------------------------------
+// FAAB: the league's own bidding history + Sleeper's trending adds → a suggested bid for each free agent.
+interface FaabState { budget: number; myLeft: number; rivalsLeft: number[]; richest: { name: string; left: number } | null; seasons: number; fromLeague: boolean; trendTop: Map<string, number>; suggest: (pid: string, fitRank: number, pos: string, gainShare: number) => FaabSuggestion }
+function useFaab(ctx: LeagueContext): FaabState | null {
+  const on = isFaab(ctx.league);
+  const q = useAsync(async () => {
+    if (!on) return null;
+    const [h, rosters, trending] = await Promise.all([
+      loadHistory(ctx),
+      sleeper.rosters(ctx.league.league_id).then((r) => r.data),
+      sleeper.trending().then((r) => r.data).catch(() => [] as { player_id: string; count: number }[]),
+    ]);
+    return { market: faabMarket(h), rosters, trending };
+  }, [ctx, on]);
+  return useMemo(() => {
+    if (!on || !q.data) return null;
+    const { market, rosters, trending } = q.data;
+    const B = budgetOf(ctx.league);
+    const leftOf = (rid: number) => B - Number((rosters.find((r) => r.roster_id === rid)?.settings as Record<string, unknown> | undefined)?.waiver_budget_used ?? 0);
+    const rostered = new Set(rosters.flatMap((r) => r.players ?? []));
+    // Rank only players available in this league: "the #3 most-added free agent here".
+    const trendTop = new Map<string, number>();
+    for (const t of trending) if (!rostered.has(t.player_id) && ctx.players.has(t.player_id)) trendTop.set(t.player_id, trendTop.size + 1);
+    const myLeft = ctx.myRosterId !== null ? leftOf(ctx.myRosterId) : B;
+    const rivals = ctx.teams.filter((t) => t.rosterId !== ctx.myRosterId).map((t) => ({ name: t.name, left: leftOf(t.rosterId) }));
+    const richest = rivals.sort((a, b) => b.left - a.left)[0] ?? null;
+    const seasonWeeks = Math.max(1, ctx.lastWeek);
+    const weeksLeft = Math.max(0, ctx.lastWeek - ctx.currentWeek + 1);
+    const minBid = Number((ctx.league.settings as Record<string, unknown>).waiver_bid_min ?? 0) || 0;
+    return {
+      budget: B, myLeft, rivalsLeft: rivals.map((r) => r.left), richest, seasons: market.seasons, fromLeague: market.fromLeague, trendTop,
+      suggest: (pid: string, fitRank: number, pos: string, gainShare: number) => suggestBid({ market, myLeft, rivalsLeft: rivals.map((r) => r.left), fitRank, trendRank: trendTop.get(pid) ?? null, weeksLeft, seasonWeeks, minBid, pos, gainShare }),
+    };
+  }, [on, q.data, ctx]);
+}
+
+function BidSheet({ faab, rows }: { faab: FaabState; rows: { w: WaiverPlayer; s: FaabSuggestion }[] }) {
+  const list = [...rows].sort((a, b) => b.s.bid - a.s.bid || (a.s.trendRank ?? 99) - (b.s.trendRank ?? 99)).slice(0, 8);
+  const tone = (t: string) => (t === "Must-add" ? "bg-pos/20 text-pos" : t === "Strong add" ? "bg-pos/10 text-pos" : t === "Solid add" ? "bg-acc-soft text-acc-ink" : "bg-panel2 text-muted");
+  return (
+    <Card title="FAAB bid sheet" right={<span className="num text-sm font-bold">${faab.myLeft} <span className="font-normal text-muted">of ${faab.budget} left</span></span>}
+      info={<>Waiver rankings combine how much a player helps <b>your</b> lineup with how hot he is across Sleeper (most-added in the last 48 hours, free agents in this league only).
+        Bids come from what your league has actually paid{faab.seasons ? ` over ${faab.seasons} season${faab.seasons > 1 ? "s" : ""}` : ""}{faab.fromLeague ? "" : ", with typical FAAB prices filling in until there's more history"}, rise late in the season (unspent FAAB is worth nothing) and never exceed what you have left.</>} pad={false}>
+      <ul className="divide-y divide-line">
+        {list.map(({ w, s }) => (
+          <li key={w.player.id} className="flex items-center gap-3 px-4 py-2.5 text-sm">
+            <PlayerImg id={w.player.id} name={w.player.name} pos={w.player.pos} size={30} />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5"><PlayerLink id={w.player.id} name={w.player.name} className="truncate font-bold" /><span className="shrink-0 text-xs text-muted">{w.player.pos}</span></div>
+              <div className="truncate text-xs text-muted">{s.trendRank ? `#${s.trendRank} most-added FA · ` : ""}{s.why.find((x) => x.startsWith("Your")) ?? ""}</div>
+            </div>
+            <span className={cx("hidden shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold sm:inline", tone(s.tier))}>{s.tier}</span>
+            <div className="w-16 shrink-0 text-right"><div className="num text-base font-extrabold">${s.bid}</div><div className="num text-[10px] text-muted">${s.low}–${s.high}</div></div>
+          </li>
+        ))}
+      </ul>
+      {faab.richest && <p className="border-t border-line px-4 py-2 text-xs text-muted">Richest rival: <b className="text-fg">{faab.richest.name}</b> with ${faab.richest.left} left.</p>}
     </Card>
   );
 }

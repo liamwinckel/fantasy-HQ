@@ -84,7 +84,33 @@ for (const r of statsRows) {
 
 const SCORING_PPR = { pass_yd: 0.04, pass_td: 4, pass_int: -1, rush_yd: 0.1, rush_td: 6, rec: 1, rec_yd: 0.1, rec_td: 6, fum_lost: -2, fgm_0_19: 3, fgm_20_29: 3, fgm_30_39: 3, fgm_40_49: 4, fgm_50p: 5, fgmiss: -1, xpm: 1, xpmiss: -1, idp_tkl_solo: 1, idp_tkl_ast: 0.5, idp_sack: 4, idp_int: 3, idp_ff: 3, idp_pass_def: 1 };
 
-function makeLeague(opts: { id: string; name: string; type: number; teams: number; positions: string[]; scoring: Record<string, number>; playoffStart: number; playoffTeams: number }) {
+// ---- league history helpers (FAAB claims with competing bids, trades, past seasons) ----
+type Tx = Record<string, unknown>;
+let txSeq = 1;
+function claims(rosterIds: number[], fas: string[], week: number, budget: number | null): Tx[] {
+  const out: Tx[] = [];
+  const k = 2 + Math.floor(rand() * 3);
+  for (let i = 0; i < k && fas.length; i++) {
+    const pid = fas.splice(Math.floor(rand() * Math.min(6, fas.length)), 1)[0];
+    const bidders = [...rosterIds].sort(() => rand() - 0.5).slice(0, 1 + Math.floor(rand() * 3));
+    if (budget) {
+      const hot = rand();
+      const top = Math.max(1, Math.round(budget * (hot < 0.15 ? 0.18 + rand() * 0.25 : hot < 0.5 ? 0.05 + rand() * 0.1 : rand() * 0.05)));
+      bidders.forEach((rid, j) => out.push({
+        transaction_id: `t${txSeq++}`, type: "waiver", status: j === 0 ? "complete" : "failed", leg: week, created: 1_700_000_000_000 + week * 6e8 + j,
+        roster_ids: [rid], adds: { [pid]: rid }, drops: null, draft_picks: [], settings: { waiver_bid: j === 0 ? top : Math.max(0, Math.round(top * (0.4 + rand() * 0.55))) },
+      }));
+    } else out.push({ transaction_id: `t${txSeq++}`, type: "waiver", status: "complete", leg: week, created: 1_700_000_000_000 + week * 6e8, roster_ids: [bidders[0]], adds: { [pid]: bidders[0] }, drops: null, draft_picks: [], settings: { seq: 0 } });
+  }
+  if (rand() < 0.6 && fas.length) { const rid = rosterIds[Math.floor(rand() * rosterIds.length)]; const pid = fas.pop()!; out.push({ transaction_id: `t${txSeq++}`, type: "free_agent", status: "complete", leg: week, created: 1_700_000_000_000 + week * 6e8 + 9, roster_ids: [rid], adds: { [pid]: rid }, drops: null, draft_picks: [], settings: null }); }
+  return out;
+}
+const trade = (week: number, a: number, b: number, aGets: string[], bGets: string[], picks: Tx[] = []): Tx => ({
+  transaction_id: `t${txSeq++}`, type: "trade", status: "complete", leg: week, created: 1_700_000_000_000 + week * 6e8 + 5, roster_ids: [a, b],
+  adds: Object.fromEntries([...aGets.map((p) => [p, a]), ...bGets.map((p) => [p, b])]), drops: Object.fromEntries([...aGets.map((p) => [p, b]), ...bGets.map((p) => [p, a])]), draft_picks: picks, settings: null,
+});
+
+function makeLeague(opts: { id: string; name: string; type: number; teams: number; positions: string[]; scoring: Record<string, number>; playoffStart: number; playoffTeams: number; faab?: number; history?: boolean }) {
   const { id, teams: T } = opts;
   const elig = new Set(opts.positions.flatMap((s) => ({ QB: ["QB"], RB: ["RB"], WR: ["WR"], TE: ["TE"], K: ["K"], DEF: ["DEF"], FLEX: ["RB", "WR", "TE"], SUPER_FLEX: ["QB", "RB", "WR", "TE"], IDP_FLEX: ["DL", "LB", "DB"] } as Record<string, string[]>)[s] ?? []));
   const pool = Object.values(players).filter((p) => elig.has(p.position as string)).sort((a, b) => (seasonPpr.get(b.player_id as string) ?? 0) - (seasonPpr.get(a.player_id as string) ?? 0));
@@ -116,11 +142,14 @@ function makeLeague(opts: { id: string; name: string; type: number; teams: numbe
       benchIdx.forEach((j, k) => (r.players[j] = fas[2 * i + k].player_id as string));
     });
   }
-  write(`/draft/${id}-d/picks`, draftPicks);
+  write(`/draft/${id}-d/picks`, draftPicks.map((d) => ({ ...d, draft_slot: ((d.round % 2 ? d.pick_no - 1 : T * d.round - d.pick_no) % T) + 1 })));
+  const order = Object.fromEntries(rosters.map((r) => [r.owner_id, r.roster_id]));
+  write(`/league/${id}/drafts`, [{ draft_id: `${id}-d`, season: "2026", status: "complete", type: "snake", draft_order: order, slot_to_roster_id: Object.fromEntries(rosters.map((r) => [String(r.roster_id), r.roster_id])), settings: { rounds: rosterSize, teams: T } }]);
+  const prevId = opts.history ? `${id}-2025` : null;
   const league = {
     league_id: id, name: opts.name, season: "2026", status: "in_season", total_rosters: T, roster_positions: opts.positions,
-    scoring_settings: opts.scoring, previous_league_id: null, draft_id: `${id}-d`,
-    settings: { type: opts.type, playoff_week_start: opts.playoffStart, playoff_teams: opts.playoffTeams, draft_rounds: opts.type === 2 ? 4 : rosterSize, num_teams: T, max_keepers: opts.type === 1 ? 3 : 0 },
+    scoring_settings: opts.scoring, previous_league_id: prevId, draft_id: `${id}-d`,
+    settings: { type: opts.type, playoff_week_start: opts.playoffStart, playoff_teams: opts.playoffTeams, draft_rounds: opts.type === 2 ? 4 : rosterSize, num_teams: T, max_keepers: opts.type === 1 ? 3 : 0, ...(opts.faab ? { waiver_type: 2, waiver_budget: opts.faab, waiver_bid_min: 0 } : {}) },
   };
   write(`/league/${id}`, league);
   write(`/league/${id}/users`, rosters.map((r, i) => ({ user_id: r.owner_id, display_name: i === 0 ? "L1am" : `manager${i + 1}`, metadata: { team_name: names[i] } })));
@@ -160,21 +189,85 @@ function makeLeague(opts: { id: string; name: string; type: number; teams: numbe
     }
     write(`/league/${id}/matchups/${week}`, ms);
   }
+  const spent: Record<number, number> = {};
   write(`/league/${id}/rosters`, rosters.map((r) => ({
     roster_id: r.roster_id, owner_id: r.owner_id, players: r.players, starters: [], reserve: [], taxi: [],
-    settings: { wins: rec[r.roster_id].w, losses: rec[r.roster_id].l, ties: 0, fpts: Math.floor(rec[r.roster_id].pf), fpts_decimal: Math.round((rec[r.roster_id].pf % 1) * 100), fpts_against: Math.floor(rec[r.roster_id].pa), fpts_against_decimal: Math.round((rec[r.roster_id].pa % 1) * 100) },
+    settings: { waiver_budget_used: opts.faab ? (spent[r.roster_id] = Math.round(opts.faab * (0.15 + rand() * 0.6))) : 0, wins: rec[r.roster_id].w, losses: rec[r.roster_id].l, ties: 0, fpts: Math.floor(rec[r.roster_id].pf), fpts_decimal: Math.round((rec[r.roster_id].pf % 1) * 100), fpts_against: Math.floor(rec[r.roster_id].pa), fpts_against_decimal: Math.round((rec[r.roster_id].pa % 1) * 100) },
   })));
   write(`/league/${id}/traded_picks`, opts.type === 2 ? [{ season: "2027", round: 1, roster_id: T, owner_id: T - 3, previous_owner_id: T }, { season: "2027", round: 2, roster_id: 1, owner_id: 4, previous_owner_id: 1 }] : []);
-  for (let w = 1; w <= CURRENT_WEEK; w++) write(`/league/${id}/transactions/${w}`, []);
+  const rids = rosters.map((r) => r.roster_id);
+  const rostered = new Set(rosters.flatMap((r) => r.players));
+  const fas = pool.filter((p) => !rostered.has(p.player_id as string) && !["K", "DEF"].includes(p.position as string)).slice(0, 80).map((p) => p.player_id as string);
+  const hotFas = [...fas]; // trending = the best free agents (the claims below don't change the static rosters)
+  for (let w = 1; w <= CURRENT_WEEK; w++) {
+    const tx = opts.history ? claims(rids, fas, w, opts.faab ?? null) : [];
+    if (opts.history && w === 6) {
+      const mine = rosters[0].players.filter((p) => !["K", "DEF"].includes(players[p].position as string));
+      const partner = opts.type === 2 ? 4 : 3;
+      const theirs = rosters[partner - 1].players.filter((p) => !["K", "DEF"].includes(players[p].position as string));
+      tx.push(trade(w, 1, partner, [mine[3]], [theirs[2], theirs[8]], opts.type === 2 ? [{ season: "2027", round: 2, roster_id: 1, previous_owner_id: 1, owner_id: partner }] : []));
+    }
+    if (opts.history && w === 9) tx.push(trade(w, 2, 5, [rosters[1].players[4]], [rosters[4].players[5]]));
+    write(`/league/${id}/transactions/${w}`, tx);
+  }
+  if (opts.history) {
+    write(`/players/nfl/trending/add`, hotFas.slice(0, 25).map((pid, i) => ({ player_id: pid, count: Math.round(40000 / (i + 1)) })));
+    // ---- last season: same managers, a draft with misses, FAAB claims and a couple of trades ----
+    const pT = 17;
+    const prevRosters = rosters.map((r) => ({ ...r, players: [] as string[] }));
+    const prevPool = [...pool].filter((p) => !["K", "DEF"].includes(p.position as string) || opts.positions.includes(p.position as string));
+    const prevPicks: Record<string, unknown>[] = [];
+    let ppi = 0;
+    for (let round = 0; round < Math.min(rosterSize, 14); round++) {
+      const ord = round % 2 ? [...prevRosters].reverse() : prevRosters;
+      for (const r of ord) {
+        const j = Math.min(prevPool.length - 1, ppi + Math.floor(rand() * 6));
+        const p = prevPool.splice(j, 1)[0];
+        r.players.push(p.player_id as string);
+        prevPicks.push({ player_id: p.player_id, round: round + 1, pick_no: prevPicks.length + 1, roster_id: r.roster_id, picked_by: r.owner_id, is_keeper: false, draft_slot: ((round % 2 ? T - 1 - ord.indexOf(r) : ord.indexOf(r)) % T) + 1 });
+        ppi = Math.max(0, ppi);
+      }
+    }
+    write(`/league/${prevId}`, { ...league, league_id: prevId, season: "2025", status: "complete", previous_league_id: null, draft_id: `${prevId}-d` });
+    write(`/league/${prevId}/users`, rosters.map((r, i) => ({ user_id: r.owner_id, display_name: i === 0 ? "L1am" : `manager${i + 1}`, metadata: { team_name: names[i] } })));
+    write(`/league/${prevId}/rosters`, prevRosters.map((r) => ({ roster_id: r.roster_id, owner_id: r.owner_id, players: r.players, starters: [], reserve: [], taxi: [], settings: { wins: 7, losses: 7, ties: 0, fpts: 1500, fpts_against: 1500, waiver_budget_used: opts.faab ? Math.round(opts.faab * (0.5 + rand() * 0.5)) : 0 } })));
+    write(`/league/${prevId}/drafts`, [{ draft_id: `${prevId}-d`, season: "2025", status: "complete", type: "snake", draft_order: order, slot_to_roster_id: Object.fromEntries(rosters.map((r) => [String(r.roster_id), r.roster_id])), settings: { rounds: Math.min(rosterSize, 14), teams: T } }]);
+    write(`/draft/${prevId}-d/picks`, prevPicks);
+    const prevRostered = new Set(prevRosters.flatMap((r) => r.players));
+    const prevFas = prevPool.filter((p) => !prevRostered.has(p.player_id as string) && !["K", "DEF"].includes(p.position as string)).slice(0, 120).map((p) => p.player_id as string);
+    for (let w = 1; w <= pT + 1; w++) {
+      const tx = w <= pT ? claims(rids, prevFas, w, opts.faab ?? null) : [];
+      if (w === 5) tx.push(trade(w, 1, 6, [prevRosters[5].players[1]], [prevRosters[0].players[2]]));
+      if (w === 8) tx.push(trade(w, 3, 7, [prevRosters[6].players[3], prevRosters[6].players[9]], [prevRosters[2].players[1]]));
+      write(`/league/${prevId}/transactions/${w}`, tx);
+      // weekly scores: each rostered player scores around his per-game rate
+      if (w <= pT) write(`/league/${prevId}/matchups/${w}`, prevRosters.map((r, i) => {
+        const pp: Record<string, number> = {};
+        for (const pid of r.players) pp[pid] = Math.round(((seasonPpr.get(pid) ?? 0) / Math.max(3, gp.get(pid) ?? 10)) * (0.3 + rand() * 1.4) * 10) / 10;
+        const starters = [...r.players].sort((a, b) => pp[b] - pp[a]).slice(0, starterSlots.length);
+        return { roster_id: r.roster_id, matchup_id: Math.floor(i / 2) + 1, starters, players: r.players, points: starters.reduce((a, p) => a + pp[p], 0), players_points: pp };
+      }));
+    }
+  }
   return { id };
 }
 
 const leagues = [
-  makeLeague({ id: "fx1", name: "Fixture Superflex Dynasty", type: 2, teams: 10, positions: ["QB", "RB", "RB", "WR", "WR", "FLEX", "FLEX", "FLEX", "FLEX", "SUPER_FLEX", ...Array(13).fill("BN")], scoring: { ...SCORING_PPR, rec: 0.5 }, playoffStart: 15, playoffTeams: 6 }),
+  makeLeague({ id: "fx1", name: "Fixture Superflex Dynasty", type: 2, teams: 10, positions: ["QB", "RB", "RB", "WR", "WR", "FLEX", "FLEX", "FLEX", "FLEX", "SUPER_FLEX", ...Array(13).fill("BN")], scoring: { ...SCORING_PPR, rec: 0.5 }, playoffStart: 15, playoffTeams: 6, history: true }),
   makeLeague({ id: "fx2", name: "Fixture IDP 6-team", type: 2, teams: 6, positions: ["QB", "QB", "RB", "RB", "WR", "WR", "TE", "TE", "FLEX", "FLEX", "SUPER_FLEX", "SUPER_FLEX", "K", "K", "IDP_FLEX", "IDP_FLEX", ...Array(14).fill("BN")], scoring: SCORING_PPR, playoffStart: 16, playoffTeams: 4 }),
   makeLeague({ id: "fx4", name: "Fixture Keeper", type: 1, teams: 10, positions: ["QB", "RB", "RB", "WR", "WR", "TE", "FLEX", "FLEX", "DEF", ...Array(7).fill("BN")], scoring: { ...SCORING_PPR, rec: 0 }, playoffStart: 15, playoffTeams: 6 }),
-  makeLeague({ id: "fx3", name: "Fixture Redraft", type: 0, teams: 12, positions: ["QB", "RB", "RB", "WR", "WR", "TE", "FLEX", "FLEX", "K", ...Array(5).fill("BN")], scoring: { ...SCORING_PPR, rec: 0.5 }, playoffStart: 15, playoffTeams: 6 }),
+  makeLeague({ id: "fx3", name: "Fixture Redraft", type: 0, teams: 12, positions: ["QB", "RB", "RB", "WR", "WR", "TE", "FLEX", "FLEX", "K", ...Array(5).fill("BN")], scoring: { ...SCORING_PPR, rec: 0.5 }, playoffStart: 15, playoffTeams: 6, faab: 100, history: true }),
 ];
 const leagueObjs = leagues.map((l) => JSON.parse(fs.readFileSync(path.join(OUT, `league__${l.id}.json`), "utf8")));
 write(`/user/${userIds[0]}/leagues/nfl/2026`, leagueObjs);
+// Last season's stat totals (Sleeper /stats endpoint shape): this season's real lines with noise, for draft grades.
+const totals: Record<string, Record<string, number>> = {};
+for (const [k, s] of weekStats) {
+  const pid = k.split(":")[0];
+  const t = (totals[pid] ??= { gp: 0 });
+  t.gp++; t.pass_yd = (t.pass_yd ?? 0) + s.passYd; t.pass_td = (t.pass_td ?? 0) + s.passTd; t.pass_int = (t.pass_int ?? 0) + s.int;
+  t.rush_yd = (t.rush_yd ?? 0) + s.rushYd; t.rush_td = (t.rush_td ?? 0) + s.rushTd; t.rec = (t.rec ?? 0) + s.rec; t.rec_yd = (t.rec_yd ?? 0) + s.recYd; t.rec_td = (t.rec_td ?? 0) + s.recTd; t.fum_lost = (t.fum_lost ?? 0) + s.fumLost;
+}
+for (const t of Object.values(totals)) { const f = 0.5 + rand(); for (const k of Object.keys(t)) if (k !== "gp") t[k] = Math.round(t[k] * f * 1.4); t.gp = Math.min(17, Math.round(t.gp * 1.4)); }
+write(`/stats/nfl/regular/2025`, totals);
 console.log("fixtures:", fs.readdirSync(OUT).length, "files;", Object.keys(players).length, "players");

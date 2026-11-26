@@ -83,6 +83,7 @@ export function LeagueOverview({ setup, league, ctx, sp }: LeagueData) {
       {!ctx.seasonOver && ctx.currentWeek > 1 && (
         <Card title="Weekly brief" href="/brief/"><p className="text-sm text-muted">Week {ctx.currentWeek - 1} recap, how SHS AI and the experts did, and your week {Math.min(ctx.currentWeek, ctx.lastWeek)} preview.</p></Card>
       )}
+      <Card title="League history" href="/history/"><p className="text-sm text-muted">Every trade graded, draft grades in hindsight, each manager&apos;s habits{ctx.league.settings && Number((ctx.league.settings as Record<string, unknown>).waiver_type) === 2 ? " and what this league really pays in FAAB" : ""}.</p></Card>
       {ctx.warnings.map((w) => <Notice key={w} tone="warn">{w}</Notice>)}
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

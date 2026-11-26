@@ -24,6 +24,7 @@ import { ord } from "@/lib/engine/classify";
 import { effectiveMode } from "@/lib/settings";
 import type { League } from "@/lib/sleeper/types";
 import { leagueColour as colourOf } from "@/lib/leagueColour";
+import { HomeCheck } from "@/components/HomeCheck";
 
 
 type Slot = { ctx: LeagueContext | null; error: string | null };
@@ -82,6 +83,7 @@ export default function Home() {
           {viewBtn("cards", Rows3, "Full cards")}{viewBtn("strips", LayoutList, "Compact strips")}
         </div>
       </div>
+      {ready.length > 0 && <HomeCheck ctxs={ready} />}
       <Reorder key={view} className={cx("flex flex-col", view === "cards" ? "gap-4" : "gap-2")} onReorder={(k) => saveOrder(k)}
         items={leagues.map((l, i) => ({ key: l.league_id, node: view === "cards" ? <LeagueWidget league={l} slot={slots[l.league_id]} index={i} /> : <LeagueStrip league={l} slot={slots[l.league_id]} index={i} /> }))} />
     </div>

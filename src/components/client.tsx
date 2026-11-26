@@ -3,7 +3,7 @@
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeftRight, BarChart3, ClipboardList, MessageCircle, Newspaper, Users, Check, ChevronDown, ChevronLeft, ChevronRight, Home, ListOrdered, Moon, RefreshCw, Scale, Sparkles, Sun, TrendingUp, Trophy, UserPlus, X } from "lucide-react";
+import { History, ArrowLeftRight, BarChart3, ClipboardList, MessageCircle, Newspaper, Users, Check, ChevronDown, ChevronLeft, ChevronRight, Home, ListOrdered, Moon, RefreshCw, Scale, Sparkles, Sun, TrendingUp, Trophy, UserPlus, X } from "lucide-react";
 import { BASE_PATH } from "@/lib/net";
 import { cx, Logo } from "./ui";
 import { usePlayerCard } from "./PlayerCard";
@@ -95,6 +95,7 @@ export const QUICK_ACTIONS = [
   { href: "/trade-finder", label: "Trade Finder", sub: "Deals they'd accept", icon: ArrowLeftRight },
   { href: "/mock-draft", label: "Mock Draft", sub: "Your league's format", icon: ClipboardList },
   { href: "/brief", label: "Weekly Brief", sub: "Recap and preview", icon: Newspaper },
+  { href: "/history", label: "League History", sub: "Trades, drafts, FAAB", icon: History },
   { href: "/breakouts", label: "Breakouts", sub: "Emerging players", icon: TrendingUp },
   { href: "/rookies", label: "Rookies", sub: "This year's class", icon: Sparkles },
   { href: "/stats", label: "Stats", sub: "Stats and schedule", icon: BarChart3 },

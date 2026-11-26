@@ -58,6 +58,26 @@ export const sleeper = {
     get(`/league/${id}/matchups/${week}`, z.array(Matchup), week < currentWeek - 1 ? 24 * HOUR : 5 * MIN, force),
   transactions: (id: string, week: number, currentWeek: number, force = false) =>
     get(`/league/${id}/transactions/${week}`, z.array(Transaction), week < currentWeek - 1 ? 24 * HOUR : 15 * MIN, force),
+  /** A finished season never changes: cache its weeks for a month. */
+  pastTransactions: (id: string, week: number) => get(`/league/${id}/transactions/${week}`, z.array(Transaction), 30 * 24 * HOUR),
+  pastMatchups: (id: string, week: number) => get(`/league/${id}/matchups/${week}`, z.array(Matchup), 30 * 24 * HOUR),
+  /** Most-added players across all of Sleeper (public, free): how in-demand a free agent is right now. */
+  trending: (force = false) => get(`/players/nfl/trending/add?lookback_hours=48&limit=200`, z.array(z.object({ player_id: z.string(), count: z.number() })), 30 * MIN, force),
+  /** Season stat totals for every player (Sleeper's public stats). Slimmed to raw stat lines before caching. */
+  seasonStats: (season: string) =>
+    cached(`sleeper:stats:${season}`, "sleeper", 7 * 24 * HOUR,
+      async () => {
+        const raw = JSON.parse(await fetchText(`/stats/nfl/regular/${season}`)) as Record<string, Record<string, unknown>>;
+        const out: Record<string, Record<string, number>> = {};
+        for (const [pid, st] of Object.entries(raw)) {
+          if (!st || !/^\d+$/.test(pid)) continue;
+          const o: Record<string, number> = {};
+          for (const [k, v] of Object.entries(st)) if (typeof v === "number" && v !== 0 && !/^(rank_|pos_rank_|tm_|adp_)|_snp$/.test(k)) o[k] = v;
+          if (Object.keys(o).length) out[pid] = o;
+        }
+        return JSON.stringify(out);
+      },
+      (b) => JSON.parse(b) as Record<string, Record<string, number>>),
   tradedPicks: (id: string, force = false) => get(`/league/${id}/traded_picks`, z.array(TradedPick), HOUR, force),
   winnersBracket: (id: string, force = false) => get(`/league/${id}/winners_bracket`, z.array(BracketGame), HOUR, force),
   drafts: (id: string, force = false) => get(`/league/${id}/drafts`, z.array(Draft), 6 * HOUR, force),

@@ -123,6 +123,7 @@ export const Draft = z.object({
   status: z.string(),
   type: z.string().nullish(),
   draft_order: z.record(z.string(), z.number()).nullish(),
+  slot_to_roster_id: z.record(z.string(), z.number()).nullish(),
   settings: z.record(z.string(), z.unknown()).nullish(),
 });
 export type Draft = z.infer<typeof Draft>;
@@ -158,5 +159,7 @@ export const DraftPick = z.object({
   roster_id: z.number().nullish(),
   picked_by: z.string().nullish(),
   is_keeper: z.boolean().nullish(),
+  draft_slot: z.number().nullish(),
+  metadata: z.record(z.string(), z.unknown()).nullish(),
 });
 export type DraftPick = z.infer<typeof DraftPick>;

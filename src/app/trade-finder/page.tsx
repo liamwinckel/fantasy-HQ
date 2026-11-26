@@ -1,6 +1,7 @@
 "use client";
 
-import { LeaguePage, useQuery, type LeagueData } from "@/components/AppData";
+import { loadHistory, managerHabits } from "@/lib/services/history";
+import { LeaguePage, useAsync, useQuery, type LeagueData } from "@/components/AppData";
 import { TeamLink } from "@/components/TeamPeek";
 import Link from "next/link";
 import { formatLabel } from "@/lib/services/portfolio";
@@ -17,6 +18,10 @@ export default function TradeFinderPage() {
 function TradeFinderPageBody({ league, ctx, sp }: LeagueData) {
   const { set } = useQuery();
   const ai = useShsAiMap(ctx, ctx.valuationMode === "dynasty" ? "dynasty" : "ros");
+  // League history: who actually trades. Nudges "chance they accept" and tags each manager.
+  const hist = useAsync(async () => { const h = await loadHistory(ctx); return managerHabits(h, null); }, [ctx]);
+  const habitOf = (rid: number) => { const o = ctx.teams.find((t) => t.rosterId === rid)?.ownerId; return o ? hist.data?.find((m) => m.owner === o) ?? null : null; };
+  const tradeFactor = (rid: number) => { const m = habitOf(rid); if (!m || m.seasons < 1) return 1; return m.label.includes("Trader") ? 1.15 : m.label.includes("Never trades") && m.seasons >= 2 ? 0.75 : 1; };
   if (ctx.myRosterId === null) return <Notice tone="warn">You don&apos;t own a team in {league.name}.</Notice>;
   const partnerFilter = Number(sp.partner) && ctx.teams.some((t) => t.rosterId === Number(sp.partner) && t.rosterId !== ctx.myRosterId) ? Number(sp.partner) : null;
   const { profiles, trades } = findTrades(ctx, ctx.myRosterId, partnerFilter ? 8 : 14, partnerFilter);
@@ -49,6 +54,7 @@ function TradeFinderPageBody({ league, ctx, sp }: LeagueData) {
                 <div className="min-w-0 flex-1">
                   <TeamLink rosterId={p.rosterId} name={`${p.name}${isMe ? " (you)" : ""}`} avatar={t?.avatar ?? null} size={24} className="max-w-full text-sm font-semibold" />
                   {dyn && p.cls && <div className="mt-0.5 pl-8"><ClassBadge cls={p.cls} className="!text-[9px]" /></div>}
+                  {!isMe && habitOf(p.rosterId) && <div className="mt-0.5 truncate pl-8 text-[10px] text-muted">{habitOf(p.rosterId)!.trades} trade{habitOf(p.rosterId)!.trades === 1 ? "" : "s"} · {habitOf(p.rosterId)!.seasons} yr{habitOf(p.rosterId)!.seasons === 1 ? "" : "s"}{/Trader|Never trades/.test(habitOf(p.rosterId)!.label) ? ` · ${habitOf(p.rosterId)!.label.split(" · ")[0]}` : ""}</div>}
                 </div>
                 <div className="flex shrink-0 gap-1">
                   {POS.map((pos) => {
@@ -87,7 +93,7 @@ function TradeFinderPageBody({ league, ctx, sp }: LeagueData) {
               <div className="mt-3 grid grid-cols-3 gap-2 text-center">
                 <Metric label={dyn ? "Value to you" : "Your lineups, rest of season"} value={dyn ? signed(t.myValue) : `${signed(t.myRos)}/g`} tone={(dyn ? t.myValue : t.myRos) >= 0 ? "pos" : "neg"} />
                 <Metric label={dyn ? "Value to them" : "Their lineups"} value={dyn ? signed(t.theirValue) : `${signed(t.theirRos)}/g`} tone={(dyn ? t.theirValue : t.theirRos) >= 0 ? "pos" : "neg"} />
-                <Metric label="Chance they accept" value={`${Math.round(t.accept * 100)}%`} tone={t.accept >= 0.55 ? "pos" : t.accept >= 0.35 ? undefined : "neg"} />
+                {(() => { const a = Math.min(0.95, t.accept * tradeFactor(t.partner)); return <Metric label={tradeFactor(t.partner) !== 1 ? "Chance they accept (their trade history)" : "Chance they accept"} value={`${Math.round(a * 100)}%`} tone={a >= 0.55 ? "pos" : a >= 0.35 ? undefined : "neg"} />; })()}
               </div>
               <ul className="mt-3 flex flex-col gap-1 text-xs leading-relaxed text-muted">{t.why.map((w) => <li key={w}>› {w}</li>)}</ul>
               <Link href={t.link} className="mt-3 block rounded-lg bg-acc py-2.5 text-center text-sm font-bold text-on-acc">Open in Trade Analyzer</Link>
