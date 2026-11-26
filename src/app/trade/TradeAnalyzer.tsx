@@ -85,7 +85,6 @@ export function TradeAnalyzer({ leagueId, mode, me, teams, initialPartner, initi
             {teams.filter((t) => t.rosterId !== me).map((t) => <option key={t.rosterId} value={t.rosterId}>{t.name} · {t.record}{t.cls ? ` · ${t.cls}` : ""}</option>)}
           </select>
         </label>
-        <Info className="">Valued as <b className="text-fg">{mode === "dynasty" ? "Dynasty" : "Redraft"}</b>, from this league&apos;s format. Tap <b className="text-fg">+</b> to add a player to the deal, <b className="text-fg">−</b> to take him out.</Info>
       </div>
 
       {result && <div className="lg:hidden"><Card><Spectrum balance={result.balance} partner={theirs?.name ?? "Partner"} /></Card></div>}

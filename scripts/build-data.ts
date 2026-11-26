@@ -21,9 +21,18 @@ const REL = "https://github.com/nflverse/nflverse-data/releases/download";
 
 async function text(url: string, fixture: string): Promise<string> {
   if (FX) return fs.readFileSync(path.join(FX, fixture), "utf8");
-  const res = await fetch(url, { redirect: "follow" });
-  if (!res.ok) throw new Error(`${res.status} ${url}`);
-  return res.text();
+  // GitHub's raw file host drops connections now and then: retry with backoff before giving up.
+  let last: unknown;
+  for (let i = 0; i < 4; i++) {
+    try {
+      const res = await fetch(url, { redirect: "follow" });
+      if (res.ok) return await res.text();
+      last = new Error(`${res.status} ${url}`);
+      if (res.status === 404) break;
+    } catch (e) { last = e; }
+    await new Promise((r) => setTimeout(r, 1500 * 2 ** i));
+  }
+  throw last instanceof Error ? last : new Error(String(last));
 }
 async function gz(url: string, fixture: string): Promise<string> {
   const buf = FX ? fs.readFileSync(path.join(FX, fixture)) : Buffer.from(await (await fetch(url, { redirect: "follow" })).arrayBuffer());
@@ -549,7 +558,17 @@ async function main() {
   const only = process.argv.includes("--only") ? process.argv[process.argv.indexOf("--only") + 1] : null;
   for (const [name, job] of jobs) {
     if (only && name !== only) continue;
-    try { await job(); } catch (e) { failed.push(name); console.error(`✗ ${name}: ${(e as Error).message}`); }
+    try { await job(); } catch (e) {
+      failed.push(name); console.error(`✗ ${name}: ${(e as Error).message}`);
+      // Keep the last good copy from the live site rather than shipping without it.
+      const keep: Record<string, string> = { consensus: "consensus.json", "values history": "values-history.json" };
+      if (!FX && keep[name]) {
+        try {
+          const r = await fetch(`https://liamwinckel.github.io/fantasy-HQ/data/${keep[name]}`);
+          if (r.ok) { write(keep[name], await r.text()); console.error(`  kept previous ${keep[name]}`); }
+        } catch { /* nothing to keep */ }
+      }
+    }
   }
   if (only) return;
   fs.writeFileSync(path.join(OUT, "meta.json"), JSON.stringify({ builtAt: new Date().toISOString(), season: s, failed }));
