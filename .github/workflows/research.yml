@@ -1,16 +1,23 @@
-# SHS AI research: replays every week since 2021 and refits SHS AI's default weights.
-# Run by hand (Actions → SHS AI research → Run workflow); commits the results, which redeploys the site.
+# SHS AI research: replays every week since 2021 (plus 2012–2020 without expert ranks, to pretrain usage/matchup)
+# and refits SHS AI. Runs every Tuesday morning after Monday Night Football so each finished week joins the training
+# data, or by hand (Actions → SHS AI research → Run workflow). Commits the results and redeploys the site.
 name: SHS AI research
 
 on:
+  schedule:
+    - cron: "17 11 * * 2"   # Tuesdays 11:17 UTC (6:17 am Toronto)
   workflow_dispatch:
     inputs:
       seasons:
-        description: Seasons to replay
+        description: Seasons to replay (with expert ranks)
         default: "2021,2022,2023,2024,2025,2026"
+      pre_seasons:
+        description: Seasons before the expert archive (pretraining only)
+        default: "2012,2013,2014,2015,2016,2017,2018,2019,2020"
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: research
@@ -35,7 +42,8 @@ jobs:
       - name: Replay seasons and fit
         run: npx tsx scripts/research/shs-history.ts
         env:
-          SEASONS: ${{ inputs.seasons }}
+          SEASONS: ${{ inputs.seasons || '2021,2022,2023,2024,2025,2026' }}
+          PRE_SEASONS: ${{ inputs.pre_seasons || '2012,2013,2014,2015,2016,2017,2018,2019,2020' }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Commit results
         run: |
@@ -43,7 +51,11 @@ jobs:
           if ! git diff --cached --quiet; then
             git -c user.name="fantasy-hq-bot" -c user.email="actions@users.noreply.github.com" commit -q -m "SHS AI research: refit defaults and v2 stack from replayed seasons"
             git push -q
+            # Commits made with GITHUB_TOKEN don't trigger other workflows, so start the deploy explicitly.
+            gh workflow run deploy.yml --ref main
           fi
+        env:
+          GH_TOKEN: ${{ github.token }}
       - uses: actions/upload-artifact@v4
         with:
           name: research

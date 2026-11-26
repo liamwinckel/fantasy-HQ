@@ -35,6 +35,10 @@ fs.mkdirSync(CACHE, { recursive: true });
 const REL = "https://github.com/nflverse/nflverse-data/releases/download";
 const NOW = new Date();
 const SEASONS = (process.env.SEASONS ?? "2021,2022,2023,2024,2025,2026").split(",").map(Number);
+// Seasons before the expert-rank archive (Aug 2021). Replayed without expert ranks to pretrain the parts of SHS AI
+// that don't need them: usage and matchup from 2012 (snap counts start there), Sleeper's projection from 2018.
+const PRE_SEASONS = (process.env.PRE_SEASONS ?? "2012,2013,2014,2015,2016,2017,2018,2019,2020").split(",").filter(Boolean).map(Number);
+const FIRST_ECR = 2021, FIRST_SLEEPER_PROJ = 2018;
 const POS = ["QB", "RB", "WR", "TE"] as const;
 const CUT: Record<string, number> = { QB: 24, RB: 40, WR: 50, TE: 20 };
 // Standard Sleeper PPR scoring.
@@ -89,7 +93,7 @@ let sleeperOk: boolean | null = null;
 async function sleeperProj(season: number, week: number): Promise<Map<string, Record<string, number>> | null> {
   const f = path.join(CACHE, `sleeper-proj-${season}-${week}.json`);
   if (fs.existsSync(f)) return new Map(Object.entries(JSON.parse(fs.readFileSync(f, "utf8"))));
-  if (sleeperOk === false) return null;
+  if (sleeperOk === false || season < FIRST_SLEEPER_PROJ) return null;
   try {
     const qs = POS.map((p) => `position[]=${p}`).join("&");
     const r = await fetch(`https://api.sleeper.app/projections/nfl/${season}/${week}?season_type=regular&${qs}`, { signal: AbortSignal.timeout(15000) });
@@ -105,7 +109,9 @@ async function sleeperProj(season: number, week: number): Promise<Map<string, Re
 
 const etMs = (k: string) => { const m = Number(k.slice(5, 7)); return Date.parse(`${k.replace(" ", "T").slice(0, 16)}:00${m >= 4 && m <= 10 ? "-04:00" : "-05:00"}`); };
 
-export interface Row { season: number; week: number; id: string; pos: string; ecrPos: number; ecrPts: number; proj: number; fpProj: number | null; actual: number; f: Record<string, [number, number]>; x?: StackX; qx?: QbX }
+/** src: where the anchor rank came from: "ecr" = expert ranks (graded rows), "sleeper" = Sleeper's projection,
+ *  "model" = the app's own history-based projection (pre-2018). Only "ecr" rows are graded or used to fit the blend. */
+export interface Row { src?: "ecr" | "sleeper" | "model"; season: number; week: number; id: string; pos: string; ecrPos: number; ecrPts: number; proj: number; fpProj: number | null; actual: number; f: Record<string, [number, number]>; x?: StackX; qx?: QbX }
 
 async function main() {
   const [playersCsv, idsCsv, gamesCsv] = await Promise.all([
@@ -128,7 +134,7 @@ async function main() {
   const rows: Row[] = [];
   let projSource = "sleeper";
 
-  for (const season of SEASONS) {
+  for (const season of [...new Set([...PRE_SEASONS, ...SEASONS])].sort((a, b) => a - b)) {
     const [statsCsv, prevCsv, snapsCsv, injCsv, xfpCsv, rec, rush, pass] = await Promise.all([
       tryText(`${REL}/stats_player/stats_player_week_${season}.csv`, `stats_${season}.csv`),
       tryText(`${REL}/stats_player/stats_player_week_${season - 1}.csv`, `stats_${season - 1}.csv`),
@@ -162,11 +168,12 @@ async function main() {
       const sunday = wg.filter((g) => new Date(etMs(g.kickoff!) - 5 * 3600e3).getUTCDay() === 0).map((g) => etMs(g.kickoff!)).sort((a, b) => a - b)[0];
       const cut = sunday ?? times[0];
       if (cut > NOW.getTime()) break;
-      const snap = [...commits].reverse().find((c) => c.at < cut && c.at > cut - 6 * 86400e3);
-      if (!snap) continue;
+      const snap = season >= FIRST_ECR ? [...commits].reverse().find((c) => c.at < cut && c.at > cut - 6 * 86400e3) : undefined;
+      const pre = season < FIRST_ECR;
+      if (!snap && !pre) continue;
       // Expert ranks + FantasyPros projection for this week
       const ecr = new Map<string, { ecr: number; team: string; pos: string; fp: number | null }>();
-      for (const r of parseCsv(await ecrFile(snap.sha))) {
+      if (snap) for (const r of parseCsv(await ecrFile(snap.sha))) {
         if (!POS.includes(r.page_pos as typeof POS[number])) continue;
         const g = fpToGsis.get(r.fantasypros_id);
         const e = Number(r.ecr);
@@ -176,13 +183,15 @@ async function main() {
       }
       // Projection: Sleeper's when reachable, otherwise FantasyPros'
       const sp = await sleeperProj(season, w);
-      if (!sp) projSource = "fantasypros";
+      if (!sp && !pre) projSource = "fantasypros";
       const projPts = new Map<string, number>();
       if (sp) for (const [sid, st] of sp) { const g = sleeperToGsis.get(sid); const pos = g ? ecr.get(g)?.pos ?? posOf.get(g) ?? null : null; if (g && pos) projPts.set(g, scoreSleeperStats(st, PPR, pos)); }
       else for (const [g, e] of ecr) if (e.fp !== null) projPts.set(g, e.fp);
 
       // Players this week: anyone ranked or with a projection; team = latest known team before this week
       const ids = new Set([...ecr.keys(), ...projPts.keys()]);
+      // Before the expert archive: everyone who has played this season or last (ranked below by projection instead)
+      if (pre) { for (const [g, a] of byPlayer) if (a.some((x) => x.week < w)) ids.add(g); for (const g of prevPpg.keys()) ids.add(g); }
       const players = new Map<string, PlayerLite>();
       const status = new Map<string, string>();
       for (const r of injuries) if (r.week === w && r.status) status.set(r.gsis, r.status);
@@ -207,7 +216,7 @@ async function main() {
         const pv = prevPpg.get(p.id);
         const prior = pv && pv.g >= 6 ? pv.ppg : priorFor(6, p.yearsExp, p.draftRound);
         const pr = project({ player: p, log: logs.get(p.id)!, prior, currentWeek: w, lastWeek, opponents, defense: new Map() });
-        const pts = projPts.get(p.id) ?? 0;
+        const pts = projPts.get(p.id) ?? (pre && !sp ? pr.median : 0);
         projections.set(p.id, { ...pr, median: pts, byWeek: { [w]: pts } });
       }
       const consensus: LeagueContext["consensus"] = {};
@@ -215,7 +224,7 @@ async function main() {
       const ctx = {
         league: { league_id: "research", season: String(season), scoring_settings: PPR, roster_positions: ["QB", "RB", "RB", "WR", "WR", "TE", "FLEX"] },
         currentWeek: w, lastWeek, seasonOver: false, myRosterId: null, teams: [], teamsCount: 12,
-        players, logs, projections, consensus, values: new Map(), extras: new Map(), combine: new Map(), prevCoach: new Map(),
+        players, logs, projections, consensus, values: new Map(), extras: new Map(), combine: new Map(), prevCoach: new Map(), keeperCost: new Map(), picks: [],
         projStats: new Map([[w, new Map()]]), stats: stats.filter((s) => s.week < w), games, nflOpponents: opponents,
         signals: buildSignals(raw, w, null), valuationMode: "redraft",
       } as unknown as LeagueContext;
@@ -226,32 +235,39 @@ async function main() {
       for (const a of curve.values()) a.sort((x, y) => y - x);
       const atRank = (pos: string, k: number) => { const c = curve.get(pos) ?? []; return c[Math.min(k, c.length) - 1] ?? 0; };
       let n = 0;
-      const sx = stackInputs(ctx, rk.filter((r) => r.ecrPos !== null).map((r) => ({ id: r.id, pos: r.pos, E: atRank(r.pos, r.ecrPos!), proj: r.pts })), w);
-      const qx = qbInputs(ctx, rk.filter((r) => r.pos === "QB" && r.ecrPos !== null).map((r) => r.id), w);
+      // Pre-expert seasons: the projection's own rank stands in for the expert rank (the "anchor").
+      const anchorRank = new Map<string, number>();
+      if (pre) { const seen = new Map<string, number>(); for (const r of [...rk].sort((a, b) => b.pts - a.pts)) { if (r.pts <= 0) continue; const k = (seen.get(r.pos) ?? 0) + 1; seen.set(r.pos, k); anchorRank.set(r.id, k); } }
+      const rankOf = (r: { id: string; ecrPos: number | null }) => (pre ? anchorRank.get(r.id) ?? null : r.ecrPos);
+      const sx = stackInputs(ctx, rk.filter((r) => rankOf(r) !== null).map((r) => ({ id: r.id, pos: r.pos, E: atRank(r.pos, rankOf(r)!), proj: pre && !sp ? 0 : r.pts })), w);
+      const qx = pre ? new Map() : qbInputs(ctx, rk.filter((r) => r.pos === "QB" && r.ecrPos !== null).map((r) => r.id), w);
       for (const r of rk) {
-        if (r.ecrPos === null || !CUT[r.pos] || r.ecrPos > CUT[r.pos] * 1.5) continue;
+        const rank = rankOf(r);
+        if (rank === null || !CUT[r.pos] || rank > CUT[r.pos] * 1.5) continue;
         const st = (byPlayer.get(r.id) ?? []).find((s) => s.week === w);
         if (!st) continue;
         const a = ai.get(r.id);
         rows.push({
-          season, week: w, id: r.id, pos: r.pos, ecrPos: r.ecrPos, ecrPts: Math.round(atRank(r.pos, r.ecrPos) * 10) / 10, proj: r.pts, fpProj: ecr.get(r.id)?.fp ?? null,
+          src: pre ? (sp ? "sleeper" : "model") : "ecr",
+          season, week: w, id: r.id, pos: r.pos, ecrPos: rank, ecrPts: Math.round(atRank(r.pos, rank) * 10) / 10, proj: r.pts, fpProj: ecr.get(r.id)?.fp ?? null,
           actual: Math.round(scoreStatLine(st, PPR, r.pos) * 10) / 10,
           f: Object.fromEntries((a?.factors ?? []).map((x) => [x.key, [Math.round(x.value * 1000) / 1000, x.weight]])),
           x: sx.get(r.id), qx: qx.get(r.id),
         });
         n++;
       }
-      process.stdout.write(`${season} wk${w}: ${n} players\n`);
+      process.stdout.write(`${season} wk${w}: ${n} players${pre ? ` (pre-expert, anchor ${sp ? "sleeper" : "model"})` : ""}\n`);
     }
   }
   fs.writeFileSync(path.join(CACHE, "dataset.json"), JSON.stringify({ projSource, rows }));
   if (process.env.SKIP_ANALYSE) return;
   const { analyse } = await import("./analyse");
-  analyse(rows, projSource);
+  const graded = rows.filter((r) => (r.src ?? "ecr") === "ecr");
+  analyse(graded, projSource);
   const { stackResearch } = await import("./stack");
   stackResearch(rows, projSource);
   const { qbResearch } = await import("./qb");
-  qbResearch(rows, projSource);
+  qbResearch(graded, projSource);
 }
 
 

@@ -33,10 +33,10 @@ function solve(A: number[][], b: number[]) {
   return M.map((row, i) => row[n] / (M[i][i] || 1e-12));
 }
 /** Ridge regression, penalty relative to each feature's scale, intercept (column 0) unpenalised. */
-function ridge(X: number[][], y: number[], alpha = ALPHA) {
+function ridge(X: number[][], y: number[], alpha = ALPHA, wt?: number[]) {
   const k = X[0].length;
   const A = Array.from({ length: k }, () => new Array(k).fill(0)), b = new Array(k).fill(0);
-  for (let i = 0; i < X.length; i++) { const x = X[i]; for (let p = 0; p < k; p++) { b[p] += x[p] * y[i]; for (let q = 0; q <= p; q++) A[p][q] += x[p] * x[q]; } }
+  for (let i = 0; i < X.length; i++) { const x = X[i], c = wt?.[i] ?? 1; for (let p = 0; p < k; p++) { b[p] += c * x[p] * y[i]; for (let q = 0; q <= p; q++) A[p][q] += c * x[p] * x[q]; } }
   for (let p = 0; p < k; p++) for (let q = 0; q < p; q++) A[q][p] = A[p][q];
   for (let p = 1; p < k; p++) A[p][p] += alpha * A[p][p] + 1e-6;
   return solve(A, b);
@@ -73,19 +73,32 @@ function spearman(a: number[], b: number[]) {
 export const key = (r: R) => `${r.season}:${r.week}:${r.pos}`;
 
 // ---------------- fitting ----------------
+const isEcr = (r: R) => (r.src ?? "ecr") === "ecr";
+/** Which rows each base model may learn from. Pre-expert rows (2012–2020) have no expert rank, so the experts base
+ *  never sees them; the projection base only sees rows that had a real projection (Sleeper's starts in 2018). */
+const BASE_ROWS: Record<BaseKey, (r: R) => boolean> = {
+  experts: isEcr,
+  projection: (r) => isEcr(r) || r.src === "sleeper",
+  opportunity: () => true,
+  context: () => true,
+};
+/** Pre-expert rows count for less than graded ones (older era, weaker anchor). */
+export let PRE_WEIGHT = Number(process.env.PRE_W ?? 0.3);
+export const setPreWeight = (w: number) => { PRE_WEIGHT = w; };
 function fitBases(rows: R[]) {
   const base = {} as PosStack["base"];
-  for (const k of BASE_KEYS) base[k] = { w: ridge(rows.map((r) => withBias(BASE[k](r.x))), rows.map((r) => r.actual)) };
+  for (const k of BASE_KEYS) { const rs = rows.filter(BASE_ROWS[k]); base[k] = { w: ridge(rs.map((r) => withBias(BASE[k](r.x))), rs.map((r) => r.actual), ALPHA, rs.map((r) => (isEcr(r) ? 1 : PRE_WEIGHT))) }; }
   return base;
 }
-/** Out-of-fold base predictions inside the training set, so the meta model learns trust from honest numbers. */
-export function oof(rows: R[]) {
+/** Out-of-fold base predictions for the graded rows, so the meta model learns trust from honest numbers.
+ *  pool = rows the bases may learn from (the graded rows, plus pre-expert seasons in the two-stage model). */
+export function oof(rows: R[], pool: R[] = rows) {
   const seasons = [...new Set(rows.map((r) => r.season))];
   const fold = (r: R) => (seasons.length >= 3 ? String(r.season) : `${r.season}:${r.week % 4}`);
   const folds = [...new Set(rows.map(fold))];
   const out = new Map<R, Record<BaseKey, number>>();
   for (const f of folds) {
-    const tr = rows.filter((r) => fold(r) !== f), te = rows.filter((r) => fold(r) === f);
+    const tr = pool.filter((r) => fold(r) !== f), te = rows.filter((r) => fold(r) === f);
     if (!tr.length || !te.length) continue;
     const m: PosStack = { base: fitBases(tr), meta: { w: [] }, range: 0 };
     for (const r of te) out.set(r, basePreds(m, r.x));
@@ -93,8 +106,8 @@ export function oof(rows: R[]) {
   return out;
 }
 const RANGE_GRID = [-0.3, -0.2, -0.1, -0.05, 0, 0.05, 0.1, 0.2, 0.3];
-function fitPos(rows: R[], opts: { range: boolean }): PosStack {
-  const o = oof(rows);
+function fitPos(rows: R[], opts: { range: boolean }, pool: R[] = rows): PosStack {
+  const o = oof(rows, pool);
   const tr = rows.filter((r) => o.has(r));
   const meta = { w: ridge(tr.map((r) => metaFeatures(o.get(r)!, r.x)), tr.map((r) => r.actual)) };
   let range = 0;
@@ -106,7 +119,7 @@ function fitPos(rows: R[], opts: { range: boolean }): PosStack {
       if (m > best + (lam === 0 ? -1 : 0.1)) { best = m; range = lam; }
     }
   }
-  return { base: fitBases(rows), meta, range };
+  return { base: fitBases(pool), meta, range };
 }
 /** One plain ridge over every input (no stacking), for comparison. */
 function fitFlat(rows: R[]) {
@@ -149,8 +162,8 @@ export function fitRank(rows: R[], D: number[][], lambda: number) {
 }
 const LAMBDAS = [30, 100, 300, 1000, 3000];
 /** Ranking head with its ridge strength picked by out-of-fold close-call accuracy inside the training seasons. */
-function fitRankHead(rows: R[]) {
-  const o = oof(rows);
+function fitRankHead(rows: R[], pool: R[] = rows) {
+  const o = oof(rows, pool);
   const tr = rows.filter((r) => o.has(r));
   const D = tr.map((r) => deltas(o.get(r)!, r.x));
   const seasons = [...new Set(tr.map((r) => r.season))];
@@ -189,10 +202,15 @@ function capped(list: (Scored & { id: string })[]) {
 }
 
 export function stackResearch(all: Row[], projSource: string) {
-  const rows = all.filter((r): r is R => !!r.x && STACK_POS.includes(r.pos as (typeof STACK_POS)[number]));
+  const every = all.filter((r): r is R => !!r.x && STACK_POS.includes(r.pos as (typeof STACK_POS)[number]));
+  const rows = every.filter(isEcr);
+  const PRE_FROM = Number(process.env.PRE_FROM ?? 0);
+  const preRows = every.filter((r) => !isEcr(r) && r.season >= PRE_FROM);
+  const preSeasons = [...new Set(preRows.map((r) => r.season))].sort();
   const seasons = [...new Set(rows.map((r) => r.season))].sort();
   const tests = seasons.slice(1);
-  const models = ["Experts", "Projection", "SHS (current)", "Opportunity only", "Context only", "One ridge (no stack)", "Stack", "Stack + range", "Stack, ranking head", "Stack, ranking head, capped"] as const;
+  const models = ["Experts", "Projection", "SHS (current)", "Opportunity only", "Context only", "One ridge (no stack)", "Stack", "Stack + range", "Stack, ranking head", "Stack, ranking head, capped",
+    "Two-stage: opportunity only", "Two-stage: stack", "Two-stage: ranking head", "Two-stage: ranking head, capped"] as const;
   type M = (typeof models)[number];
   const bySeason: Record<number, Record<M, Metrics>> = {};
   const pooled: Record<M, (Scored & { id: string })[]> = Object.fromEntries(models.map((m) => [m, []])) as never;
@@ -211,6 +229,10 @@ export function stackResearch(all: Row[], projSource: string) {
       const flat = fitFlat(tr);
       const head = fitRankHead(tr);
       (lamUsed[pos] ??= []).push(head.lambda);
+      // Two-stage: bases also learn from the pre-expert seasons (all earlier than any test season).
+      const pool = [...tr, ...preRows.filter((r) => r.pos === pos)];
+      const st2 = fitPos(tr, { range: false }, pool);
+      const head2 = fitRankHead(tr, pool);
       for (const r of te) {
         const base = { g: key(r), ecrPos: r.ecrPos, actual: r.actual, id: r.id };
         const b = basePreds(st, r.x);
@@ -225,9 +247,15 @@ export function stackResearch(all: Row[], projSource: string) {
         L["Stack + range"].push({ ...base, score: p2.score, pred: p2.pts });
         const hv = r.x.E + dot(head.beta, deltas(b, r.x));
         L["Stack, ranking head"].push({ ...base, score: hv, pred: p1.pts });
+        const b2 = basePreds(st2, r.x), q2 = stackPredict(st2, r.x);
+        L["Two-stage: opportunity only"].push({ ...base, score: b2.opportunity, pred: b2.opportunity });
+        L["Two-stage: stack"].push({ ...base, score: q2.score, pred: q2.pts });
+        const hv2 = r.x.E + dot(head2.beta, deltas(b2, r.x));
+        L["Two-stage: ranking head"].push({ ...base, score: hv2, pred: q2.pts });
       }
     }
     L["Stack, ranking head, capped"] = capped(L["Stack, ranking head"]).map((x, i) => ({ ...x, id: String(i) }));
+    L["Two-stage: ranking head, capped"] = capped(L["Two-stage: ranking head"]).map((x, i) => ({ ...x, id: String(i) }));
     bySeason[s] = Object.fromEntries(models.map((m) => [m, grade(L[m])])) as Record<M, Metrics>;
     for (const m of models) pooled[m].push(...L[m]);
     console.log(`${s}: close calls experts ${bySeason[s]["Experts"].near} · head ${bySeason[s]["Stack, ranking head"].near} · capped ${bySeason[s]["Stack, ranking head, capped"].near} | all ${bySeason[s]["Experts"].all} → ${bySeason[s]["Stack, ranking head"].all}`, JSON.stringify(lamUsed));
@@ -238,28 +266,36 @@ export function stackResearch(all: Row[], projSource: string) {
   for (const pos of STACK_POS) byPos[pos] = Object.fromEntries(models.map((m) => [m, grade(pooled[m].filter((x) => x.g.endsWith(`:${pos}`)))])) as Record<M, Metrics>;
 
   // Final model: every season.
-  const final: StackJson = { version: 2, trainedOn: `${seasons[0]}–${seasons.at(-1)} (${rows.length.toLocaleString()} player-weeks)`, projSource, model: {} };
+  const preNote = preRows.length ? `; usage & matchup pretrained on ${preSeasons[0]}–${preSeasons.at(-1)} (+${preRows.length.toLocaleString()} player-weeks) where it helped` : "";
+  const final: StackJson = { version: 2, trainedOn: `${seasons[0]}–${seasons.at(-1)} (${rows.length.toLocaleString()} player-weeks)${preNote}`, projSource, model: {} };
+  const twoStage: Record<string, boolean> = {};
   for (const pos of STACK_POS) {
     const pr = rows.filter((r) => r.pos === pos);
-    const m = fitPos(pr, { range: true });
-    m.head = fitRankHead(pr).beta;
+    const t = byPos[pos];
+    // Pretraining is kept for a position only if it beat the single-stage model out of sample on close calls
+    // without losing on all pairs.
+    const two = preRows.length > 0 && t["Two-stage: ranking head, capped"].near > t["Stack, ranking head, capped"].near && t["Two-stage: ranking head, capped"].all >= t["Stack, ranking head, capped"].all - 0.1;
+    twoStage[pos] = two;
+    const pool = two ? [...pr, ...preRows.filter((r) => r.pos === pos)] : pr;
+    const m = fitPos(pr, { range: true }, pool);
+    m.head = fitRankHead(pr, pool).beta;
     // The app ranks with v2 only where it beat both the experts and the current SHS formula out of sample on close
     // calls (by at least 0.2 points) without losing on all pairs.
-    const t = byPos[pos];
-    m.use = t["Stack, ranking head, capped"].near >= Math.max(t["Experts"].near, t["SHS (current)"].near) + 0.2 && t["Stack, ranking head, capped"].all >= t["Experts"].all;
+    const c = two ? t["Two-stage: ranking head, capped"] : t["Stack, ranking head, capped"];
+    m.use = c.near >= Math.max(t["Experts"].near, t["SHS (current)"].near) + 0.2 && c.all >= t["Experts"].all;
     final.model[pos] = m;
   }
   const r4 = (v: number) => Math.round(v * 1e4) / 1e4;
   const round = (m: PosStack): PosStack => ({ base: Object.fromEntries(BASE_KEYS.map((k) => [k, { w: m.base[k].w.map(r4) }])) as PosStack["base"], meta: { w: m.meta.w.map(r4) }, range: m.range, head: m.head?.map(r4), use: m.use });
   for (const pos of STACK_POS) final.model[pos] = round(final.model[pos]!);
-  final.report = { tests, total, bySeason, byPos, rangeUsed };
+  final.report = { tests, total, bySeason, byPos, rangeUsed, twoStage, preSeasons, preRows: preRows.length };
   fs.writeFileSync(path.join(process.cwd(), "src/lib/services/shsStack.json"), JSON.stringify(final, null, 1));
   fs.mkdirSync(path.join(process.cwd(), "docs"), { recursive: true });
-  fs.writeFileSync(path.join(process.cwd(), "docs/shs-stack.md"), report(models as unknown as string[], total, bySeason, byPos, tests, projSource, rows.length, rangeUsed, final));
+  fs.writeFileSync(path.join(process.cwd(), "docs/shs-stack.md"), report(models as unknown as string[], total, bySeason, byPos, tests, projSource, rows.length, rangeUsed, final, twoStage, preSeasons, preRows.length));
   console.log(JSON.stringify(total, null, 1));
 }
 
-function report(models: string[], total: Record<string, Metrics>, bySeason: Record<number, Record<string, Metrics>>, byPos: Record<string, Record<string, Metrics>>, tests: number[], projSource: string, n: number, rangeUsed: Record<string, number[]>, final: StackJson) {
+function report(models: string[], total: Record<string, Metrics>, bySeason: Record<number, Record<string, Metrics>>, byPos: Record<string, Record<string, Metrics>>, tests: number[], projSource: string, n: number, rangeUsed: Record<string, number[]>, final: StackJson, twoStage: Record<string, boolean>, preSeasons: number[], preN: number) {
   const tbl = (t: Record<string, Metrics>) => ["| Model | Close calls | All pairs | Avg miss (pts) | Rank corr. |", "|---|---|---|---|---|", ...models.map((m) => `| ${m} | ${t[m].near}% | ${t[m].all}% | ${t[m].mae} | ${t[m].rho} |`)].join("\n");
   const e = total["Experts"], s = total["Stack + range"];
   return `# SHS AI v2: stacked weekly model
@@ -270,6 +306,8 @@ Out of sample, walk-forward: seasons ${tests.join(", ")} are each predicted by a
 **Close calls** = pairs of players within ${NEAR} expert-rank spots at the same position in the same week (${e.nearPairs.toLocaleString()} pairs): the start/sit decisions people face. **All pairs** = every two ranked players (the old headline number). **Avg miss** = average absolute error in fantasy points. **Rank corr.** = Spearman correlation with actual scoring, averaged over each position-week.
 
 Headline: close calls ${e.near}% (experts) → ${s.near}% (SHS v2), avg miss ${e.mae} → ${s.mae} pts.
+
+**Two-stage models**: ${preN ? `the usage, matchup and projection parts also learn from ${preN.toLocaleString()} player-weeks of ${preSeasons[0]}–${preSeasons.at(-1)} (before the expert-rank archive; projection from Sleeper's 2018+ archive). The blend with expert ranks still learns only from graded seasons. Kept per position only where it beat the single-stage model out of sample: ${Object.entries(twoStage).map(([p, v]) => `${p} ${v ? "yes" : "no"}`).join(", ")}.` : "not run (no pre-expert seasons in the dataset)."}
 
 ## All test seasons
 
