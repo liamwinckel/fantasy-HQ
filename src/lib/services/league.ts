@@ -1,5 +1,5 @@
 import { sleeper } from "../sleeper/client";
-import type { League, Matchup, Player, Roster, SleeperUser, Transaction } from "../sleeper/types";
+import type { DraftPick, League, Matchup, Player, Roster, SleeperUser, Transaction } from "../sleeper/types";
 import { combine, consensus, contracts, injuryReports, type CombineRow, playerInfo, returnStats, schedule, snapCounts, weeklyStats, type Contract, type Game, type WeekStat } from "../nflverse";
 import { canFill, isSuperflex, playerPositions, primaryPosition, starterDemand, startingSlots } from "../engine/positions";
 import { scoreSleeperStats, scoreStatLine, scoringLabel } from "../engine/scoring";
@@ -91,6 +91,8 @@ export interface LeagueContext {
   keeperSurplus: Map<string, number>;
   /** Keeper leagues: next season's keep price (round) and surplus (+ cheap for what he's worth, − overpriced) for rostered players. */
   keeperCost: Map<string, { round: number; surplus: number }>;
+  /** How far expert ranks can be trusted per player (1 = fully; lower for return-yard specialists in leagues that score returns). */
+  marketTrust: Map<string, number>;
   /** NFL schedule this season (kickoffs, roof, coaches, Vegas lines). */
   games: Game[];
   /** Head coach of each NFL team last season. */
@@ -460,7 +462,17 @@ async function buildLeagueContext(
     currentWeek: Math.min(currentWeek, lastWeek), playoffStart, lastWeek, dynastyAdjust,
   });
   const cons: Record<string, Consensus> = consR?.data.players ?? {};
-  blendWithMarket(values, [...players.values()], cons, isSuperflex(league.roster_positions));
+  // Market trust: share of each player's points this season that came from return yards (which expert ranks ignore).
+  const trust = new Map<string, number>();
+  if (scoresReturns) for (const [id, log] of logs) {
+    const tot = log.reduce((x, g) => x + g.pts, 0);
+    if (tot <= 0) continue;
+    let ret = 0;
+    for (const g of log) ret += returnPts(id, g.week);
+    const share = Math.min(1, ret / tot);
+    if (share > 0.02) trust.set(id, Math.max(0, 1 - 2.5 * share));
+  }
+  blendWithMarket(values, [...players.values()], cons, isSuperflex(league.roster_positions), trust);
 
   // ---------- Teams ----------
   const sortedForRank = [...rosters].sort((a, b) => b.settings.wins - a.settings.wins || pts(b, "fpts") - pts(a, "fpts"));
@@ -656,17 +668,25 @@ async function buildLeagueContext(
     league, format, valuationMode, scoring: scoringLabel(league.scoring_settings), superflex: isSuperflex(league.roster_positions),
     teamsCount, currentWeek, playoffStart, lastWeek, inPlayoffs, seasonOver, teams, myRosterId, players, projections, values,
     replacement, waiverLevel, consensus: cons, consensusDates: consR ? { ecr: consR.data.ecrDate, weekly: consR.data.weeklyDate } : null, projStats, stats, logs, signals, lineups, weekStrength, sim, remainingSchedule: Object.fromEntries(remaining.map((r) => [r.week, r.games])), classifications, picks, matchupsThisWeek: thisWeekMatchups, matchupsByWeek: matchupWeeks, healthyStrength, showClasses, extras, nflOpponents: opponents, liveScore, transactions, txNames,
-    fetchedAt: Math.min(rostersR.fetchedAt, leagueR.fetchedAt), stale, warnings, keeperSurplus: new Map(), keeperCost: new Map(), games,
+    fetchedAt: Math.min(rostersR.fetchedAt, leagueR.fetchedAt), stale, warnings, keeperSurplus: new Map(), keeperCost: new Map(), marketTrust: trust, games,
     prevCoach: new Map((prevSchedR?.data ?? []).flatMap((g) => [[g.home, g.homeCoach ?? ""], [g.away, g.awayCoach ?? ""]] as [string, string][]).filter(([, c]) => c)),
     combine: combineR?.data ?? new Map(),
   };
   // Keeper leagues: a player who'd be a cheap keeper next year is worth more in a trade now.
   if (format === "keeper" && !seasonOver) {
     try {
-      const rounds = league.settings.draft_rounds || 15;
+      // The draft's own settings hold the real round count (the league's draft_rounds field is often stale).
+      let rounds = league.settings.draft_rounds || 15, dTeams = teamsCount;
+      let picks: DraftPick[] = [];
+      const drafts = (await sleeper.drafts(league.league_id).catch(() => null))?.data ?? [];
+      const d = drafts.find((x) => x.draft_id === league.draft_id) ?? drafts[0];
+      if (d) {
+        const st = (d.settings ?? {}) as Record<string, unknown>;
+        rounds = Number(st.rounds) || rounds; dTeams = Number(st.teams) || dTeams;
+        picks = (await sleeper.draftPicks(d.draft_id)).data;
+      }
       const rules = keeperRulesFor(getSettings(), league);
-      const picks = league.draft_id ? (await sleeper.draftPicks(league.draft_id)).data : [];
-      for (const t of teams) for (const r of keeperPlan(out, t.rosterId, picks, rules, rounds)) {
+      for (const t of teams) for (const r of keeperPlan(out, t.rosterId, picks, rules, rounds, { teams: dTeams })) {
         if (r.surplus !== null && r.surplus > 0) out.keeperSurplus.set(r.playerId, r.surplus);
         if (r.surplus !== null && r.costRound !== null) out.keeperCost.set(r.playerId, { round: r.costRound, surplus: r.surplus });
       }

@@ -94,12 +94,34 @@ export function keeperPlan(ctx: LeagueContext, rosterId: number, picks: DraftPic
   const team = ctx.teams.find((t) => t.rosterId === rosterId)!;
   const T = ctx.teamsCount;
   const T2 = extra.teams || T;
+  // Market view of next season: a player's dynasty positional rank (FantasyPros via DynastyProcess) read as the points
+  // per game the player at that rank scores in this league. It sees past a lost or injured season (a star in a bad
+  // offence) that this season's numbers alone would punish.
+  const ladder = new Map<string, number[]>();
+  for (const [id, pr] of ctx.projections) {
+    const pos = ctx.players.get(id)?.pos;
+    if (pos && pr.base > 0) (ladder.get(pos) ?? ladder.set(pos, []).get(pos)!).push(pr.base);
+  }
+  for (const l of ladder.values()) l.sort((a, b) => b - a);
+  const marketPpg = (id: string) => {
+    const c = ctx.consensus?.[id], pos = ctx.players.get(id)?.pos;
+    const rank = c?.dp;
+    if (!rank || !pos) return null;
+    const l = ladder.get(pos) ?? [];
+    return l.length ? l[Math.min(l.length - 1, Math.max(0, Math.round(rank) - 1))] : null;
+  };
   const ppgAt = (id: string, yearsAhead: number) => {
     const p = ctx.players.get(id);
     const pr = ctx.projections.get(id);
     if (!p || !pr) return 0;
     const ratio = p.age === null ? 1 : ageMultiplier(p.pos, p.age + yearsAhead) / Math.max(0.01, ageMultiplier(p.pos, p.age));
-    return pr.base * ratio * (ctx.extras.get(id)?.durability ?? 1);
+    const model = pr.base * ratio * (ctx.extras.get(id)?.durability ?? 1);
+    const mkt = marketPpg(id);
+    if (mkt === null) return model;
+    // Half model, half market (less market for return specialists, whose value the experts' scoring can't see).
+    const w = 0.5 * (ctx.marketTrust?.get(id) ?? 1);
+    const am = (y: number) => (p.age === null ? 1 : ageMultiplier(p.pos, p.age + y));
+    return (1 - w) * model + w * mkt * (yearsAhead > 1 ? am(yearsAhead) / Math.max(0.01, am(1)) : 1);
   };
   // Next season, or next two seasons blended (the second counts 60%) when keepers can be held longer.
   const nextPpg = (id: string) => (rules.horizon === 2 ? (ppgAt(id, 1) + 0.6 * ppgAt(id, 2)) / 1.6 : ppgAt(id, 1));
@@ -165,4 +187,12 @@ export function keeperPlan(ctx: LeagueContext, rosterId: number, picks: DraftPic
   rows.sort((a, b) => b.surplus - a.surplus || b.keepScore - a.keepScore);
   rows.filter((r) => r.costRound !== null && r.surplus > 0).slice(0, rules.maxKeepers).forEach((r) => (r.recommended = true));
   return rows;
+}
+
+/** Letter grade for a keep: points per game he'd score next season above what his keep-round pick usually returns. */
+export function keeperGrade(surplus: number | null): string | null {
+  if (surplus === null || !Number.isFinite(surplus)) return null;
+  const g: [number, string][] = [[6, "A+"], [4.5, "A"], [3.5, "A-"], [2.6, "B+"], [1.8, "B"], [1.1, "B-"], [0.5, "C+"], [0, "C"], [-0.7, "C-"], [-1.5, "D+"], [-2.5, "D"]];
+  for (const [t, l] of g) if (surplus >= t) return l;
+  return "F";
 }

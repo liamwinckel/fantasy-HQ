@@ -177,7 +177,10 @@ export const ecrToValue = (ecr: number) => 100 * Math.exp(-(Math.max(1, ecr) - 1
  *   Redraft = 55% model + 45% FantasyPros rest-of-season consensus rank
  * Players the market doesn't cover keep the model value. Rescaled so the league's top asset = 100.
  */
-export function blendWithMarket(values: Map<string, PlayerValue>, players: PlayerLite[], cons: Record<string, Consensus>, superflex: boolean) {
+export function blendWithMarket(values: Map<string, PlayerValue>, players: PlayerLite[], cons: Record<string, Consensus>, superflex: boolean, trust?: Map<string, number>) {
+  // How far the market can be trusted for a player (1 = fully). Expert ranks use standard scoring, so a player who
+  // scores a lot through this league's extra categories (e.g. kick/punt return yards) is mostly valued by the model.
+  const tr = (id: string) => trust?.get(id) ?? 1;
   const pos = new Map(players.map((p) => [p.id, p.pos]));
   const mk = (id: string) => (superflex ? cons[id]?.v2 : cons[id]?.v1);
   const maxMk = Math.max(1, ...players.map((p) => mk(p.id) ?? 0));
@@ -201,16 +204,17 @@ export function blendWithMarket(values: Map<string, PlayerValue>, players: Playe
   const ratios = covered.map((v) => (100 * mk(v.id)!) / maxMk / v.dynastyModel!).sort((a, b) => a - b);
   const k = ratios.length ? ratios[Math.floor(ratios.length / 2)] : 1;
   for (const v of values.values()) {
-    if (mk(v.id) || (v.dynastyModel ?? 0) <= 0) continue;
+    if ((mk(v.id) && tr(v.id) >= 1) || (v.dynastyModel ?? 0) <= 0) continue;
+    if (mk(v.id)) continue; // partly trusted market players are blended below
     const above = covered.filter((c) => c.dynastyModel! >= v.dynastyModel!).map((c) => (100 * mk(c.id)!) / maxMk);
     const cap = above.length ? Math.min(...above) : Infinity;
     setDynasty(v, Math.min(v.dynastyModel! * k, cap));
   }
   for (const v of values.values()) {
-    const m = mk(v.id);
-    if (m) setDynasty(v, (100 * m) / maxMk);
+    const m = mk(v.id), t = tr(v.id);
+    if (m) setDynasty(v, t * ((100 * m) / maxMk) + (1 - t) * (v.dynastyModel ?? 0) * k);
     const r = roVal(v.id);
-    if (r !== null) v.redraft = round1(0.55 * v.redraft + 0.45 * r);
+    if (r !== null) { const w = 0.45 * t; v.redraft = round1((1 - w) * v.redraft + w * r); }
   }
   const maxD = Math.max(1e-9, ...[...values.values()].map((v) => v.dynasty));
   const maxR = Math.max(1e-9, ...[...values.values()].map((v) => v.redraft));
@@ -227,12 +231,14 @@ export function blendWithMarket(values: Map<string, PlayerValue>, players: Playe
 }
 
 /**
- * Keeper leagues: add next-season keeper surplus to trade value. The best keeper bargain in the league adds
- * up to 25 points; values are then rescaled so the top asset = 100.
+ * Keeper leagues: add next season's keeper surplus to trade value, in the same units as the redraft value
+ * (points above replacement): surplus points per game over what his keep-round pick would return × 17 games,
+ * counted at 40% (it's next year, and he has to stay healthy). Values are then rescaled so the top asset = 100.
  */
 export function applyKeeperBonus(values: Map<string, PlayerValue>, surplus: Map<string, number>) {
-  const max = Math.max(1e-9, ...surplus.values());
-  for (const [id, s] of surplus) { const v = values.get(id); if (v) v.redraft = round1(v.redraft + (25 * s) / max); }
+  const maxRaw = Math.max(1e-9, ...[...values.values()].map((v) => v.rosVorp));
+  const perPoint = maxRaw / 100; // raw rest-of-season points per value point
+  for (const [id, s] of surplus) { const v = values.get(id); if (v && s > 0) v.redraft = round1(v.redraft + (s * 17 * 0.4) / perPoint); }
   const maxR = Math.max(1e-9, ...[...values.values()].map((v) => v.redraft));
   for (const v of values.values()) v.redraft = round1((100 * v.redraft) / maxR);
 }

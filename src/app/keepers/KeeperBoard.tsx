@@ -5,7 +5,7 @@ import { useState, type ReactNode } from "react";
 import { PlayerLink } from "@/components/PlayerCard";
 import { Segmented } from "@/components/client";
 import { Card, InfoButton, cx, signed, Info } from "@/components/ui";
-import { modRounds, type KeeperRules } from "@/lib/engine/keepers";
+import { keeperGrade, modRounds, type KeeperRules } from "@/lib/engine/keepers";
 import type { BoardCell, MyKeeperRow } from "@/lib/services/keeperData";
 import type { KeeperRow } from "@/lib/engine/keepers";
 
@@ -126,8 +126,9 @@ export function KeeperBoard({ leagueId, rows, rules, rounds, teams, draftType, s
             <li key={r.playerId} className={cx("grid grid-cols-2 gap-x-3 gap-y-2 px-3 py-3 sm:grid-cols-[minmax(0,1.3fr)_6.5rem_6.5rem_5.5rem_5rem_9rem] sm:items-center sm:px-5", r.planned && "bg-acc-soft")}>
               <div className="col-span-2 min-w-0 sm:col-span-1">
                 <div className="flex min-w-0 items-center gap-2">
+                  <KeepGrade g={keeperGrade(r.surplus)} />
+                  <PlayerLink id={r.playerId} name={r.name} className="min-w-0 truncate font-semibold" />
                   {r.planned && <span className="shrink-0 rounded bg-acc px-1.5 py-0.5 text-[10px] font-extrabold text-on-acc">KEEP</span>}
-                  <PlayerLink id={r.playerId} name={r.name} className="font-semibold" />
                 </div>
                 <div className="truncate text-xs text-muted">{r.pos}{r.team ? ` · ${r.team}` : ""}{r.age ? ` · age ${Math.floor(r.age)}` : ""}{r.yearsKept ? ` · kept ${r.yearsKept} season${r.yearsKept === 1 ? "" : "s"}` : ""}</div>
               </div>
@@ -239,4 +240,11 @@ function DraftBoard({ board, order, rounds, teamName, myRosterId, season }: { bo
       </div>
     </Card>
   );
+}
+
+/** Keep grade chip: green A/B, neutral C, red D/F. */
+function KeepGrade({ g }: { g: string | null }) {
+  if (!g) return <span className="num grid h-7 w-9 shrink-0 place-items-center rounded-lg bg-panel2 text-sm font-extrabold text-muted">—</span>;
+  const tone = g.startsWith("A") ? "bg-pos/20 text-pos" : g.startsWith("B") ? "bg-pos/10 text-pos" : g.startsWith("C") ? "bg-panel2 text-fg" : "bg-neg/15 text-neg";
+  return <span title="Keep grade: next-season value over what that round's pick usually gets" className={cx("num grid h-7 w-9 shrink-0 place-items-center rounded-lg text-sm font-extrabold", tone)}>{g}</span>;
 }
