@@ -3,7 +3,7 @@
 /** Home: one check across every league before kickoff: lineup problems, exposure, and starters working against each other. */
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, CheckCircle2, ChevronDown } from "lucide-react";
+import { CheckCircle2, ChevronDown } from "lucide-react";
 import { useApp } from "@/components/AppData";
 import { cx } from "@/components/ui";
 import { crossLeague, type Issue } from "@/lib/services/crossLeague";
@@ -16,25 +16,48 @@ export function HomeCheck({ ctxs }: { ctxs: LeagueContext[] }) {
   const c = crossLeague(ctxs);
   const high = c.issues.filter((i) => i.severity === "high").length;
   const watch = c.issues.length - high;
-  const [open, setOpen] = useState<boolean | null>(null);
-  const isOpen = open ?? high > 0;
+  // Collapsed by default; tap to expand.
+  const [isOpen, setOpen] = useState(false);
   if (!c.leaguesChecked) return null;
   const go = (leagueId: string) => { selectLeague(leagueId); router.push(`/matchup/?league=${leagueId}`); };
   const byLeague = new Map<string, Issue[]>();
   for (const i of c.issues) (byLeague.get(i.leagueId) ?? byLeague.set(i.leagueId, []).get(i.leagueId)!).push(i);
   const clear = !c.issues.length;
   const summary = clear ? `All clear in ${c.leaguesChecked} league${c.leaguesChecked > 1 ? "s" : ""}` : [high ? `${high} to fix` : null, watch ? `${watch} to watch` : null].filter(Boolean).join(" · ");
+  const leagueIds = ctxs.filter((x) => x.myRosterId !== null && !x.seasonOver).map((x) => x.league.league_id);
   return (
-    <section className="rounded-2xl border border-line bg-panel">
-      <button type="button" onClick={() => setOpen(!isOpen)} aria-expanded={isOpen} className="flex w-full items-center gap-3 px-4 py-3 text-left">
-        {clear ? <CheckCircle2 size={20} className="shrink-0 text-pos" /> : <AlertTriangle size={20} className={cx("shrink-0", high ? "text-neg" : "text-acc-ink")} />}
+    <section className={cx("relative overflow-hidden rounded-2xl border bg-panel", clear ? "border-pos/30" : high ? "border-neg/35" : "border-warn/35")}>
+      {/* state glow */}
+      <span aria-hidden className={cx("pointer-events-none absolute -left-10 -top-16 h-40 w-40 rounded-full blur-3xl", clear ? "bg-pos/15" : high ? "bg-neg/20" : "bg-warn/15")} />
+      <button type="button" onClick={() => setOpen(!isOpen)} aria-expanded={isOpen} className="relative flex w-full items-center gap-3.5 px-4 py-3.5 text-left">
+        <span className="relative grid h-11 w-11 shrink-0 place-items-center">
+          {!clear && <span aria-hidden className={cx("absolute inset-0 rounded-full motion-safe:animate-ping opacity-30", high ? "bg-neg" : "bg-warn")} style={{ animationDuration: "2.4s" }} />}
+          <span className={cx("relative grid h-11 w-11 place-items-center rounded-full border-2", clear ? "border-pos bg-pos/15 text-pos" : high ? "border-neg bg-neg/15 text-neg" : "border-warn bg-warn/15 text-warn")}>
+            {clear ? <CheckCircle2 size={22} /> : <span className="num text-lg font-extrabold leading-none">{high || watch}</span>}
+          </span>
+        </span>
         <div className="min-w-0 flex-1">
-          <div className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-muted">Game-day check</div>
-          <div className="truncate text-sm font-semibold">{summary}{c.conflicts.length ? ` · ${c.conflicts.length} conflict${c.conflicts.length > 1 ? "s" : ""}` : ""}</div>
+          <div className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted">Game-day check</div>
+          <div className="truncate text-[15px] font-bold">{summary}{c.conflicts.length ? <span className="font-semibold text-muted"> · {c.conflicts.length} conflict{c.conflicts.length > 1 ? "s" : ""}</span> : null}</div>
+          {/* one chip per league: colour + how many problems there */}
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {leagueIds.map((id) => {
+              const list = byLeague.get(id) ?? [];
+              const hi = list.filter((i) => i.severity === "high").length;
+              return (
+                <span key={id} className={cx("flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-bold", hi ? "border-neg/40 text-neg" : list.length ? "border-warn/40 text-warn" : "border-line text-muted")}>
+                  <span className="h-1.5 w-1.5 rounded-full" style={{ background: leagueColour(id) }} />
+                  {list.length ? list.length : <CheckCircle2 size={10} />}
+                </span>
+              );
+            })}
+          </div>
         </div>
-        <ChevronDown size={18} className={cx("shrink-0 text-muted transition-transform", isOpen && "rotate-180")} />
+        <span className={cx("grid h-8 w-8 shrink-0 place-items-center rounded-full border border-line bg-panel2 text-muted transition-transform duration-300", isOpen && "rotate-180")}><ChevronDown size={16} /></span>
       </button>
-      {isOpen && (
+      <div className={cx("relative grid transition-[grid-template-rows] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]", isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]")}>
+      <div className="min-h-0 overflow-hidden">
+      {(
         <div className="flex flex-col gap-4 border-t border-line px-4 pb-4 pt-3">
           {[...byLeague].map(([id, list]) => (
             <button key={id} type="button" onClick={() => go(id)} className="flex flex-col gap-1.5 rounded-xl bg-panel2 p-3 text-left">
@@ -73,6 +96,8 @@ export function HomeCheck({ ctxs }: { ctxs: LeagueContext[] }) {
           )}
         </div>
       )}
+      </div>
+      </div>
     </section>
   );
 }
