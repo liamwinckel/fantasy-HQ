@@ -8,7 +8,7 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { reducedMotion } from "./motion";
 
-const HOLD = 350, SLOP = 8, GAP_FALLBACK = 12;
+const HOLD = 350, SLOP = 8;
 const EASE = "cubic-bezier(0.22,1,0.36,1)";
 
 export function Reorder({ items, onReorder, className }: { items: { key: string; node: ReactNode }[]; onReorder: (keys: string[]) => void; className?: string }) {
@@ -22,7 +22,9 @@ export function Reorder({ items, onReorder, className }: { items: { key: string;
     const root = box.current;
     if (!root) return;
     const scroller = document.getElementById("fhq-scroll");
-    type Drag = { i: number; el: HTMLElement; els: HTMLElement[]; tops: number[]; hs: number[]; gap: number; y0: number; s0: number; target: number };
+    // Works for a single column or a grid: each item's slot is its rectangle at drag start; the dragged card lands in
+    // the slot nearest its centre and the others slide into the slots they move to.
+    type Drag = { i: number; el: HTMLElement; els: HTMLElement[]; rects: DOMRect[]; x0: number; y0: number; s0: number; target: number };
     let timer = 0, sx = 0, sy = 0, pending: { i: number; el: HTMLElement } | null = null, drag: Drag | null = null, swallow = false;
 
     const itemOf = (t: EventTarget | null) => {
@@ -37,30 +39,31 @@ export function Reorder({ items, onReorder, className }: { items: { key: string;
     const begin = () => {
       if (!pending) return;
       const els = [...root.querySelectorAll<HTMLElement>("[data-reorder]")];
-      const rects = els.map((e) => e.getBoundingClientRect());
-      const gap = rects.length > 1 ? rects[1].top - rects[0].bottom : GAP_FALLBACK;
-      drag = { i: pending.i, el: pending.el, els, tops: rects.map((r) => r.top), hs: rects.map((r) => r.height), gap, y0: sy, s0: scroller?.scrollTop ?? 0, target: pending.i };
+      drag = { i: pending.i, el: pending.el, els, rects: els.map((e) => e.getBoundingClientRect()), x0: sx, y0: sy, s0: scroller?.scrollTop ?? 0, target: pending.i };
       pending = null;
       drag.el.style.zIndex = "40";
       drag.el.style.boxShadow = "0 18px 40px rgba(0,0,0,.45)";
       style(drag.el, "scale(1.03)", true);
       (navigator as Navigator & { vibrate?: (n: number) => void }).vibrate?.(12);
     };
-    const move = (y: number) => {
+    const slotOf = (j: number, i: number, t: number) => (i < j && j <= t ? j - 1 : t <= j && j < i ? j + 1 : j);
+    const offset = (from: DOMRect, to: DOMRect) => [to.left - from.left, to.top - from.top] as const;
+    const move = (x: number, y: number) => {
       if (!drag) return;
       // Auto-scroll near the top / bottom edge.
       if (scroller) { const r = scroller.getBoundingClientRect(); if (y < r.top + 70) scroller.scrollTop -= 10; else if (y > r.bottom - 90) scroller.scrollTop += 10; }
-      const dy = y - drag.y0 + ((scroller?.scrollTop ?? 0) - drag.s0);
-      style(drag.el, `translateY(${dy}px) scale(1.03)`, false);
-      const mid = drag.tops[drag.i] + drag.hs[drag.i] / 2 + dy;
-      let t = 0;
-      drag.tops.forEach((top, j) => { if (j !== drag!.i && mid > top + drag!.hs[j] / 2) t++; });
+      const dx = x - drag.x0, dy = y - drag.y0 + ((scroller?.scrollTop ?? 0) - drag.s0);
+      style(drag.el, `translate(${dx}px, ${dy}px) scale(1.03)`, false);
+      const me = drag.rects[drag.i];
+      const cx = me.left + me.width / 2 + dx, cy = me.top + me.height / 2 + dy;
+      let t = drag.i, best = Infinity;
+      drag.rects.forEach((r, j) => { const d = Math.hypot(r.left + r.width / 2 - cx, r.top + r.height / 2 - cy); if (d < best) { best = d; t = j; } });
       drag.target = t;
-      const shift = drag.hs[drag.i] + drag.gap;
       drag.els.forEach((e, j) => {
         if (j === drag!.i) return;
-        const by = drag!.i < j && j <= t ? -shift : t <= j && j < drag!.i ? shift : 0;
-        style(e, by ? `translateY(${by}px)` : "", true);
+        const k = slotOf(j, drag!.i, t);
+        const [ox, oy] = offset(drag!.rects[j], drag!.rects[k]);
+        style(e, k !== j ? `translate(${ox}px, ${oy}px)` : "", true);
       });
     };
     const end = () => {
@@ -70,11 +73,9 @@ export function Reorder({ items, onReorder, className }: { items: { key: string;
       const d = drag; drag = null;
       swallow = true; window.setTimeout(() => (swallow = false), 400);
       // Settle into the slot, then commit the new order and clear the transforms in the same frame.
-      let off = 0;
-      if (d.target > d.i) for (let j = d.i + 1; j <= d.target; j++) off += d.hs[j] + d.gap;
-      else for (let j = d.target; j < d.i; j++) off -= d.hs[j] + d.gap;
+      const [ox, oy] = offset(d.rects[d.i], d.rects[d.target]);
       d.el.style.boxShadow = "";
-      style(d.el, `translateY(${off}px)`, true);
+      style(d.el, `translate(${ox}px, ${oy}px)`, true);
       window.setTimeout(() => {
         for (const e of d.els) { e.style.transition = "none"; e.style.transform = ""; e.style.zIndex = ""; }
         if (d.target !== d.i) {
@@ -94,9 +95,9 @@ export function Reorder({ items, onReorder, className }: { items: { key: string;
     const early = (x: number, y: number) => { if (pending && (Math.abs(x - sx) > SLOP || Math.abs(y - sy) > SLOP)) { window.clearTimeout(timer); pending = null; } };
 
     const ts = (e: TouchEvent) => { if (e.touches.length === 1) start(e.touches[0].clientX, e.touches[0].clientY, e.target); };
-    const tm = (e: TouchEvent) => { const t = e.touches[0]; if (drag) { e.preventDefault(); move(t.clientY); } else early(t.clientX, t.clientY); };
+    const tm = (e: TouchEvent) => { const t = e.touches[0]; if (drag) { e.preventDefault(); move(t.clientX, t.clientY); } else early(t.clientX, t.clientY); };
     const md = (e: MouseEvent) => { if (e.button === 0) start(e.clientX, e.clientY, e.target); };
-    const mm = (e: MouseEvent) => { if (drag) { e.preventDefault(); move(e.clientY); } else early(e.clientX, e.clientY); };
+    const mm = (e: MouseEvent) => { if (drag) { e.preventDefault(); move(e.clientX, e.clientY); } else early(e.clientX, e.clientY); };
     const click = (e: MouseEvent) => { if (swallow) { e.preventDefault(); e.stopPropagation(); } };
     const menu = (e: Event) => { if (drag || pending) e.preventDefault(); }; // no long-press callout / context menu
 

@@ -9,6 +9,8 @@ import Link from "next/link";
 import { LeaguePage, useAsync, type LeagueData, Loading } from "@/components/AppData";
 import { Card, Info, Notice, PageHeader, cx } from "@/components/ui";
 import { Segmented } from "@/components/client";
+import { Sheet } from "@/components/Sheet";
+import { Search } from "lucide-react";
 import { PlayerLink } from "@/components/PlayerCard";
 import { formatLabel } from "@/lib/services/portfolio";
 import { sleeper } from "@/lib/sleeper/client";
@@ -64,28 +66,107 @@ function GradeChip({ g, size = "md" }: { g: string; size?: "md" | "lg" }) {
 }
 const ownerName = (d: Loaded, o: string) => d.h.owners.get(o)?.name ?? "Manager";
 
+/** Per-manager trade record from the graded trades: who wins, who loses, what they go after. */
+interface TraderStats { owner: string; n: number; won: number; lost: number; even: number; net: number; picksIn: number; picksOut: number; pos: Map<string, number>; partners: Map<string, number>; best: TradeGrade | null; worst: TradeGrade | null }
+function traderStats(trades: TradeGrade[]): TraderStats[] {
+  const m = new Map<string, TraderStats>();
+  for (const t of trades) {
+    const even = 1 / t.sides.length;
+    for (const s of t.sides) {
+      const x = m.get(s.owner) ?? { owner: s.owner, n: 0, won: 0, lost: 0, even: 0, net: 0, picksIn: 0, picksOut: 0, pos: new Map(), partners: new Map(), best: null, worst: null };
+      x.n++; x.net += s.share - even;
+      if (s.share > even + 0.04) x.won++; else if (s.share < even - 0.04) x.lost++; else x.even++;
+      for (const g of s.got) { if (g.pos === "PICK") x.picksIn++; else x.pos.set(g.pos, (x.pos.get(g.pos) ?? 0) + 1); }
+      for (const o of t.sides) if (o.owner !== s.owner) { x.picksOut += o.got.filter((g) => g.pos === "PICK").length; x.partners.set(o.owner, (x.partners.get(o.owner) ?? 0) + 1); }
+      const sh = (tt: TradeGrade | null) => tt?.sides.find((q) => q.owner === s.owner)?.share ?? 0;
+      if (!x.best || s.share > sh(x.best)) x.best = t;
+      if (!x.worst || s.share < sh(x.worst)) x.worst = t;
+      m.set(s.owner, x);
+    }
+  }
+  return [...m.values()].sort((a, b) => b.n - a.n || b.net - a.net);
+}
+/** One line describing how a manager trades, from what they actually do. */
+function tendency(x: TraderStats, habit: ManagerHabits | undefined) {
+  const tags: string[] = [];
+  const topPos = [...x.pos].sort((a, b) => b[1] - a[1])[0];
+  if (x.picksIn >= 2 && x.picksIn > x.picksOut * 1.5) tags.push("Buys picks");
+  else if (x.picksOut >= 2 && x.picksOut > x.picksIn * 1.5) tags.push("Sells picks to win now");
+  if (topPos && topPos[1] >= 2) tags.push(`Targets ${topPos[0]}s`);
+  if (x.n >= 3 && x.won >= x.n * 0.6) tags.push("Usually wins trades");
+  else if (x.n >= 3 && x.lost >= x.n * 0.6) tags.push("Often overpays");
+  if (habit?.label.includes("Trader")) tags.unshift("Active trader");
+  return tags.slice(0, 3);
+}
+
 function Trades({ d, ctx }: { d: Loaded; ctx: LeagueContext }) {
   const myOwner = ctx.teams.find((t) => t.rosterId === ctx.myRosterId)?.ownerId ?? "";
-  const [who, setWho] = useState<"mine" | "all">("all");
-  const list = d.trades.filter((t) => who === "all" || t.sides.some((s) => s.owner === myOwner));
-  const myRecord = d.trades.filter((t) => t.sides.some((s) => s.owner === myOwner));
-  const won = myRecord.filter((t) => { const me = t.sides.find((s) => s.owner === myOwner)!; return me.share > 1 / t.sides.length + 0.04; }).length;
-  const lost = myRecord.filter((t) => { const me = t.sides.find((s) => s.owner === myOwner)!; return me.share < 1 / t.sides.length - 0.04; }).length;
+  const stats = useMemo(() => traderStats(d.trades), [d.trades]);
+  const seasons = [...new Set(d.trades.map((t) => t.season))];
+  const [q, setQ] = useState("");
+  const [season, setSeason] = useState("all");
+  const [who, setWho] = useState<string>("all"); // "all" | owner id
+  const [kind, setKind] = useState<"all" | "picks" | "lopsided">("all");
+  const [sort, setSort] = useState<"new" | "margin">("new");
+  const [open, setOpen] = useState<string | null>(null);
   if (!d.trades.length) return <Notice>No trades in this league&apos;s history yet.</Notice>;
+  const margin = (t: TradeGrade) => { const sh = t.sides.map((x) => x.share).sort((a, b) => b - a); return sh[0] - (sh[1] ?? 0); };
+  const needle = q.trim().toLowerCase();
+  const list = d.trades
+    .filter((t) => season === "all" || t.season === season)
+    .filter((t) => who === "all" || t.sides.some((x) => x.owner === who))
+    .filter((t) => kind === "all" || (kind === "picks" ? t.sides.some((x) => x.got.some((g) => g.pos === "PICK")) : margin(t) > 0.3))
+    .filter((t) => !needle || t.sides.some((x) => ownerName(d, x.owner).toLowerCase().includes(needle) || x.got.some((g) => g.name.toLowerCase().includes(needle))))
+    .sort((a, b) => (sort === "margin" ? margin(b) - margin(a) : Number(b.season) - Number(a.season) || b.week - a.week));
+  const sel = open ? stats.find((x) => x.owner === open) ?? null : null;
+  const chip = (on: boolean) => cx("shrink-0 rounded-full border px-3 py-1 text-xs font-semibold", on ? "border-acc bg-acc text-on-acc" : "border-line text-muted");
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-muted">{myRecord.length ? <>Your trades: <b className="text-pos">{won} won</b> · <b className="text-neg">{lost} lost</b> · {myRecord.length - won - lost} even</> : "You haven't traded in this league."}</p>
-        <Segmented size="md" label="Whose trades" options={[{ value: "all", label: "All" }, { value: "mine", label: "Mine" }]} value={who} onChange={setWho} />
+      {/* Managers at a glance: tap one for their full trade profile */}
+      <div className="-mx-3 flex gap-2 overflow-x-auto px-3 pb-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 lg:grid-cols-4" data-no-swipe>
+        {stats.map((x) => {
+          const mine = x.owner === myOwner;
+          const tags = tendency(x, d.habits.find((h) => h.owner === x.owner));
+          return (
+            <button key={x.owner} type="button" onClick={() => setOpen(x.owner)} className={cx("flex w-44 shrink-0 flex-col gap-1 rounded-2xl border bg-panel p-3 text-left sm:w-auto", mine ? "border-acc/60" : "border-line")}>
+              <span className={cx("truncate text-sm font-bold", mine && "text-acc-ink")}>{ownerName(d, x.owner)}</span>
+              <span className="num text-xs"><b className="text-pos">{x.won}W</b> · <b className="text-neg">{x.lost}L</b> · <span className="text-muted">{x.even} even</span></span>
+              <span className="flex items-center justify-between text-[11px] text-muted"><span>{x.n} trade{x.n === 1 ? "" : "s"}</span><span className={cx("num font-bold", x.net >= 0 ? "text-pos" : "text-neg")}>{x.net >= 0 ? "+" : ""}{Math.round(x.net * 100)}</span></span>
+              {tags[0] && <span className="truncate text-[10px] font-bold text-acc-ink">{tags[0]}</span>}
+            </button>
+          );
+        })}
       </div>
+
+      {/* Search + filters */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2 rounded-xl border border-line bg-panel px-3"><Search size={15} className="text-muted" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search players or managers" className="h-10 min-w-0 flex-1 bg-transparent text-sm outline-none" />{q && <button type="button" onClick={() => setQ("")} className="text-xs text-muted">Clear</button>}</div>
+        <div className="-mx-3 flex gap-1.5 overflow-x-auto px-3 sm:mx-0 sm:flex-wrap sm:px-0" data-no-swipe>
+          <button type="button" className={chip(who === "all")} onClick={() => setWho("all")}>Everyone</button>
+          {myOwner && <button type="button" className={chip(who === myOwner)} onClick={() => setWho(myOwner)}>Mine</button>}
+          <select value={who !== "all" && who !== myOwner ? who : ""} onChange={(e) => setWho(e.target.value || "all")} className={cx(chip(who !== "all" && who !== myOwner), "max-w-[9.5rem] bg-panel pr-1")} aria-label="Manager">
+            <option value="">Manager…</option>
+            {stats.filter((x) => x.owner !== myOwner).map((x) => <option key={x.owner} value={x.owner}>{ownerName(d, x.owner)}</option>)}
+          </select>
+          <span className="mx-1 w-px shrink-0 bg-line" />
+          <button type="button" className={chip(season === "all")} onClick={() => setSeason("all")}>All seasons</button>
+          {seasons.map((y) => <button key={y} type="button" className={chip(season === y)} onClick={() => setSeason(y)}>{y}</button>)}
+          <span className="mx-1 w-px shrink-0 bg-line" />
+          <button type="button" className={chip(kind === "picks")} onClick={() => setKind(kind === "picks" ? "all" : "picks")}>Picks involved</button>
+          <button type="button" className={chip(kind === "lopsided")} onClick={() => setKind(kind === "lopsided" ? "all" : "lopsided")}>Lopsided</button>
+          <button type="button" className={chip(sort === "margin")} onClick={() => setSort(sort === "margin" ? "new" : "margin")}>{sort === "margin" ? "Biggest wins first" : "Newest first"}</button>
+        </div>
+        <p className="text-xs text-muted">{list.length} of {d.trades.length} trades</p>
+      </div>
+
       {list.map((t) => (
         <Card key={t.id} title={<span>{t.season} · Week {t.week}</span>} right={<span className="text-xs font-bold text-acc-ink">{t.verdict}</span>} pad={false}>
           <div className="grid divide-y divide-line sm:grid-cols-2 sm:divide-x sm:divide-y-0">
-            {t.sides.map((s) => (
-              <div key={s.rosterId} className="flex flex-col gap-2 px-4 py-3">
-                <div className="flex items-center gap-2"><GradeChip g={s.grade} /><span className={cx("min-w-0 flex-1 truncate font-bold", s.owner === myOwner && "text-acc-ink")}>{ownerName(d, s.owner)}</span></div>
+            {t.sides.map((x) => (
+              <div key={x.rosterId} className="flex flex-col gap-2 px-4 py-3">
+                <button type="button" onClick={() => setOpen(x.owner)} className="flex items-center gap-2 text-left"><GradeChip g={x.grade} /><span className={cx("min-w-0 flex-1 truncate font-bold", x.owner === myOwner && "text-acc-ink")}>{ownerName(d, x.owner)}</span></button>
                 <ul className="flex flex-col gap-1 text-sm">
-                  {s.got.map((g) => (
+                  {x.got.map((g) => (
                     <li key={g.id} className="flex items-center gap-2">
                       <span className="w-9 shrink-0 text-[10px] font-bold text-muted">{g.pos}</span>
                       <span className="min-w-0 flex-1 truncate">{g.pos === "PICK" ? g.name : <PlayerLink id={g.id} name={g.name} />}</span>
@@ -93,15 +174,48 @@ function Trades({ d, ctx }: { d: Loaded; ctx: LeagueContext }) {
                       {g.value > 0 && <span className="num w-10 shrink-0 text-right text-xs font-bold">{g.value.toFixed(0)}</span>}
                     </li>
                   ))}
-                  {!s.got.length && <li className="text-muted">Nothing</li>}
+                  {!x.got.length && <li className="text-muted">Nothing</li>}
                 </ul>
-                <div className="text-[11px] text-muted">{s.pts.toFixed(0)} starter pts since{s.value > 0 ? ` · ${s.value.toFixed(0)} value today` : ""}</div>
+                <div className="text-[11px] text-muted">{x.pts.toFixed(0)} starter pts since{x.value > 0 ? ` · ${x.value.toFixed(0)} value today` : ""}</div>
               </div>
             ))}
           </div>
           <div className="border-t border-line px-4 py-2 text-[11px] text-muted">Graded on: {t.basis}</div>
         </Card>
       ))}
+      {!list.length && <Notice>No trades match.</Notice>}
+
+      <Sheet open={!!sel} onClose={() => setOpen(null)} title={sel ? ownerName(d, sel.owner) : ""} sub="Trade profile">
+        {sel && <TraderProfile x={sel} d={d} onShow={() => { setWho(sel.owner); setOpen(null); }} />}
+      </Sheet>
+    </div>
+  );
+}
+
+function TraderProfile({ x, d, onShow }: { x: TraderStats; d: Loaded; onShow: () => void }) {
+  const habit = d.habits.find((h) => h.owner === x.owner);
+  const tags = tendency(x, habit);
+  const pos = [...x.pos].sort((a, b) => b[1] - a[1]);
+  const partners = [...x.partners].sort((a, b) => b[1] - a[1]);
+  const line = (t: TradeGrade | null) => { if (!t) return null; const me = t.sides.find((s) => s.owner === x.owner)!; return <>{t.season} wk {t.week}: got {me.got.map((g) => g.name).join(", ") || "nothing"} <b>({me.grade})</b></>; };
+  return (
+    <div className="flex flex-col gap-4 text-sm">
+      <div className="grid grid-cols-4 gap-2 text-center">
+        {[["Trades", String(x.n)], ["Won", String(x.won)], ["Lost", String(x.lost)], ["Net", `${x.net >= 0 ? "+" : ""}${Math.round(x.net * 100)}`]].map(([l, v]) => (
+          <div key={l} className="rounded-xl bg-panel2 py-2"><div className={cx("num text-lg font-extrabold", l === "Won" && "text-pos", l === "Lost" && "text-neg")}>{v}</div><div className="text-[11px] text-muted">{l}</div></div>
+        ))}
+      </div>
+      {tags.length > 0 && <div className="flex flex-wrap gap-1.5">{tags.map((t) => <span key={t} className="rounded-md bg-acc-soft px-2 py-0.5 text-xs font-bold text-acc-ink">{t}</span>)}</div>}
+      <ul className="flex flex-col gap-1.5 text-muted">
+        {pos.length > 0 && <li>Acquired most: <b className="text-fg">{pos.slice(0, 3).map(([p, n]) => `${p} (${n})`).join(", ")}</b></li>}
+        <li>Picks: <b className="text-fg">{x.picksIn} in · {x.picksOut} out</b></li>
+        {partners.length > 0 && <li>Trades most with: <b className="text-fg">{partners.slice(0, 3).map(([o, n]) => `${ownerName(d, o)} (${n})`).join(", ")}</b></li>}
+        {habit && <li>Waivers: <b className="text-fg">{habit.adds} pickups{habit.faabBids ? ` · $${habit.faabSpent} FAAB` : ""}</b></li>}
+        <li>Best trade: <span className="text-fg">{line(x.best)}</span></li>
+        {x.worst && x.worst !== x.best && <li>Worst trade: <span className="text-fg">{line(x.worst)}</span></li>}
+      </ul>
+      <p className="text-[11px] text-muted">Net = how far ahead of an even split this manager has come out, summed over their trades (+100 would be one trade won outright).</p>
+      <button type="button" onClick={onShow} className="rounded-xl bg-acc py-2.5 font-bold text-on-acc">Show their trades</button>
     </div>
   );
 }

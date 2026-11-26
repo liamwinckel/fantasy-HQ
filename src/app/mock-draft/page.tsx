@@ -5,6 +5,7 @@
  * you drag up and down. Opens straight onto the board; start (or pause) whenever you like. Settings never reset a
  * draft unless you change its structure and choose to.
  */
+import { leagueDraftDefaults } from "@/lib/services/mockDraft";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { LeaguePage, useAsync, type LeagueData } from "@/components/AppData";
 import { Notice, cx } from "@/components/ui";
@@ -35,7 +36,12 @@ function Body({ setup, league, ctx }: LeagueData) {
   const modes = mockModes(ctx);
   const cons = useAsync(() => consensus(), []);
   const keeper = useAsync(() => (ctx.format === "keeper" ? loadKeeperPlan(setup.settings, league, ctx) : Promise.resolve(null)), [setup, league, ctx]);
-  const defRounds = (mode: MockMode) => mode === "rookie" ? Math.max(1, ...ctx.picks.filter((p) => p.season === [...new Set(ctx.picks.map((x) => x.season))].sort()[0]).map((p) => p.round)) : mode === "startup" ? ctx.league.roster_positions.length : ctx.league.settings.draft_rounds || ctx.league.roster_positions.length;
+  // The league's real draft setup on Sleeper (this season's draft, else last season's): type, rounds, your slot.
+  const dd = useAsync(() => leagueDraftDefaults(ctx).catch(() => ({})), [ctx]);
+  const fromLeague = (mode: MockMode) => (dd.data as Awaited<ReturnType<typeof leagueDraftDefaults>> | undefined)?.[mode];
+  const defRounds = (mode: MockMode) => fromLeague(mode)?.rounds || defRoundsFallback(mode);
+  const defType = (mode: MockMode) => fromLeague(mode)?.type ?? defaultType(mode);
+  const defRoundsFallback = (mode: MockMode) => mode === "rookie" ? Math.max(1, ...ctx.picks.filter((p) => p.season === [...new Set(ctx.picks.map((x) => x.season))].sort()[0]).map((p) => p.round)) : mode === "startup" ? ctx.league.roster_positions.length : ctx.league.settings.draft_rounds || ctx.league.roster_positions.length;
   const [cfg, setCfg] = useState<Cfg>(() => ({ mode: modes[0], type: defaultType(modes[0]), rounds: defRounds(modes[0]), slot: 1, speed: "normal", noise: "normal", autoMe: false, keepers: true }));
   const [state, setState] = useState<MockState | null>(null);
   const [started, setStarted] = useState(false);
@@ -43,7 +49,7 @@ function Body({ setup, league, ctx }: LeagueData) {
   const [tick, setTick] = useState(0);
   const [settings, setSettings] = useState(false);
   const rand = useRef(rng(Date.now() % 100000));
-  const ready = cfg.mode === "rookie" ? !!cons.data : cfg.mode === "keeper" ? !!keeper.data : true;
+  const ready = !dd.loading && (cfg.mode === "rookie" ? !!cons.data : cfg.mode === "keeper" ? !!keeper.data : true);
   const rookieMissing = cfg.mode === "rookie" && cons.data && !cons.data.data.rookies?.length;
 
   const build = (c: Cfg) => {
@@ -54,8 +60,9 @@ function Body({ setup, league, ctx }: LeagueData) {
   // Open straight onto the board.
   useEffect(() => {
     if (!ready || state) return;
-    if (rookieMissing && modes.includes("startup")) { const c: Cfg = { ...cfg, mode: "startup", type: "snake", rounds: defRounds("startup") }; setCfg(c); build(c); }
-    else if (!rookieMissing) build(cfg);
+    const withLeague = (m: MockMode): Cfg => ({ ...cfg, mode: m, type: defType(m), rounds: defRounds(m), slot: fromLeague(m)?.slot ?? cfg.slot });
+    if (rookieMissing && modes.includes("startup")) { const c = withLeague("startup"); setCfg(c); build(c); }
+    else if (!rookieMissing) { const c = withLeague(cfg.mode); setCfg(c); build(c); }
   }, [ready, rookieMissing]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const pk = state ? clockPick(state) : null;
@@ -82,14 +89,14 @@ function Body({ setup, league, ctx }: LeagueData) {
     <>
       <Room ctx={ctx} state={state} pk={pk} tick={tick} started={started} paused={paused}
         onStart={() => { setStarted(true); setPaused(false); }} onPause={() => setPaused((p) => !p)} onSettings={() => setSettings(true)} refresh={refresh} />
-      <SettingsSheet open={settings} onClose={() => setSettings(false)} cfg={cfg} modes={modes} teams={ctx.teamsCount} defRounds={defRounds}
+      <SettingsSheet open={settings} onClose={() => setSettings(false)} cfg={cfg} modes={modes} teams={ctx.teamsCount} defRounds={defRounds} defType={defType}
         onLive={(c) => setCfg(c)} onApply={(c) => { setCfg(c); build(c); setSettings(false); }}
         onRestart={() => { build(cfg); setSettings(false); }} />
     </>
   );
 }
 
-function SettingsSheet({ open, onClose, cfg, modes, teams, defRounds, onLive, onApply, onRestart }: { open: boolean; onClose: () => void; cfg: Cfg; modes: MockMode[]; teams: number; defRounds: (m: MockMode) => number; onLive: (c: Cfg) => void; onApply: (c: Cfg) => void; onRestart: () => void }) {
+function SettingsSheet({ open, onClose, cfg, modes, teams, defRounds, defType, onLive, onApply, onRestart }: { open: boolean; onClose: () => void; cfg: Cfg; modes: MockMode[]; teams: number; defRounds: (m: MockMode) => number; defType: (m: MockMode) => DraftType; onLive: (c: Cfg) => void; onApply: (c: Cfg) => void; onRestart: () => void }) {
   const [d, setD] = useState(cfg);
   useEffect(() => { if (open) setD(cfg); }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
   const changed = STRUCT.some((k) => d[k] !== cfg[k]);
@@ -108,7 +115,7 @@ function SettingsSheet({ open, onClose, cfg, modes, teams, defRounds, onLive, on
         <Row label="Computer randomness" sub="how far teams stray from ADP"><Seg v={d.noise} opts={[["low", "By the book"], ["normal", "Realistic"], ["high", "Chaotic"]]} on={(x) => set({ noise: x })} /></Row>
         <Row label="Auto-pick for me" sub="SHS picks your best value"><Seg v={d.autoMe ? "on" : "off"} opts={[["off", "Off"], ["on", "On"]]} on={(x) => set({ autoMe: x === "on" })} /></Row>
         <div className="mt-2 text-[11px] font-bold uppercase tracking-widest text-muted">Format</div>
-        {modes.length > 1 && <Row label="Draft"><Seg v={d.mode} opts={modes.map((m) => [m, MODE_LABEL[m]] as [MockMode, string])} on={(x) => setD({ ...d, mode: x, type: defaultType(x), rounds: defRounds(x) })} /></Row>}
+        {modes.length > 1 && <Row label="Draft"><Seg v={d.mode} opts={modes.map((m) => [m, MODE_LABEL[m]] as [MockMode, string])} on={(x) => setD({ ...d, mode: x, type: defType(x), rounds: defRounds(x) })} /></Row>}
         <Row label="Order"><Seg v={d.type} opts={[["snake", "Snake"], ["linear", "Linear"]]} on={(x) => setD({ ...d, type: x })} /></Row>
         <Row label="Rounds">
           <div className="flex items-center gap-2">
@@ -208,9 +215,13 @@ function Room({ ctx, state, pk, tick, started, paused, onStart, onPause, onSetti
 function PlayerDrawer({ state, tick, canPick, assignLabel, onPick, onProfile, pickNow }: { state: MockState; tick: number; canPick: boolean; assignLabel: string | null; onPick: (id: string) => void; onProfile: (id: string) => void; pickNow: boolean }) {
   const [q, setQ] = useState("");
   const [pos, setPos] = useState("ALL");
-  const [h, setH] = useState(150);
+  // Collapsed = exactly the handle, search and position chips, so nothing below (like the yellow SHS pick) peeks out.
+  const head = useRef<HTMLDivElement>(null);
+  const peek = () => head.current?.offsetHeight ?? 128;
+  const [h, setH] = useState(128);
+  useEffect(() => { setH((x) => (x <= 160 ? peek() : x)); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const drag = useRef<{ y: number; h: number } | null>(null);
-  const snaps = () => [150, Math.round(window.innerHeight * 0.45), Math.round(window.innerHeight * 0.68)];
+  const snaps = () => [peek(), Math.round(window.innerHeight * 0.45), Math.round(window.innerHeight * 0.68)];
   useEffect(() => { document.documentElement.style.setProperty("--drawer", `${h}px`); return () => { document.documentElement.style.removeProperty("--drawer"); }; }, [h]);
   // Your turn or choosing a player: open to half height.
   useEffect(() => { if ((pickNow || assignLabel) && h < 200) setH(snaps()[1]); }, [pickNow, assignLabel]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -230,6 +241,7 @@ function PlayerDrawer({ state, tick, canPick, assignLabel, onPick, onProfile, pi
   const total = useMemo(() => available(state).length, [state, tick]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div className="kb-dock fixed inset-x-0 bottom-[calc(max(env(safe-area-inset-bottom),8px)+70px)] z-30 mx-auto flex max-w-4xl flex-col overflow-hidden rounded-t-2xl border border-b-0 border-line bg-panel shadow-[0_-8px_30px_rgba(0,0,0,0.45)] md:bottom-0" style={{ height: h, transition: drag.current ? "none" : "height 220ms cubic-bezier(.2,.8,.2,1)" }}>
+      <div ref={head} className="shrink-0">
       <div onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} className="shrink-0 cursor-grab touch-none select-none px-4 pb-2 pt-2">
         <div className="mx-auto mb-2 h-1.5 w-10 rounded-full bg-line" />
         <div className="flex items-center justify-between text-sm"><b>{assignLabel ? `Pick ${assignLabel}: choose a player` : pickNow ? "Your pick" : "Players"}</b><span className="text-xs text-muted">{total} available · by ADP</span></div>
@@ -238,6 +250,7 @@ function PlayerDrawer({ state, tick, canPick, assignLabel, onPick, onProfile, pi
         <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-line bg-panel2 px-2"><Search size={14} className="text-muted" /><input value={q} onFocus={() => h < 300 && setH(snaps()[2])} onChange={(e) => setQ(e.target.value)} placeholder="Search players" className="h-9 min-w-0 flex-1 bg-transparent text-sm outline-none" /></div>
       </div>
       <div className="flex shrink-0 gap-1 overflow-x-auto px-3 pb-2" data-no-swipe>{["ALL", ...positions].map((p) => <button key={p} type="button" onClick={() => setPos(p)} className={cx("shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold", pos === p ? "border-acc bg-acc text-on-acc" : "border-line text-muted")}>{p}</button>)}</div>
+      </div>
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         {sugg.length > 0 && !q && (
           <div className="flex gap-2 overflow-x-auto border-y border-line bg-acc-soft/40 px-3 py-2" data-no-swipe>

@@ -46,6 +46,41 @@ export const MODE_LABEL: Record<MockMode, string> = { redraft: "Redraft", keeper
 
 export const defaultType = (mode: MockMode): DraftType => (mode === "rookie" ? "linear" : "snake");
 
+/** The league's own draft setup on Sleeper, per mock mode: type, rounds and (when the order is set) your slot. */
+export interface DraftDefaults { type: DraftType; rounds: number; slot: number | null; season: string; source: "this season" | "last season"; auction: boolean }
+export async function leagueDraftDefaults(ctx: LeagueContext): Promise<Partial<Record<MockMode, DraftDefaults>>> {
+  const { sleeper } = await import("../sleeper/client");
+  const myUser = ctx.teams.find((t) => t.rosterId === ctx.myRosterId)?.ownerId ?? null;
+  const seasons: { draft: import("../sleeper/types").Draft; season: string; current: boolean; first: boolean }[] = [];
+  let league: import("../sleeper/types").League | null = ctx.league;
+  for (let i = 0; i < 4 && league; i++) {
+    const ds = await sleeper.drafts(league.league_id).then((r) => r.data).catch(() => []);
+    const prev: string | null = league.previous_league_id && league.previous_league_id !== "0" ? league.previous_league_id : null;
+    for (const d of ds) seasons.push({ draft: d, season: d.season, current: i === 0, first: !prev });
+    league = prev ? await sleeper.league(prev).then((r) => r.data).catch(() => null) : null;
+  }
+  if (!seasons.length) return {};
+  const firstSeason = Math.min(...seasons.map((x) => Number(x.season)));
+  const toDefaults = (x: (typeof seasons)[number]): DraftDefaults => {
+    const st = (x.draft.settings ?? {}) as Record<string, unknown>;
+    const t = String((x.draft as unknown as { type?: string }).type ?? "snake");
+    const rounds = Number(st.rounds) || 0;
+    const slot = x.current && myUser && x.draft.draft_order ? x.draft.draft_order[myUser] ?? null : null;
+    return { type: t === "linear" ? "linear" : "snake", rounds, slot, season: x.season, source: x.current ? "this season" : "last season", auction: t === "auction" };
+  };
+  // Newest first; a dynasty league's first-season draft is the startup, every later one is a rookie draft.
+  const sorted = [...seasons].sort((a, b) => Number(b.season) - Number(a.season));
+  const out: Partial<Record<MockMode, DraftDefaults>> = {};
+  const rookie = sorted.find((x) => Number(x.season) > firstSeason);
+  const startup = [...seasons].sort((a, b) => Number(a.season) - Number(b.season))[0];
+  if (rookie) out.rookie = toDefaults(rookie);
+  if (startup) out.startup = toDefaults(startup);
+  out.redraft = toDefaults(sorted[0]);
+  out.keeper = toDefaults(sorted[0]);
+  for (const k of Object.keys(out) as MockMode[]) if (!out[k]!.rounds) delete out[k];
+  return out;
+}
+
 export function buildMock(ctx: LeagueContext, mode: MockMode, opts: MockOptions): MockState {
   const type = opts.type ?? defaultType(mode);
   const rp = ctx.league.roster_positions;

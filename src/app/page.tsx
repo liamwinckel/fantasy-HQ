@@ -70,7 +70,7 @@ export default function Home() {
       className={cx("flex h-8 w-9 items-center justify-center rounded-full transition-colors", view === v ? "bg-acc text-on-acc" : "text-muted")}><Icon size={16} /></button>
   );
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 lg:max-w-none">
       <div className="flex items-end justify-between gap-3">
         <div className="min-w-0">
           <div className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-acc-ink">{week ? `Week ${week}` : "This week"}</div>
@@ -84,7 +84,7 @@ export default function Home() {
         </div>
       </div>
       {ready.length > 0 && <HomeCheck ctxs={ready} />}
-      <Reorder key={view} className={cx("flex flex-col", view === "cards" ? "gap-4" : "gap-2")} onReorder={(k) => saveOrder(k)}
+      <Reorder key={view} className={cx("grid grid-cols-1 items-start", view === "cards" ? "gap-4 lg:grid-cols-2 lg:gap-5" : "gap-2 lg:grid-cols-2 lg:gap-x-4 2xl:grid-cols-3")} onReorder={(k) => saveOrder(k)}
         items={leagues.map((l, i) => ({ key: l.league_id, node: view === "cards" ? <LeagueWidget league={l} slot={slots[l.league_id]} index={i} /> : <LeagueStrip league={l} slot={slots[l.league_id]} index={i} /> }))} />
     </div>
   );
