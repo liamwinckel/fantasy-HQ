@@ -1,0 +1,1404 @@
+CM
+Cash Money Heroes League
+CASH MONEY HEROES LEAGUE · KEEPER · 19 ROUNDS × 10 TEAMS
+KEEPER PLANNER
+KEEPER RULES
+i
+Keepers per team
+−
+5
++
+Sleeper setting: 5
+Drafted players cost
+Round he was drafted ± modifier
+Where he'd go next year ± offset
+Whichever of those is earlier
+Waiver / free-agent pickups cost
+A set round
+Where he'd go next year ± offset
+Drafted-round modifier
+−
+1 round
++
+Modifier moves the cost
+Earlier (pricier)
+Later
+Waiver pickups' round
+Round 1 · picks 1–10
+Round 2 · picks 11–20
+Round 3 · picks 21–30
+Round 4 · picks 31–40
+Round 5 · picks 41–50
+Round 6 · picks 51–60
+Round 7 · picks 61–70
+Round 8 · picks 71–80
+Round 9 · picks 81–90
+Round 10 · picks 91–100
+Round 11 · picks 101–110
+Round 12 · picks 111–120
+Round 13 · picks 121–130
+Round 14 · picks 131–140
+Round 15 · picks 141–150
+Round 16 · picks 151–160
+Round 17 · picks 161–170
+Round 18 · picks 171–180
+Round 19 · picks 181–190 (last)
+Extra rounds per season already kept
+−
+None
++
+Max seasons in a row
+−
+No limit
++
+Rounds that can't be kept
+−
+None
++
+Can a keeper use a pick you got in a trade?
+Yes, any pick I own
+Only my own
+e.g. you own two 5th-rounders: can he go in either?
+If you don't own a pick in his round
+Use my next earlier pick
+Use my next later pick
+He can't be kept
+Value him over
+Next season
+Next 2 seasons
+i
+YOUR KEEPERS FOR 2027
+i
+Keeping 5 of 5 · recommended
+KEEP
+Chimere Dike
+WR · TEN · age 25 · kept 1 season
+DRAFTED
+19.10 #190
+as a keeper
+COSTS · WOULD GO
+Rd 18 · Rd 3
+draft rule
+ROUNDS SAVED
++15
+GAIN / GAME
++4.3 pts
+Don't keep
+Keep at 18.04 (your pick)
+Cost: by rules
+Cost: round 1
+Cost: round 2
+Cost: round 3
+Cost: round 4
+Cost: round 5
+Cost: round 6
+Cost: round 7
+Cost: round 8
+Cost: round 9
+Cost: round 10
+Cost: round 11
+Cost: round 12
+Cost: round 13
+Cost: round 14
+Cost: round 15
+Cost: round 16
+Cost: round 17
+Cost: round 18
+Cost: round 19
+KEEP
+Luther Burden III
+WR · CHI · age 23 · kept 1 season
+DRAFTED
+13.10 #130
+as a keeper
+COSTS · WOULD GO
+Rd 12 · Rd 3
+draft rule
+ROUNDS SAVED
++9
+GAIN / GAME
++4.2 pts
+Don't keep
+Keep at 12.04 (your pick)
+Cost: by rules
+Cost: round 1
+Cost: round 2
+Cost: round 3
+Cost: round 4
+Cost: round 5
+Cost: round 6
+Cost: round 7
+Cost: round 8
+Cost: round 9
+Cost: round 10
+Cost: round 11
+Cost: round 12
+Cost: round 13
+Cost: round 14
+Cost: round 15
+Cost: round 16
+Cost: round 17
+Cost: round 18
+Cost: round 19
+KEEP
+Emmett Johnson
+RB · KC · age 23
+DRAFTED
+15.10 #150
+by Belichick Me Outside
+COSTS · WOULD GO
+Rd 14 · Rd 4
+draft rule
+ROUNDS SAVED
++10
+GAIN / GAME
++2.9 pts
+Don't keep
+Keep at 14.04 (your pick)
+Cost: by rules
+Cost: round 1
+Cost: round 2
+Cost: round 3
+Cost: round 4
+Cost: round 5
+Cost: round 6
+Cost: round 7
+Cost: round 8
+Cost: round 9
+Cost: round 10
+Cost: round 11
+Cost: round 12
+Cost: round 13
+Cost: round 14
+Cost: round 15
+Cost: round 16
+Cost: round 17
+Cost: round 18
+Cost: round 19
+KEEP
+Parker Washington
+WR · JAX · age 24
+DRAFTED
+5.10 #50
+by Belichick Me Outside
+COSTS · WOULD GO
+Rd 4 · Rd 2
+draft rule
+ROUNDS SAVED
++2
+GAIN / GAME
++2.0 pts
+Don't keep
+Keep at 4.04 (your pick)
+Cost: by rules
+Cost: round 1
+Cost: round 2
+Cost: round 3
+Cost: round 4
+Cost: round 5
+Cost: round 6
+Cost: round 7
+Cost: round 8
+Cost: round 9
+Cost: round 10
+Cost: round 11
+Cost: round 12
+Cost: round 13
+Cost: round 14
+Cost: round 15
+Cost: round 16
+Cost: round 17
+Cost: round 18
+Cost: round 19
+KEEP
+Malik Washington
+WR · MIA · age 25
+DRAFTED
+14.01 #131
+by Belichick Me Outside
+COSTS · WOULD GO
+Rd 13 · Rd 7
+draft rule
+ROUNDS SAVED
++6
+GAIN / GAME
++1.4 pts
+Don't keep
+Keep at 13.07 (your pick)
+Cost: by rules
+Cost: round 1
+Cost: round 2
+Cost: round 3
+Cost: round 4
+Cost: round 5
+Cost: round 6
+Cost: round 7
+Cost: round 8
+Cost: round 9
+Cost: round 10
+Cost: round 11
+Cost: round 12
+Cost: round 13
+Cost: round 14
+Cost: round 15
+Cost: round 16
+Cost: round 17
+Cost: round 18
+Cost: round 19
+Jordyn Tyson
+WR · NO · age 22
+DRAFTED
+13.04 #124
+by The Louisiana BurrChase
+COSTS · WOULD GO
+Rd 12 · Rd 15
+draft rule
+ROUNDS SAVED
+-3
+GAIN / GAME
+0.0 pts
+Don't keep
+Keep at 12.04 (your pick)
+Cost: by rules
+Cost: round 1
+Cost: round 2
+Cost: round 3
+Cost: round 4
+Cost: round 5
+Cost: round 6
+Cost: round 7
+Cost: round 8
+Cost: round 9
+Cost: round 10
+Cost: round 11
+Cost: round 12
+Cost: round 13
+Cost: round 14
+Cost: round 15
+Cost: round 16
+Cost: round 17
+Cost: round 18
+Cost: round 19
+De'Von Achane
+RB · MIA · age 25 · kept 3 seasons
+DRAFTED
+10.01 #91
+as a keeper
+COSTS · WOULD GO
+Rd 9 · Rd 17
+draft rule
+ROUNDS SAVED
+-8
+GAIN / GAME
+-0.7 pts
+Don't keep
+Keep at 9.07 (your pick)
+Cost: by rules
+Cost: round 1
+Cost: round 2
+Cost: round 3
+Cost: round 4
+Cost: round 5
+Cost: round 6
+Cost: round 7
+Cost: round 8
+Cost: round 9
+Cost: round 10
+Cost: round 11
+Cost: round 12
+Cost: round 13
+Cost: round 14
+Cost: round 15
+Cost: round 16
+Cost: round 17
+Cost: round 18
+Cost: round 19
+TreVeyon Henderson
+RB · NE · age 24
+DRAFTED
+9.06 #86
+by Belichick Me Outside
+COSTS · WOULD GO
+Rd 8 · Rd 19
+draft rule
+ROUNDS SAVED
+-11
+GAIN / GAME
+-1.0 pts
+Don't keep
+Keep at 8.04 (your pick)
+Cost: by rules
+Cost: round 1
+Cost: round 2
+Cost: round 3
+Cost: round 4
+Cost: round 5
+Cost: round 6
+Cost: round 7
+Cost: round 8
+Cost: round 9
+Cost: round 10
+Cost: round 11
+Cost: round 12
+Cost: round 13
+Cost: round 14
+Cost: round 15
+Cost: round 16
+Cost: round 17
+Cost: round 18
+Cost: round 19
+Jordan Mason
+RB · MIN · age 27
+DRAFTED
+7.10 #70
+by Belichick Me Outside
+COSTS · WOULD GO
+Rd 6 · Rd 19
+draft rule
+ROUNDS SAVED
+-13
+GAIN / GAME
+-2.0 pts
+Don't keep
+Keep at 6.02 (via ASwizzleSizzle)
+Keep at 6.04 (your pick)
+Cost: by rules
+Cost: round 1
+Cost: round 2
+Cost: round 3
+Cost: round 4
+Cost: round 5
+Cost: round 6
+Cost: round 7
+Cost: round 8
+Cost: round 9
+Cost: round 10
+Cost: round 11
+Cost: round 12
+Cost: round 13
+Cost: round 14
+Cost: round 15
+Cost: round 16
+Cost: round 17
+Cost: round 18
+Cost: round 19
+George Pickens
+WR · DAL · age 25 · kept 1 season
+DRAFTED
+3.10 #30
+as a keeper
+COSTS · WOULD GO
+Rd 2 · Rd 4
+draft rule
+ROUNDS SAVED
+-2
+GAIN / GAME
+-2.1 pts
+Don't keep
+Keep at 2.04 (your pick)
+Cost: by rules
+Cost: round 1
+Cost: round 2
+Cost: round 3
+Cost: round 4
+Cost: round 5
+Cost: round 6
+Cost: round 7
+Cost: round 8
+Cost: round 9
+Cost: round 10
+Cost: round 11
+Cost: round 12
+Cost: round 13
+Cost: round 14
+Cost: round 15
+Cost: round 16
+Cost: round 17
+Cost: round 18
+Cost: round 19
+Rhamondre Stevenson
+RB · NE · age 28
+DRAFTED
+6.01 #51
+by Belichick Me Outside
+COSTS · WOULD GO
+Rd 5 · Rd 16
+draft rule
+ROUNDS SAVED
+-11
+GAIN / GAME
+-2.4 pts
+Don't keep
+Keep at 5.07 (your pick)
+Cost: by rules
+Cost: round 1
+Cost: round 2
+Cost: round 3
+Cost: round 4
+Cost: round 5
+Cost: round 6
+Cost: round 7
+Cost: round 8
+Cost: round 9
+Cost: round 10
+Cost: round 11
+Cost: round 12
+Cost: round 13
+Cost: round 14
+Cost: round 15
+Cost: round 16
+Cost: round 17
+Cost: round 18
+Cost: round 19
+Myles Price
+WR · MIN · age 24
+DRAFTED
+Undrafted (waivers)
+COSTS · WOULD GO
+Rd 3 · Rd 10
+pickup rule
+ROUNDS SAVED
+-7
+GAIN / GAME
+-3.9 pts
+Don't keep
+Keep at 3.07 (your pick)
+Cost: by rules
+Cost: round 1
+Cost: round 2
+Cost: round 3
+Cost: round 4
+Cost: round 5
+Cost: round 6
+Cost: round 7
+Cost: round 8
+Cost: round 9
+Cost: round 10
+Cost: round 11
+Cost: round 12
+Cost: round 13
+Cost: round 14
+Cost: round 15
+Cost: round 16
+Cost: round 17
+Cost: round 18
+Cost: round 19
+Javonte Williams
+RB · DAL · age 26
+DRAFTED
+1.10 #10
+by Belichick Me Outside
+COSTS · WOULD GO
+Rd 1 · Rd 3
+draft rule · capped
+ROUNDS SAVED
+-2
+GAIN / GAME
+-4.2 pts
+Don't keep
+Keep at 1.07 (your pick)
+Cost: by rules
+Cost: round 1
+Cost: round 2
+Cost: round 3
+Cost: round 4
+Cost: round 5
+Cost: round 6
+Cost: round 7
+Cost: round 8
+Cost: round 9
+Cost: round 10
+Cost: round 11
+Cost: round 12
+Cost: round 13
+Cost: round 14
+Cost: round 15
+Cost: round 16
+Cost: round 17
+Cost: round 18
+Cost: round 19
+Deshaun Watson
+QB · CLE · age 31
+DRAFTED
+Undrafted (waivers)
+COSTS · WOULD GO
+Rd 3 · Rd 12
+pickup rule
+ROUNDS SAVED
+-9
+GAIN / GAME
+-4.2 pts
+Don't keep
+Keep at 3.07 (your pick)
+Cost: by rules
+Cost: round 1
+Cost: round 2
+Cost: round 3
+Cost: round 4
+Cost: round 5
+Cost: round 6
+Cost: round 7
+Cost: round 8
+Cost: round 9
+Cost: round 10
+Cost: round 11
+Cost: round 12
+Cost: round 13
+Cost: round 14
+Cost: round 15
+Cost: round 16
+Cost: round 17
+Cost: round 18
+Cost: round 19
+Barion Brown
+WR · NO · age 23
+DRAFTED
+Undrafted (waivers)
+COSTS · WOULD GO
+Rd 3 · Rd 14
+pickup rule
+ROUNDS SAVED
+-11
+GAIN / GAME
+-4.2 pts
+Don't keep
+Keep at 3.07 (your pick)
+Cost: by rules
+Cost: round 1
+Cost: round 2
+Cost: round 3
+Cost: round 4
+Cost: round 5
+Cost: round 6
+Cost: round 7
+Cost: round 8
+Cost: round 9
+Cost: round 10
+Cost: round 11
+Cost: round 12
+Cost: round 13
+Cost: round 14
+Cost: round 15
+Cost: round 16
+Cost: round 17
+Cost: round 18
+Cost: round 19
+Mike Gesicki
+TE · CIN · age 31
+DRAFTED
+Undrafted (waivers)
+COSTS · WOULD GO
+Rd 3 · Rd 19
+pickup rule
+ROUNDS SAVED
+-16
+GAIN / GAME
+-4.2 pts
+Don't keep
+Keep at 3.07 (your pick)
+Cost: by rules
+Cost: round 1
+Cost: round 2
+Cost: round 3
+Cost: round 4
+Cost: round 5
+Cost: round 6
+Cost: round 7
+Cost: round 8
+Cost: round 9
+Cost: round 10
+Cost: round 11
+Cost: round 12
+Cost: round 13
+Cost: round 14
+Cost: round 15
+Cost: round 16
+Cost: round 17
+Cost: round 18
+Cost: round 19
+Travis Etienne Jr.
+RB · NO · age 27
+DRAFTED
+3.01 #21
+by Belichick Me Outside
+COSTS · WOULD GO
+Rd 2 · Rd 19
+draft rule
+ROUNDS SAVED
+-17
+GAIN / GAME
+-5.4 pts
+Don't keep
+Keep at 2.04 (your pick)
+Cost: by rules
+Cost: round 1
+Cost: round 2
+Cost: round 3
+Cost: round 4
+Cost: round 5
+Cost: round 6
+Cost: round 7
+Cost: round 8
+Cost: round 9
+Cost: round 10
+Cost: round 11
+Cost: round 12
+Cost: round 13
+Cost: round 14
+Cost: round 15
+Cost: round 16
+Cost: round 17
+Cost: round 18
+Cost: round 19
+2027 DRAFT BOARD
+i
+	
+Slot 1
+The. Mighty Ducks
+	
+Slot 2
+The hurts locker
+	
+Slot 3
+The Replacements
+	
+Slot 4
+Lasciare Louts
+	
+Slot 5
+ShadyDealings
+	
+Slot 6
+Coke with Nabers
+	
+Slot 7
+Belichick Me Outside
+	
+Slot 8
+We Are Golden
+	
+Slot 9
+ASwizzleSizzle
+	
+Slot 10
+The Louisiana BurrChase
+
+R1	
+1.01
+	
+1.02
+	
+1.03
+	
+1.04
+RB
+Jahmyr Gibbs
+predicted
+	
+1.05
+	
+1.06
+	
+1.07
+	
+1.08
+	
+1.09
+	
+1.10
+
+R2	
+2.10
+WR
+Puka Nacua
+predicted
+	
+2.09
+	
+2.08
+	
+2.07
+	
+2.06
+	
+2.05
+	
+2.04
+	
+2.03
+	
+2.02
+	
+2.01
+
+R3	
+3.01
+	
+3.02
+	
+3.03
+	
+3.04
+	
+3.05
+	
+3.06
+	
+3.07
+	
+3.08
+	
+3.09
+WR
+CeeDee Lamb
+predicted
+	
+3.10
+
+R4	
+4.10
+	
+4.09
+	
+4.08
+RB
+Bhayshul Tuten
+predicted
+	
+4.07
+	
+4.06
+	
+4.05
+	
+4.04
+WR
+Parker Washington
+your keeper
+	
+4.03
+TE
+Brock Bowers
+predicted
+	
+4.02
+RB
+Kenneth Walker III
+predicted
+	
+4.01
+
+R5	
+5.01
+	
+5.02
+TE
+Harold Fannin Jr.
+predicted
+	
+5.03
+WR
+Chris Olave
+predicted
+	
+5.04
+	
+5.05
+WR
+Jaxon Smith-Njigba
+predicted
+	
+5.06
+RB
+Chuba Hubbard
+predicted
+	
+5.07
+	
+5.08
+	
+5.09
+	
+5.10
+
+R6	
+6.10
+	
+6.09
+	
+6.08
+	
+6.07
+	
+6.06
+	
+6.05
+	
+6.04
+	
+6.03
+	
+6.02
+→ Belichick Me Outside
+	
+6.01
+QB
+Joe Burrow
+predicted
+
+R7	
+7.01
+WR
+Amon-Ra St. Brown
+predicted
+	
+7.02
+TE
+George Kittle
+predicted
+	
+7.03
+	
+7.04
+	
+7.05
+	
+7.06
+	
+7.07
+	
+7.08
+RB
+Tony Pollard
+predicted
+	
+7.09
+RB
+Blake Corum
+predicted
+	
+7.10
+
+R8	
+8.10
+	
+8.09
+	
+8.08
+	
+8.07
+TE
+Colston Loveland
+predicted
+	
+8.06
+	
+8.05
+WR
+Christian Watson
+predicted
+	
+8.04
+	
+8.03
+	
+8.02
+	
+8.01
+
+R9	
+9.01
+	
+9.02
+	
+9.03
+TE
+Dalton Kincaid
+predicted
+	
+9.04
+QB
+Trevor Lawrence
+predicted
+	
+9.05
+	
+9.06
+	
+9.07
+	
+9.08
+	
+9.09
+	
+9.10
+TE
+Trey McBride
+predicted
+
+R10	
+10.10
+TE
+Travis Kelce
+predicted
+	
+10.09
+	
+10.08
+	
+10.07
+	
+10.06
+	
+10.05
+	
+10.04
+	
+10.03
+	
+10.02
+	
+10.01
+
+R11	
+11.01
+	
+11.02
+WR
+Nico Collins
+predicted
+	
+11.03
+	
+11.04
+	
+11.05
+	
+11.06
+	
+11.07
+	
+11.08
+	
+11.09
+	
+11.10
+
+R12	
+12.10
+	
+12.09
+	
+12.08
+	
+12.07
+WR
+KC Concepcion Jr.
+predicted
+	
+12.06
+	
+12.05
+	
+12.04
+WR
+Luther Burden III
+your keeper
+	
+12.03
+WR
+Matthew Golden
+predicted
+	
+12.02
+QB
+Patrick Mahomes
+predicted
+	
+12.01
+
+R13	
+13.01
+	
+13.02
+	
+13.03
+TE
+Isaiah Likely
+predicted
+	
+13.04
+	
+13.05
+	
+13.06
+	
+13.07
+WR
+Malik Washington
+your keeper
+	
+13.08
+	
+13.09
+	
+13.10
+
+R14	
+14.10
+RB
+Jonah Coleman
+predicted
+	
+14.09
+	
+14.08
+QB
+Brock Purdy
+predicted
+	
+14.07
+	
+14.06
+	
+14.05
+	
+14.04
+RB
+Emmett Johnson
+your keeper
+	
+14.03
+RB
+Bucky Irving
+predicted
+	
+14.02
+QB
+Jared Goff
+predicted
+	
+14.01
+
+R15	
+15.01
+	
+15.02
+QB
+Jordan Love
+predicted
+	
+15.03
+	
+15.04
+	
+15.05
+	
+15.06
+	
+15.07
+	
+15.08
+	
+15.09
+	
+15.10
+
+R16	
+16.10
+	
+16.09
+TE
+Brenton Strange
+predicted
+	
+16.08
+	
+16.07
+	
+16.06
+	
+16.05
+	
+16.04
+	
+16.03
+	
+16.02
+	
+16.01
+
+R17	
+17.01
+	
+17.02
+	
+17.03
+	
+17.04
+WR
+Denzel Boston
+predicted
+	
+17.05
+	
+17.06
+	
+17.07
+	
+17.08
+TE
+Chig Okonkwo
+predicted
+	
+17.09
+	
+17.10
+
+R18	
+18.10
+	
+18.09
+	
+18.08
+	
+18.07
+	
+18.06
+	
+18.05
+	
+18.04
+WR
+Chimere Dike
+your keeper
+	
+18.03
+	
+18.02
+	
+18.01
+Show all 19 rounds
+QB
+RB
+WR
+TE
+K
+DEF
+· solid yellow ring = your keeper · dashed = predicted · → = pick traded to that team
+OTHER TEAMS' LIKELY KEEPERS
+i
+ShadyDealings
+Jaxon Smith-Njigba · WR · Rd 5 (5.05) · would go Rd 1
+Lasciare Louts
+Jahmyr Gibbs · RB · Rd 1 (1.04) · would go Rd 1
+KC Concepcion Jr. · WR · Rd 12 (12.07) · would go Rd 4
+Colston Loveland · TE · Rd 8 (8.07) · would go Rd 4
+Trevor Lawrence · QB · Rd 9 (9.04) · would go Rd 4
+Denzel Boston · WR · Rd 17 (17.04) · would go Rd 13
+We Are Golden
+Matthew Golden · WR · Rd 12 (12.03) · would go Rd 1
+Bucky Irving · RB · Rd 14 (14.03) · would go Rd 1
+Brock Bowers · TE · Rd 4 (4.03) · would go Rd 1
+Tony Pollard · RB · Rd 7 (7.08) · would go Rd 5
+Chig Okonkwo · TE · Rd 17 (17.08) · would go Rd 10
+The. Mighty Ducks
+Amon-Ra St. Brown · WR · Rd 7 (7.01) · would go Rd 2
+Jonah Coleman · RB · Rd 14 (14.10) · would go Rd 2
+Puka Nacua · WR · Rd 2 (2.10) · would go Rd 1
+Travis Kelce · TE · Rd 10 (10.10) · would go Rd 3
+The hurts locker
+Nico Collins · WR · Rd 11 (11.02) · would go Rd 5
+Jordan Love · QB · Rd 15 (15.02) · would go Rd 6
+Harold Fannin Jr. · TE · Rd 5 (5.02) · would go Rd 3
+George Kittle · TE · Rd 7 (7.02) · would go Rd 5
+Brenton Strange · TE · Rd 16 (16.09) · would go Rd 10
+ASwizzleSizzle
+Kenneth Walker III · RB · Rd 4 (4.02) · would go Rd 1
+Patrick Mahomes · QB · Rd 12 (12.02) · would go Rd 4
+CeeDee Lamb · WR · Rd 3 (3.09) · would go Rd 2
+Jared Goff · QB · Rd 14 (14.02) · would go Rd 10
+Blake Corum · RB · Rd 7 (7.09) · would go Rd 6
+The Replacements
+Isaiah Likely · TE · Rd 13 (13.03) · would go Rd 3
+Bhayshul Tuten · RB · Rd 4 (4.08) · would go Rd 1
+Brock Purdy · QB · Rd 14 (14.08) · would go Rd 5
+Chris Olave · WR · Rd 5 (5.03) · would go Rd 6
+Dalton Kincaid · TE · Rd 9 (9.03) · would go Rd 9
+The Louisiana BurrChase
+Trey McBride · TE · Rd 9 (9.10) · would go Rd 2
+Joe Burrow · QB · Rd 6 (6.01) · would go Rd 2
+Coke with Nabers
+Chuba Hubbard · RB · Rd 5 (5.06) · would go Rd 2
+Christian Watson · WR · Rd 8 (8.05) · would go Rd 4
+LEAGUE KEEPER VALUES
+i
+Trade targets
+Whole league
+Mine
+ALL
+QB
+RB
+WR
+TE
+PLAYER · TEAM
+RANK
+KEEP
+SAVED
+Bucky Irving
+17.2 pts/g · We Are GoldenLATE KEEP
+RB6
+R14
++13
+goes R1
+Jonah Coleman
+15.0 pts/g · The. Mighty DucksLATE KEEP
+RB11
+R14
++12
+goes R2
+Matthew Golden
+16.0 pts/g · We Are GoldenLATE KEEP
+WR6
+R12
++11
+goes R1
+Isaiah Likely
+11.3 pts/g · The ReplacementsLATE KEEP
+TE4
+R13
++10
+goes R3
+Jordan Love
+19.0 pts/g · The hurts locker LATE KEEP
+QB10
+R15
++9
+goes R6
+Brock Purdy
+20.3 pts/g · The ReplacementsLATE KEEP
+QB3
+R14
++9
+goes R5
+Chig Okonkwo
+7.1 pts/g · We Are GoldenLATE KEEP
+TE18
+R17
++7
+goes R10
+Patrick Mahomes
+19.9 pts/g · ASwizzleSizzleLATE KEEP
+QB4
+R12
++8
+goes R4
+KC Concepcion Jr.
+12.0 pts/g · Lasciare LoutsLATE KEEP
+WR22
+R12
++8
+goes R4
+Brenton Strange
+7.4 pts/g · The hurts locker LATE KEEP
+TE14
+R16
++6
+goes R10
+Travis Kelce
+10.5 pts/g · The. Mighty DucksLATE KEEP
+TE5
+R10
++7
+goes R3
+Trey McBride
+12.6 pts/g · The Louisiana BurrChase
+TE2
+R9
++7
+goes R2
+Denzel Boston
+9.4 pts/g · Lasciare LoutsLATE KEEP
+WR43
+R17
++4
+goes R13
+Nico Collins
+13.2 pts/g · The hurts locker LATE KEEP
+WR16
+R11
++6
+goes R5
+Tyler Shough
+15.0 pts/g · Coke with NabersLATE KEEP
+QB21
+R15
++4
+goes R11
+Jared Goff
+17.4 pts/g · ASwizzleSizzleLATE KEEP
+QB13
+R14
++4
+goes R10
+Amon-Ra St. Brown
+16.2 pts/g · The. Mighty Ducks
+WR5
+R7
++5
+goes R2
+Trevor Lawrence
+19.7 pts/g · Lasciare Louts
+QB6
+R9
++5
+goes R4
+Baker Mayfield
+12.5 pts/g · The. Mighty DucksLATE KEEP
+QB36
+R15
++3
+goes R12
+Jaxon Smith-Njigba
+21.0 pts/g · ShadyDealings
+WR1
+R5
++4
+goes R1
+Joe Burrow
+23.6 pts/g · The Louisiana BurrChase
+QB1
+R6
++4
+goes R2
+Colston Loveland
+9.1 pts/g · Lasciare Louts
+TE7
+R8
++4
+goes R4
+Christian Watson
+14.4 pts/g · Coke with Nabers
+WR11
+R8
++4
+goes R4
+Caleb Douglas
+8.1 pts/g · ASwizzleSizzleLATE KEEP
+WR57
+R18
++1
+goes R17
+Tre Tucker
+8.4 pts/g · ShadyDealingsLATE KEEP
+WR52
+R16
++1
+goes R15
+
+Rank = positional rank by healthy points per game. Keep = round it costs (19 rounds). Tap a team to open a trade with them for that player.
+
+Home
+Matchup
+Rankings
+League

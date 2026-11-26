@@ -1,0 +1,734 @@
+CM
+Cash Money Heroes League
+CASH MONEY HEROES LEAGUE · KEEPER · HALF PPR
+RANKINGS
+i
+Week
+Week 12
+Season
+Weeks 12–17
+Dynasty
+Long term
+PPR
+0
+½
+1
+TE PREMIUM
+None
++.5
++1
+PASS TD
+4 pt
+6 pt
+
+= your league's setting. Changing these re-scores every projection.
+
+SHS AI backtest
+Close calls 54.7% vs experts 52.2% · 11 weeks
++2.5
+All players
+i
+All
+QB
+RB
+WR
+TE
+FLX
+DST
+ECR
+▼
+SHS
+▼
+PLAYER
+▼
+MTCH
+PTS
+▼
+1
+RB1
+=
+Jahmyr Gibbs
+RB · DET vs CHI
+· Lasciare Louts
+C+
+23.2
+10–39
+2
+QB1
+=
+Joe Burrow
+QB · CIN vs NO
+· The Louisiana BurrChase
+B
+22.7
+13–34
+3
+QB2
+=
+Josh Allen
+QB · BUF vs KC
+· ShadyDealings
+C-
+19.1
+9–31
+4
+QB3
+1
+Trevor Lawrence
+QB · JAX vs TEN
+· Lasciare Louts
+A+
+22.0
+12–33
+5
+QB4
+1
+Dak Prescott
+QB · DAL vs PHI
+· Coke with Nabers
+B-
+19.5
+11–30
+6
+WR1
+=
+Ja'Marr Chase
+WR · CIN vs NO
+· The Louisiana BurrChase
+B-
+16.2
+7–28
+7
+QB5
+1
+Jayden Daniels
+QB · WAS vs ARI
+· Lasciare Louts
+A
+21.5
+13–31
+8
+QB6
+1
+Caleb Williams
+QB · CHI vs DET
+· The. Mighty Ducks
+A+
+19.7
+9–32
+9
+QB7
+=
+C.J. Stroud
+QB · HOU vs BAL
+· The Replacements
+C+
+20.8
+12–31
+10
+QB8
+2
+Patrick Mahomes
+QB · KC vs BUF
+· ASwizzleSizzle
+C-
+15.9
+8–25
+11
+RB2
+=
+Christian McCaffrey
+RB · SF vs SEA
+· ShadyDealings
+D+
+16.3
+8–27
+12
+RB3
+1
+Bijan Robinson
+RB · ATL vs MIN
+· The Louisiana BurrChase
+F
+16.3
+7–27
+13
+RB4
+1
+Bucky Irving
+RB · TB vs CAR
+· We Are Golden
+A+
+18.9
+9–30
+14
+RB5
+=
+James Cook III
+RB · BUF vs KC
+· ASwizzleSizzle
+D
+16.5
+7–28
+15
+WR2
+=
+Jaxon Smith-Njigba
+Q
+WR · SEA vs SF
+· ShadyDealings
+A-
+20.4
+10–33
+16
+WR3
+=
+CeeDee Lamb
+WR · DAL vs PHI
+· ASwizzleSizzle
+A-
+16.5
+6–29
+17
+QB9
+1
+Jared Goff
+QB · DET vs CHI
+· ASwizzleSizzle
+A
+19.0
+9–30
+18
+QB10
+2
+Brock Purdy
+Q
+QB · SF vs SEA
+· The Replacements
+F
+14.8
+8–23
+19
+WR4
+=
+Amon-Ra St. Brown
+WR · DET vs CHI
+· The. Mighty Ducks
+C+
+17.4
+7–29
+20
+RB6
+1
+Jonah Coleman
+RB · DEN vs PIT
+· The. Mighty Ducks
+B
+16.3
+6–30
+21
+RB7
+1
+Javonte Williams
+RB · DAL vs PHI
+· You
+D
+17.7
+7–31
+22
+RB9
+1
+Cam Skattebo
+RB · NYG vs IND
+· The Louisiana BurrChase
+A
+18.3
+9–30
+23
+QB11
+2
+Jordan Love
+QB · GB vs LAR
+· The hurts locker
+D
+16.0
+9–24
+24
+RB8
+2
+Chuba Hubbard
+RB · CAR vs TB
+· Coke with Nabers
+F
+14.3
+7–23
+25
+WR5
+=
+Parker Washington
+WR · JAX vs TEN
+· You
+A+
+17.2
+7–29
+26
+RB10
+1
+Chase Brown
+RB · CIN vs NO
+· The. Mighty Ducks
+A+
+12.2
+5–21
+27
+QB12
+2
+Deshaun Watson
+QB · CLE vs LV
+· You
+A-
+15.2
+8–23
+28
+QB13
+2
+Kirk Cousins
+QB · MIN vs ATL
+· The Replacements
+B+
+16.8
+9–26
+29
+QB14
+1
+Tyler Shough
+QB · NO vs CIN
+· Coke with Nabers
+A
+15.7
+7–25
+30
+WR6
+=
+Justin Jefferson
+WR · MIN vs ATL
+· The Louisiana BurrChase
+B+
+15.1
+6–26
+31
+QB15
+1
+J.J. McCarthy
+QB · NYG vs IND
+· Free agent
+B
+16.3
+8–26
+32
+WR7
+1
+George Pickens
+WR · DAL vs PHI
+· You
+A-
+12.2
+4–22
+33
+WR8
+1
+Tee Higgins
+WR · CIN vs NO
+· Lasciare Louts
+B-
+14.0
+6–24
+34
+QB16
+1
+Matthew Stafford
+QB · LAR vs GB
+· The. Mighty Ducks
+D+
+12.9
+6–21
+35
+RB11
+2
+Emmett Johnson
+RB · KC vs BUF
+· You
+B+
+18.4
+7–32
+36
+WR9
+2
+Matthew Golden
+WR · GB vs LAR
+· We Are Golden
+C
+15.5
+7–26
+37
+QB17
+3
+Bo Nix
+QB · DEN vs PIT
+· We Are Golden
+D
+13.5
+6–22
+38
+RB12
+1
+D'Andre Swift
+RB · CHI vs DET
+· The Replacements
+C-
+13.3
+4–25
+39
+RB13
+1
+Kyren Williams
+RB · LAR vs GB
+· ShadyDealings
+A-
+13.2
+5–23
+40
+WR10
+=
+Christian Watson
+OUT
+WR · GB vs LAR
+· Coke with Nabers
+C
+14.0
+5–26
+41
+QB18
+1
+Joe Milton
+QB · PHI vs DAL
+· Free agent
+A+
+13.4
+6–22
+42
+WR11
+1
+Malik Nabers
+WR · NYG vs IND
+· Coke with Nabers
+D
+13.4
+5–24
+43
+QB19
+2
+Jacoby Brissett
+QB · BAL vs HOU
+· Free agent
+C+
+12.1
+5–20
+44
+WR12
+1
+Nico Collins
+WR · HOU vs BAL
+· The hurts locker
+C+
+15.0
+7–25
+45
+QB20
+2
+Bryce Young
+QB · CAR vs TB
+· The Louisiana BurrChase
+D
+13.6
+6–22
+46
+WR13
+2
+Luther Burden III
+WR · CHI vs DET
+· You
+A
+14.4
+5–26
+47
+QB21
+4
+Fernando Mendoza
+QB · LV vs CLE
+· We Are Golden
+C
+11.9
+5–20
+48
+RB14
+=
+Saquon Barkley
+RB · PHI vs DAL
+· We Are Golden
+A+
+14.5
+6–25
+49
+RB15
+2
+Breece Hall
+RB · NYJ vs MIA
+· The hurts locker
+B+
+10.8
+5–18
+50
+WR14
+1
+Chris Olave
+WR · NO vs CIN
+· The Replacements
+C+
+12.9
+6–22
+51
+RB16
+3
+Tony Pollard
+RB · TEN vs JAX
+· We Are Golden
+D+
+12.4
+5–21
+52
+QB22
+2
+Cam Ward
+QB · TEN vs JAX
+· Free agent
+D+
+12.2
+6–20
+53
+QB23
+5
+Geno Smith
+QB · NYJ vs MIA
+· The hurts locker
+D+
+16.9
+9–26
+54
+WR15
+1
+Zay Flowers
+Q
+WR · BAL vs HOU
+· Coke with Nabers
+B+
+13.5
+5–24
+55
+RB17
+4
+Jaylen Warren
+RB · PIT vs DEN
+· The Louisiana BurrChase
+B-
+11.6
+3–22
+56
+QB24
+5
+Baker Mayfield
+QB · TB vs CAR
+· The. Mighty Ducks
+B
+14.4
+7–23
+57
+RB18
+4
+Ashton Jeanty
+RB · LV vs CLE
+· The. Mighty Ducks
+C
+11.3
+5–19
+58
+WR16
+1
+Garrett Wilson
+WR · NYJ vs MIA
+· The Louisiana BurrChase
+D
+13.0
+5–22
+59
+WR17
+1
+DeVonta Smith
+WR · PHI vs DAL
+· Lasciare Louts
+A+
+11.5
+4–20
+60
+RB19
+1
+Derrick Henry
+Q
+RB · BAL vs HOU
+· Coke with Nabers
+B
+13.0
+6–22
+61
+QB25
+5
+Anthony Richardson Sr.
+QB · IND vs NYG
+· Free agent
+B+
+12.3
+6–19
+62
+QB26
+3
+Sam Darnold
+QB · SEA vs SF
+· The. Mighty Ducks
+B-
+14.0
+6–23
+63
+WR18
+4
+Mike Evans
+Q
+WR · SF vs SEA
+· The Replacements
+F
+11.4
+5–19
+64
+RB20
+5
+Jonathan Taylor
+RB · IND vs NYG
+· ASwizzleSizzle
+C-
+14.4
+6–25
+65
+RB21
+5
+Blake Corum
+RB · LAR vs GB
+· ASwizzleSizzle
+A-
+12.7
+6–21
+66
+QB27
+1
+Justin Herbert
+Q
+QB · LAC vs NE
+· Free agent
+C+
+12.3
+7–18
+67
+RB22
+2
+Ollie Gordon II
+RB · MIA vs NYJ
+· The Louisiana BurrChase
+A-
+12.2
+5–21
+68
+WR19
+4
+Drake London
+WR · ATL vs MIN
+· The hurts locker
+F
+11.8
+5–20
+69
+WR20
+4
+Jameson Williams
+WR · DET vs CHI
+· We Are Golden
+C+
+11.8
+4–21
+70
+DEF1
+=
+Minnesota Vikings
+DEF · MIN vs ATL
+· The Louisiana BurrChase
+—
+9.6
+3–18
+71
+QB28
+3
+Michael Penix Jr.
+QB · ATL vs MIN
+· Free agent
+F
+10.7
+4–18
+72
+QB29
+1
+Tommy DeVito
+QB · NE vs LAC
+· Free agent
+C
+12.6
+7–19
+73
+TE1
+1
+Trey McBride
+TE · ARI vs WAS
+· The Louisiana BurrChase
+A+
+11.9
+5–20
+74
+TE2
+1
+Brock Bowers
+Q
+TE · LV vs CLE
+· We Are Golden
+B+
+12.0
+5–21
+75
+QB30
+3
+Kyle McCord
+QB · MIA vs NYJ
+· Free agent
+B+
+12.9
+7–20
+Show more (431 left)
+Home
+Matchup
+Rankings
+League

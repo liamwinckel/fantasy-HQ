@@ -1,0 +1,326 @@
+CM
+Cash Money Heroes League
+CASH MONEY HEROES LEAGUE · KEEPER · HALF PPR
+TRADE FINDER
+i
+TEAM NEEDS
+i
+TL
+The Louisiana BurrChase
+30 trades · 5 yrs · Trader
+QB
+1
+RB
+4
+WR
+5
+TE
+3
+Deals
+A
+ASwizzleSizzle
+14 trades · 5 yrs
+QB
+5
+RB
+1
+WR
+9
+TE
+7
+Deals
+WA
+We Are Golden
+12 trades · 5 yrs
+QB
+4
+RB
+3
+WR
+6
+TE
+2
+Deals
+TM
+The. Mighty Ducks
+13 trades · 5 yrs
+QB
+9
+RB
+7
+WR
+4
+TE
+5
+Deals
+S
+ShadyDealings
+16 trades · 5 yrs
+QB
+2
+RB
+2
+WR
+8
+TE
+10
+Deals
+CW
+Coke with Nabers
+4 trades · 3 yrs
+QB
+7
+RB
+5
+WR
+7
+TE
+8
+Deals
+LL
+Lasciare Louts
+1 trade · 1 yr
+QB
+6
+RB
+8
+WR
+3
+TE
+6
+Deals
+BM
+Belichick Me Outside (you)
+QB
+10
+RB
+9
+WR
+1
+TE
+9
+TR
+The Replacements
+3 trades · 3 yrs
+QB
+3
+RB
+6
+WR
+10
+TE
+1
+Deals
+TH
+The hurts locker
+1 trade · 2 yrs
+QB
+8
+RB
+10
+WR
+2
+TE
+4
+Deals
+SUGGESTED TRADES
+TR
+WITH THE REPLACEMENTS
+YOU GIVE
+Luther Burden III WR
+1
+34
+YOU GET
+Isaiah Likely TE
+=
+25
+Kirk Cousins QB
+=
+12
+
+SHS AI: the evidence favours them (-1.3 value vs the expert view)
+
+Your lineups, rest of season
++5.1/g
+Their lineups
++2.6/g
+Chance they accept
+86%
+› You're 9th of 10 at TE/QB; The Replacements is 1st of 10 there.
+› The Replacements is 10th of 10 at WR, where you're 1st of 10.
+› You spread one asset across two lineup holes.
+Open in Trade Analyzer
+TR
+WITH THE REPLACEMENTS
+YOU GIVE
+Parker Washington WR
+=
+45
+YOU GET
+Brock Purdy QB
+1
+30
+Isaiah Likely TE
+=
+25
+
+SHS AI: the evidence favours them (-3.6 value vs the expert view)
+
+Your lineups, rest of season
++4.6/g
+Their lineups
++3.4/g
+Chance they accept
+76%
+› You're 10th of 10 at QB/TE; The Replacements is 3rd of 10 there.
+› The Replacements is 10th of 10 at WR, where you're 1st of 10.
+› You spread one asset across two lineup holes.
+Open in Trade Analyzer
+A
+WITH ASWIZZLESIZZLE
+YOU GIVE
+George Pickens WR
+2
+25
+YOU GET
+Patrick Mahomes QB
+=
+19
+
+SHS AI: agrees with the experts on this deal
+
+Your lineups, rest of season
++3.8/g
+Their lineups
+-0.5/g
+Chance they accept
+95%
+› You're 10th of 10 at QB; ASwizzleSizzle is 5th of 10 there.
+› ASwizzleSizzle is 9th of 10 at WR, where you're 1st of 10.
+Open in Trade Analyzer
+A
+WITH ASWIZZLESIZZLE
+YOU GIVE
+George Pickens WR
+2
+25
+YOU GET
+Jared Goff QB
+=
+19
+
+SHS AI: agrees with the experts on this deal
+
+Your lineups, rest of season
++3.5/g
+Their lineups
+-0.2/g
+Chance they accept
+95%
+› You're 10th of 10 at QB; ASwizzleSizzle is 5th of 10 there.
+› ASwizzleSizzle is 9th of 10 at WR, where you're 1st of 10.
+Open in Trade Analyzer
+TH
+WITH THE HURTS LOCKER
+YOU GIVE
+Travis Etienne Jr. RB
+1
+9
+Jordan Mason RB
+1
+7
+YOU GET
+Brenton Strange TE
+=
+8
+
+SHS AI: agrees with the experts on this deal
+
+Your lineups, rest of season
++0.9/g
+Their lineups
++2.9/g
+Chance they accept
+95%
+› You're 9th of 10 at TE; The hurts locker is 4th of 10 there.
+› The hurts locker is 10th of 10 at RB, where you're 9th of 10.
+› You consolidate depth into one stronger starter, so your roster spots open up.
+Open in Trade Analyzer
+TH
+WITH THE HURTS LOCKER
+YOU GIVE
+Javonte Williams RB
+=
+44
+Travis Etienne Jr. RB
+1
+9
+YOU GET
+George Kittle TE
+=
+32
+
+SHS AI: agrees with the experts on this deal
+
+Your lineups, rest of season
++0.3/g
+Their lineups
++4.3/g
+Chance they accept
+95%
+› You're 9th of 10 at TE; The hurts locker is 4th of 10 there.
+› The hurts locker is 10th of 10 at RB, where you're 9th of 10.
+› You consolidate depth into one stronger starter, so your roster spots open up.
+Open in Trade Analyzer
+WA
+WITH WE ARE GOLDEN
+YOU GIVE
+Luther Burden III WR
+1
+34
+Jordyn Tyson WR
+2
+18
+YOU GET
+Saquon Barkley RB
+2
+29
+
+SHS AI: agrees with the experts on this deal
+
+Your lineups, rest of season
++1.1/g
+Their lineups
+-0.2/g
+Chance they accept
+95%
+› You're 9th of 10 at RB; We Are Golden is 3rd of 10 there.
+› We Are Golden is 6th of 10 at WR, where you're 1st of 10.
+› You consolidate depth into one stronger starter, so your roster spots open up.
+Open in Trade Analyzer
+WA
+WITH WE ARE GOLDEN
+YOU GIVE
+Luther Burden III WR
+1
+34
+YOU GET
+Tony Pollard RB
+1
+28
+
+SHS AI: agrees with the experts on this deal
+
+Your lineups, rest of season
++0.8/g
+Their lineups
++0.1/g
+Chance they accept
+91%
+› You're 9th of 10 at RB; We Are Golden is 3rd of 10 there.
+› We Are Golden is 6th of 10 at WR, where you're 1st of 10.
+Open in Trade Analyzer
+Home
+Matchup
+Rankings
+League

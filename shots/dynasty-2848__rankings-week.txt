@@ -1,0 +1,732 @@
+TG
+The Great Games
+THE GREAT GAMES · DYNASTY · PPR · 6PT PASS TD
+RANKINGS
+i
+Week
+Week 12
+Season
+Weeks 12–17
+Dynasty
+Long term
+PPR
+0
+½
+1
+TE PREMIUM
+None
++.5
++1
+PASS TD
+4 pt
+6 pt
+
+= your league's setting. Changing these re-scores every projection.
+
+SHS AI backtest
+Close calls 54.4% vs experts 52.5% · 11 weeks
++1.9
+All players
+i
+All
+QB
+RB
+WR
+TE
+FLX
+K
+IDP
+ECR
+▼
+SHS
+▼
+PLAYER
+▼
+MTCH
+PTS
+▼
+1
+QB1
+=
+Joe Burrow
+QB · CIN vs NO
+· Kupp the Bass
+B
+36.2
+23–52
+2
+QB2
+=
+Josh Allen
+QB · BUF vs KC
+· ABCeeDee
+C-
+23.9
+12–37
+3
+RB1
+=
+Jahmyr Gibbs
+RB · DET vs CHI
+· You
+C+
+32.9
+17–52
+4
+QB3
+=
+Trevor Lawrence
+QB · JAX vs TEN
+· You
+A+
+33.2
+20–48
+5
+QB4
+=
+Dak Prescott
+QB · DAL vs PHI
+· ABCeeDee
+B-
+28.6
+16–43
+6
+QB5
+1
+Jayden Daniels
+QB · WAS vs ARI
+· Alec MaWoods
+A
+29.6
+18–42
+7
+QB6
+1
+Caleb Williams
+QB · CHI vs DET
+· Brown Judkins
+A+
+31.4
+18–47
+8
+QB7
+=
+C.J. Stroud
+QB · HOU vs BAL
+· ABCeeDee
+C+
+30.1
+18–43
+9
+QB8
+1
+Patrick Mahomes
+QB · KC vs BUF
+· Alec MaWoods
+C-
+21.3
+11–33
+10
+RB2
+=
+Christian McCaffrey
+RB · SF vs SEA
+· Chasin Chips
+D+
+23.0
+12–36
+11
+WR1
+=
+Ja'Marr Chase
+WR · CIN vs NO
+· Chasin Chips
+B-
+20.8
+10–34
+12
+RB3
+1
+Bijan Robinson
+RB · ATL vs MIN
+· ABCeeDee
+F
+24.3
+13–38
+13
+RB4
+1
+Bucky Irving
+RB · TB vs CAR
+· Chasin Chips
+A+
+26.9
+15–40
+14
+QB9
+1
+Jared Goff
+QB · DET vs CHI
+· Chasin Chips
+A
+30.8
+17–46
+15
+QB10
+2
+Brock Purdy
+Q
+QB · SF vs SEA
+· Alec MaWoods
+F
+22.8
+13–33
+16
+RB5
+=
+James Cook III
+RB · BUF vs KC
+· Alec MaWoods
+D
+24.6
+13–38
+17
+RB6
+1
+Jonah Coleman
+RB · DEN vs PIT
+· You
+B
+23.1
+9–40
+18
+RB7
+1
+Javonte Williams
+RB · DAL vs PHI
+· Chasin Chips
+D
+24.6
+12–39
+19
+QB11
+1
+Jordan Love
+QB · GB vs LAR
+· Chasin Chips
+D
+24.1
+14–35
+20
+QB12
+2
+Deshaun Watson
+QB · CLE vs LV
+· You
+A-
+21.0
+12–31
+21
+RB8
+2
+Chuba Hubbard
+RB · CAR vs TB
+· Alec MaWoods
+F
+20.6
+12–30
+22
+RB9
+1
+Cam Skattebo
+RB · NYG vs IND
+· ABCeeDee
+A
+26.2
+15–39
+23
+WR2
+=
+Jaxon Smith-Njigba
+Q
+WR · SEA vs SF
+· Kupp the Bass
+A-
+26.3
+14–40
+24
+QB13
+=
+Kirk Cousins
+QB · MIN vs ATL
+· Brown Judkins
+B+
+25.1
+15–36
+25
+QB14
+3
+Tyler Shough
+QB · NO vs CIN
+· Alec MaWoods
+A
+25.5
+15–38
+26
+QB15
+1
+J.J. McCarthy
+QB · NYG vs IND
+· Kupp the Bass
+B
+21.9
+12–34
+27
+QB16
+1
+Matthew Stafford
+QB · LAR vs GB
+· Kupp the Bass
+D+
+21.6
+11–34
+28
+WR3
+1
+CeeDee Lamb
+WR · DAL vs PHI
+· ABCeeDee
+A-
+21.3
+9–36
+29
+QB17
+2
+Bo Nix
+QB · DEN vs PIT
+· Alec MaWoods
+D
+19.5
+11–30
+30
+QB18
+1
+Joe Milton
+QB · PHI vs DAL
+· ABCeeDee
+A+
+19.7
+10–31
+31
+QB19
+1
+Jacoby Brissett
+QB · BAL vs HOU
+· ABCeeDee
+C+
+19.4
+10–31
+32
+QB20
+1
+Bryce Young
+QB · CAR vs TB
+· Chasin Chips
+D
+21.3
+11–33
+33
+RB10
+1
+Chase Brown
+RB · CIN vs NO
+· Brown Judkins
+A+
+18.3
+10–28
+34
+QB21
+4
+Fernando Mendoza
+QB · LV vs CLE
+· Chasin Chips
+C
+17.0
+8–28
+35
+WR4
+1
+Amon-Ra St. Brown
+WR · DET vs CHI
+· ABCeeDee
+C+
+22.8
+11–37
+36
+RB11
+2
+Emmett Johnson
+RB · KC vs BUF
+· Alec MaWoods
+B+
+25.6
+10–44
+37
+RB12
+=
+D'Andre Swift
+RB · CHI vs DET
+· Alec MaWoods
+C-
+18.4
+8–31
+38
+QB22
+1
+Cam Ward
+QB · TEN vs JAX
+· Kupp the Bass
+D+
+21.3
+12–32
+39
+QB23
+5
+Geno Smith
+QB · NYJ vs MIA
+· Chasin Chips
+D+
+27.1
+15–41
+40
+QB24
+=
+Baker Mayfield
+QB · TB vs CAR
+· Kupp the Bass
+B
+20.9
+12–32
+41
+QB25
+3
+Anthony Richardson Sr.
+QB · IND vs NYG
+· Chasin Chips
+B+
+18.7
+11–27
+42
+WR5
+1
+Parker Washington
+WR · JAX vs TEN
+· ABCeeDee
+A+
+18.2
+8–31
+43
+QB26
+4
+Sam Darnold
+QB · SEA vs SF
+· ABCeeDee
+B-
+22.6
+11–36
+44
+RB13
+=
+Kyren Williams
+RB · LAR vs GB
+· ABCeeDee
+A-
+18.8
+8–32
+45
+QB27
+=
+Justin Herbert
+Q
+QB · LAC vs NE
+· Brown Judkins
+C+
+19.8
+12–29
+46
+RB14
+=
+Saquon Barkley
+RB · PHI vs DAL
+· Kupp the Bass
+A+
+20.4
+10–32
+47
+WR6
+1
+Justin Jefferson
+WR · MIN vs ATL
+· Brown Judkins
+B+
+19.5
+9–32
+48
+RB15
+3
+Breece Hall
+RB · NYJ vs MIA
+· You
+B+
+16.2
+9–25
+49
+QB28
+2
+Michael Penix Jr.
+QB · ATL vs MIN
+· You
+F
+15.6
+7–25
+50
+QB29
+3
+Tommy DeVito
+QB · NE vs LAC
+· Free agent
+C
+19.7
+12–29
+51
+RB16
+1
+Tony Pollard
+RB · TEN vs JAX
+· Kupp the Bass
+D+
+18.0
+9–28
+52
+RB17
+3
+Jaylen Warren
+RB · PIT vs DEN
+· You
+B-
+16.9
+6–30
+53
+RB18
+4
+Ashton Jeanty
+RB · LV vs CLE
+· Alec MaWoods
+C
+16.8
+9–26
+54
+WR7
+=
+George Pickens
+WR · DAL vs PHI
+· Alec MaWoods
+A-
+15.5
+6–27
+55
+RB19
+4
+Derrick Henry
+Q
+RB · BAL vs HOU
+· Chasin Chips
+B
+18.4
+10–29
+56
+RB20
+4
+Jonathan Taylor
+RB · IND vs NYG
+· ABCeeDee
+C-
+20.9
+11–33
+57
+WR8
+2
+Tee Higgins
+WR · CIN vs NO
+· Chasin Chips
+B-
+17.8
+8–30
+58
+WR9
+1
+Matthew Golden
+WR · GB vs LAR
+· You
+C
+16.5
+7–28
+59
+RB21
+=
+Blake Corum
+RB · LAR vs GB
+· Chasin Chips
+A-
+15.0
+7–24
+60
+WR10
+1
+Christian Watson
+OUT
+WR · GB vs LAR
+· Brown Judkins
+C
+17.3
+6–32
+61
+WR11
+1
+Malik Nabers
+WR · NYG vs IND
+· You
+D
+17.5
+8–29
+62
+QB30
+1
+Kyle McCord
+QB · MIA vs NYJ
+· Free agent
+B+
+17.5
+10–26
+63
+WR12
+1
+Nico Collins
+WR · HOU vs BAL
+· Chasin Chips
+C+
+18.7
+9–30
+64
+WR13
+2
+Luther Burden III
+WR · CHI vs DET
+· You
+A
+17.5
+7–30
+65
+QB31
+1
+Josh Johnson
+QB · ARI vs WAS
+· Free agent
+A-
+0.0
+66
+RB22
+3
+Ollie Gordon II
+RB · MIA vs NYJ
+· You
+A-
+18.0
+9–29
+67
+RB23
+1
+Quinshon Judkins
+RB · CLE vs LV
+· Brown Judkins
+A
+17.7
+9–27
+68
+WR14
+1
+Chris Olave
+WR · NO vs CIN
+· Alec MaWoods
+C+
+17.0
+8–27
+69
+RB24
+2
+Omarion Hampton
+RB · LAC vs NE
+· You
+B-
+14.2
+7–23
+70
+WR15
+1
+Zay Flowers
+Q
+WR · BAL vs HOU
+· Kupp the Bass
+B+
+17.9
+8–30
+71
+RB25
+2
+Rhamondre Stevenson
+RB · NE vs LAC
+· Kupp the Bass
+B
+18.7
+10–29
+72
+TE1
+=
+Trey McBride
+TE · ARI vs WAS
+· You
+A+
+16.0
+8–25
+73
+WR16
+=
+Garrett Wilson
+WR · NYJ vs MIA
+· Alec MaWoods
+D
+16.7
+8–27
+74
+QB32
+1
+Mason Rudolph
+QB · PIT vs DEN
+· Brown Judkins
+C
+18.7
+12–26
+75
+WR17
+=
+DeVonta Smith
+WR · PHI vs DAL
+· Brown Judkins
+A+
+14.8
+6–25
+Show more (1200 left)
+Home
+Matchup
+Rankings
+League

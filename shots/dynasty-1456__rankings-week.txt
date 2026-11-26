@@ -1,0 +1,730 @@
+GG
+Goodell’s Goon Gang
+GOODELL’S GOON GANG · DYNASTY · HALF PPR · 6PT PASS TD · FIRST DOWNS
+RANKINGS
+i
+Week
+Week 12
+Season
+Weeks 12–17
+Dynasty
+Long term
+PPR
+0
+½
+1
+TE PREMIUM
+None
++.5
++1
+PASS TD
+4 pt
+6 pt
+
+= your league's setting. Changing these re-scores every projection.
+
+SHS AI backtest
+Close calls 53.6% vs experts 52.4% · 11 weeks
++1.2
+All players
+i
+All
+QB
+RB
+WR
+TE
+FLX
+ECR
+▼
+SHS
+▼
+PLAYER
+▼
+MTCH
+PTS
+▼
+1
+QB1
+=
+Joe Burrow
+QB · CIN vs NO
+· Njigbas in Paris
+B
+28.4
+16–43
+2
+QB2
+=
+Josh Allen
+QB · BUF vs KC
+· Bunch of Cornballs
+C-
+21.9
+10–36
+3
+QB3
+1
+Trevor Lawrence
+QB · JAX vs TEN
+· McCaffrican Americans
+A+
+27.4
+15–42
+4
+QB4
+1
+Dak Prescott
+QB · DAL vs PHI
+· CJRebs
+B-
+24.2
+12–38
+5
+RB1
+=
+Jahmyr Gibbs
+RB · DET vs CHI
+· Dak to the Future
+C+
+25.8
+12–42
+6
+QB5
+1
+Jayden Daniels
+QB · WAS vs ARI
+· Dak to the Future
+A
+26.7
+16–38
+7
+QB6
+1
+Caleb Williams
+QB · CHI vs DET
+· Njigbas in Paris
+A+
+24.4
+11–40
+8
+QB7
+=
+C.J. Stroud
+QB · HOU vs BAL
+· wifebeatersunite
+C+
+25.9
+15–39
+9
+QB8
+2
+Patrick Mahomes
+QB · KC vs BUF
+· You
+C-
+19.7
+10–32
+10
+RB2
+=
+Christian McCaffrey
+RB · SF vs SEA
+· McCaffrican Americans
+D+
+18.0
+9–29
+11
+QB9
+1
+Jared Goff
+QB · DET vs CHI
+· Dak to the Future
+A
+23.4
+11–38
+12
+QB10
+2
+Brock Purdy
+Q
+QB · SF vs SEA
+· wifebeatersunite
+F
+18.3
+10–28
+13
+RB3
+1
+Bijan Robinson
+RB · ATL vs MIN
+· You
+F
+18.8
+9–31
+14
+WR1
+=
+Ja'Marr Chase
+WR · CIN vs NO
+· MorbidMole
+B-
+16.3
+7–28
+15
+QB11
+2
+Jordan Love
+QB · GB vs LAR
+· Bunch of Cornballs
+D
+20.0
+12–29
+16
+RB4
+1
+Bucky Irving
+RB · TB vs CAR
+· River$harks
+A+
+21.5
+11–33
+17
+RB5
+=
+James Cook III
+RB · BUF vs KC
+· XmasJaxonFlaxonWaxon
+D
+19.4
+9–31
+18
+QB12
+3
+Deshaun Watson
+QB · CLE vs LV
+· You
+A-
+18.5
+10–29
+19
+QB13
+2
+Kirk Cousins
+QB · MIN vs ATL
+· Njigbas in Paris
+B+
+21.0
+11–32
+20
+RB6
+1
+Jonah Coleman
+RB · DEN vs PIT
+· Dak to the Future
+B
+18.0
+6–32
+21
+QB14
+1
+Tyler Shough
+QB · NO vs CIN
+· CJRebs
+A
+19.3
+9–32
+22
+RB7
+1
+Javonte Williams
+RB · DAL vs PHI
+· McCaffrican Americans
+D
+19.9
+9–33
+23
+QB15
+1
+J.J. McCarthy
+QB · NYG vs IND
+· Bunch of Cornballs
+B
+19.6
+10–31
+24
+QB16
+2
+Matthew Stafford
+QB · LAR vs GB
+· River$harks
+D+
+16.3
+8–26
+25
+RB8
+2
+Chuba Hubbard
+RB · CAR vs TB
+· Dak to the Future
+F
+15.8
+8–25
+26
+RB9
+1
+Cam Skattebo
+RB · NYG vs IND
+· Njigbas in Paris
+A
+20.8
+11–32
+27
+QB17
+3
+Bo Nix
+QB · DEN vs PIT
+· XmasJaxonFlaxonWaxon
+D
+16.2
+8–26
+28
+QB18
+1
+Joe Milton
+QB · PHI vs DAL
+· Dak to the Future
+A+
+16.2
+7–27
+29
+WR2
+=
+Jaxon Smith-Njigba
+Q
+WR · SEA vs SF
+· MorbidMole
+A-
+20.5
+10–33
+30
+QB19
+4
+Jacoby Brissett
+QB · BAL vs HOU
+· You
+C+
+14.5
+6–25
+31
+RB10
+2
+Chase Brown
+RB · CIN vs NO
+· McCaffrican Americans
+A+
+14.0
+6–23
+32
+RB11
+2
+Emmett Johnson
+RB · KC vs BUF
+· You
+B+
+19.7
+7–35
+33
+WR3
+1
+CeeDee Lamb
+WR · DAL vs PHI
+· wifebeatersunite
+A-
+16.6
+7–29
+34
+WR4
+1
+Amon-Ra St. Brown
+WR · DET vs CHI
+· CJRebs
+C+
+17.5
+7–30
+35
+QB20
+1
+Bryce Young
+QB · CAR vs TB
+· XmasJaxonFlaxonWaxon
+D
+17.1
+8–28
+36
+QB21
+4
+Fernando Mendoza
+QB · LV vs CLE
+· You
+C
+14.5
+6–25
+37
+QB22
+2
+Cam Ward
+QB · TEN vs JAX
+· McCaffrican Americans
+D+
+15.1
+7–25
+38
+RB12
+1
+D'Andre Swift
+RB · CHI vs DET
+· Dak to the Future
+C-
+14.6
+5–26
+39
+QB23
+5
+Geno Smith
+QB · NYJ vs MIA
+· wifebeatersunite
+D+
+21.4
+11–33
+40
+RB13
+2
+Kyren Williams
+RB · LAR vs GB
+· Bunch of Cornballs
+A-
+14.7
+6–26
+41
+QB24
+5
+Baker Mayfield
+QB · TB vs CAR
+· wifebeatersunite
+B
+17.8
+9–28
+42
+QB25
+4
+Anthony Richardson Sr.
+QB · IND vs NYG
+· McCaffrican Americans
+B+
+15.3
+8–24
+43
+WR5
+1
+Parker Washington
+WR · JAX vs TEN
+· Bunch of Cornballs
+A+
+14.6
+6–26
+44
+QB26
+4
+Sam Darnold
+QB · SEA vs SF
+· You
+B-
+17.8
+8–30
+45
+WR6
+1
+Justin Jefferson
+WR · MIN vs ATL
+· CJRebs
+B+
+15.2
+6–26
+46
+QB27
+1
+Justin Herbert
+Q
+QB · LAC vs NE
+· River$harks
+C+
+15.0
+9–22
+47
+QB28
+2
+Michael Penix Jr.
+QB · ATL vs MIN
+· CJRebs
+F
+13.2
+5–23
+48
+RB14
+=
+Saquon Barkley
+RB · PHI vs DAL
+· wifebeatersunite
+A+
+16.7
+8–27
+49
+RB16
+2
+Tony Pollard
+RB · TEN vs JAX
+· Njigbas in Paris
+D+
+13.8
+6–23
+50
+WR7
+1
+George Pickens
+WR · DAL vs PHI
+· MorbidMole
+A-
+12.3
+4–22
+51
+RB15
+2
+Breece Hall
+RB · NYJ vs MIA
+· XmasJaxonFlaxonWaxon
+B+
+12.2
+6–20
+52
+QB29
+2
+Tommy DeVito
+QB · NE vs LAC
+· Free agent
+C
+15.6
+9–24
+53
+QB30
+2
+Kyle McCord
+QB · MIA vs NYJ
+· Free agent
+B+
+15.7
+8–24
+54
+WR8
+1
+Tee Higgins
+WR · CIN vs NO
+· Njigbas in Paris
+B-
+14.0
+6–24
+55
+RB17
+4
+Jaylen Warren
+RB · PIT vs DEN
+· McCaffrican Americans
+B-
+13.3
+4–25
+56
+RB18
+4
+Ashton Jeanty
+RB · LV vs CLE
+· CJRebs
+C
+12.7
+6–21
+57
+QB31
+=
+Josh Johnson
+QB · ARI vs WAS
+· Free agent
+A-
+0.0
+58
+RB19
+4
+Derrick Henry
+Q
+RB · BAL vs HOU
+· MorbidMole
+B
+14.6
+7–24
+59
+WR9
+1
+Matthew Golden
+WR · GB vs LAR
+· wifebeatersunite
+C
+12.9
+6–22
+60
+RB20
+4
+Jonathan Taylor
+RB · IND vs NYG
+· McCaffrican Americans
+C-
+16.6
+7–27
+61
+RB21
+1
+Blake Corum
+RB · LAR vs GB
+· You
+A-
+12.3
+6–20
+62
+WR10
+1
+Christian Watson
+OUT
+WR · GB vs LAR
+· wifebeatersunite
+C
+14.1
+5–26
+63
+WR11
+2
+Malik Nabers
+WR · NYG vs IND
+· CJRebs
+D
+13.5
+5–24
+64
+WR12
+=
+Nico Collins
+WR · HOU vs BAL
+· XmasJaxonFlaxonWaxon
+C+
+15.1
+7–25
+65
+RB22
+3
+Ollie Gordon II
+RB · MIA vs NYJ
+· You
+A-
+14.1
+6–24
+66
+QB32
+=
+Mason Rudolph
+QB · PIT vs DEN
+· Free agent
+C
+14.1
+8–21
+67
+RB23
+=
+Quinshon Judkins
+RB · CLE vs LV
+· Njigbas in Paris
+A
+13.9
+6–23
+68
+WR13
+2
+Luther Burden III
+WR · CHI vs DET
+· You
+A
+13.5
+5–24
+69
+WR14
+1
+Chris Olave
+WR · NO vs CIN
+· wifebeatersunite
+C+
+12.9
+6–22
+70
+WR15
+1
+Zay Flowers
+Q
+WR · BAL vs HOU
+· You
+B+
+13.6
+5–24
+71
+RB24
+2
+Omarion Hampton
+RB · LAC vs NE
+· River$harks
+B-
+10.7
+4–19
+72
+RB25
+1
+Rhamondre Stevenson
+RB · NE vs LAC
+· River$harks
+B
+14.1
+7–23
+73
+WR16
+=
+Garrett Wilson
+WR · NYJ vs MIA
+· River$harks
+D
+13.0
+5–22
+74
+RB26
+2
+Zach Charbonnet
+RB · SEA vs SF
+· McCaffrican Americans
+C
+10.1
+4–17
+75
+TE1
+1
+Trey McBride
+TE · ARI vs WAS
+· CJRebs
+A+
+12.0
+5–20
+Show more (398 left)
+Home
+Matchup
+Rankings
+League

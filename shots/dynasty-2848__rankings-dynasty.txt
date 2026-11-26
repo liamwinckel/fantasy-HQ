@@ -1,0 +1,583 @@
+TG
+The Great Games
+THE GREAT GAMES · DYNASTY · PPR · 6PT PASS TD
+RANKINGS
+i
+Week
+Week 12
+Season
+Weeks 12–17
+Dynasty
+Long term
+FORMAT
+1QB
+Superflex
+TE PREMIUM
+None
++.5
++1
+
+= your league's setting. Superflex uses FantasyPros' superflex dynasty list. TE premium has no expert list, so TEs are raised by how much the premium adds to their scoring (more catches, bigger boost).
+
+All players
+i
+All
+QB
+RB
+WR
+TE
+FLX
+K
+IDP
+Picks
+ECR
+▼
+SHS
+▼
+PLAYER
+▼
+VALUE
+▼
+1
+QB1
+=
+Josh Allen
+QB · BUF
+· ABCeeDee
+100
+2
+WR1
+=
+Jaxon Smith-Njigba
+Q
+WR · SEA
+· Kupp the Bass
+90
+3
+WR2
+=
+Ja'Marr Chase
+WR · CIN
+· Chasin Chips
+90
+4
+QB3
+=
+Joe Burrow
+QB · CIN
+· Kupp the Bass
+85
+5
+QB4
+=
+Caleb Williams
+QB · CHI
+· Brown Judkins
+83
+6
+QB6
+=
+Lamar Jackson
+IR
+QB · BAL
+· Kupp the Bass
+83
+7
+RB2
+=
+Bijan Robinson
+RB · ATL
+· ABCeeDee
+80
+8
+QB9
+=
+Patrick Mahomes
+QB · KC
+· Alec MaWoods
+79
+9
+WR5
+=
+CeeDee Lamb
+WR · DAL
+· ABCeeDee
+78
+10
+WR3
+=
+Puka Nacua
+IR
+WR · LAR
+· Kupp the Bass
+76
+11
+WR4
+=
+Amon-Ra St. Brown
+WR · DET
+· ABCeeDee
+76
+12
+RB1
+=
+Jahmyr Gibbs
+RB · DET
+· You
+75
+13
+WR7
+=
+Justin Jefferson
+WR · MIN
+· Brown Judkins
+74
+14
+QB5
+=
+Jayden Daniels
+QB · WAS
+· Alec MaWoods
+70
+15
+QB7
+=
+Trevor Lawrence
+QB · JAX
+· You
+65
+16
+WR6
+=
+Malik Nabers
+WR · NYG
+· You
+64
+17
+QB8
+=
+Brock Purdy
+Q
+QB · SF
+· Alec MaWoods
+62
+18
+QB10
+=
+Jordan Love
+QB · GB
+· Chasin Chips
+62
+19
+QB2
+=
+Drake Maye
+OUT
+QB · NE
+· ABCeeDee
+61
+20
+RB3
+=
+Kenneth Walker III
+OUT
+RB · KC
+· Alec MaWoods
+60
+21
+QB13
+=
+Jalen Hurts
+IR
+QB · PHI
+· You
+58
+22
+WR8
+=
+Drake London
+WR · ATL
+· You
+57
+23
+RB4
+=
+Jeremiyah Love
+IR
+RB · ARI
+· Alec MaWoods
+57
+24
+RB7
+=
+Ashton Jeanty
+RB · LV
+· Alec MaWoods
+55
+25
+RB5
+=
+James Cook III
+RB · BUF
+· Alec MaWoods
+55
+26
+QB14
+=
+Justin Herbert
+Q
+QB · LAC
+· Brown Judkins
+54
+27
+QB16
+=
+C.J. Stroud
+QB · HOU
+· ABCeeDee
+53
+28
+PICK
+1st
+2027 1st · Early
+Kupp the Bass · experts rank it like #29 overall
+52
+29
+PICK
+1st
+2027 1st · Early
+Brown Judkins · experts rank it like #29 overall
+52
+30
+WR9
+=
+Tetairoa McMillan
+Q
+WR · CAR
+· ABCeeDee
+51
+31
+RB6
+=
+Jonathan Taylor
+RB · IND
+· ABCeeDee
+50
+32
+WR10
+=
+Chris Olave
+WR · NO
+· Alec MaWoods
+49
+33
+TE1
+=
+Brock Bowers
+Q
+TE · LV
+· ABCeeDee
+49
+34
+RB9
+=
+Breece Hall
+RB · NYJ
+· You
+47
+35
+QB11
+=
+Dak Prescott
+QB · DAL
+· ABCeeDee
+46
+36
+WR12
+=
+George Pickens
+WR · DAL
+· Alec MaWoods
+45
+37
+TE2
+=
+Trey McBride
+TE · ARI
+· You
+45
+38
+QB12
+=
+Bo Nix
+QB · DEN
+· Alec MaWoods
+44
+39
+WR13
+=
+Zay Flowers
+Q
+WR · BAL
+· Kupp the Bass
+44
+40
+WR19
+=
+Garrett Wilson
+WR · NYJ
+· Alec MaWoods
+44
+41
+WR11
+=
+Nico Collins
+WR · HOU
+· Chasin Chips
+44
+42
+RB8
+=
+De'Von Achane
+IR
+RB · MIA
+· Kupp the Bass
+43
+43
+QB17
+=
+Jaxson Dart
+IR
+QB · NYG
+· You
+38
+44
+WR14
+=
+Luther Burden III
+WR · CHI
+· You
+37
+45
+WR15
+=
+Emeka Egbuka
+WR · TB
+· Alec MaWoods
+37
+46
+WR17
+=
+Carnell Tate
+WR · TEN
+· You
+37
+47
+RB12
+=
+Christian McCaffrey
+RB · SF
+· Chasin Chips
+36
+48
+QB15
+=
+Jared Goff
+QB · DET
+· Chasin Chips
+35
+49
+TE3
+=
+Colston Loveland
+TE · CHI
+· ABCeeDee
+35
+50
+WR16
+=
+Matthew Golden
+WR · GB
+· You
+34
+51
+WR22
+=
+DeVonta Smith
+WR · PHI
+· Brown Judkins
+34
+52
+WR18
+=
+Tee Higgins
+WR · CIN
+· Chasin Chips
+33
+53
+WR21
+=
+Parker Washington
+WR · JAX
+· ABCeeDee
+31
+54
+QB18
+=
+Tyler Shough
+QB · NO
+· Alec MaWoods
+30
+55
+WR20
+=
+Christian Watson
+OUT
+WR · GB
+· Brown Judkins
+29
+56
+WR23
+=
+Rashee Rice
+WR · KC
+· You
+29
+57
+RB10
+=
+Bucky Irving
+RB · TB
+· Chasin Chips
+28
+58
+WR29
+=
+Rome Odunze
+WR · CHI
+· Kupp the Bass
+28
+59
+RB11
+=
+Chase Brown
+RB · CIN
+· Brown Judkins
+28
+60
+TE7
+=
+Sam LaPorta
+TE · DET
+· You
+27
+61
+QB20
+=
+Bryce Young
+QB · CAR
+· Chasin Chips
+27
+62
+TE4
+=
+Tyler Warren
+TE · IND
+· ABCeeDee
+27
+63
+WR24
+=
+Jordyn Tyson
+WR · NO
+· ABCeeDee
+27
+64
+WR32
+=
+A.J. Brown
+D
+WR · NE
+· ABCeeDee
+27
+65
+QB19
+=
+Fernando Mendoza
+QB · LV
+· Chasin Chips
+26
+66
+WR25
+=
+Ladd McConkey
+WR · LAC
+· ABCeeDee
+26
+67
+WR31
+1
+Jaylen Waddle
+WR · DEN
+· You
+25
+68
+RB14
+=
+Bhayshul Tuten
+Q
+RB · JAX
+· Chasin Chips
+24
+69
+RB16
+=
+Omarion Hampton
+RB · LAC
+· You
+23
+70
+PICK
+1st
+2027 1st · Mid
+You · experts rank it like #64 overall
+23
+71
+PICK
+1st
+2027 1st · Mid
+Alec MaWoods · experts rank it like #64 overall
+23
+72
+RB13
+=
+Kyren Williams
+RB · LAR
+· ABCeeDee
+22
+73
+WR28
+=
+Makai Lemon
+WR · PHI
+· Alec MaWoods
+22
+74
+WR27
+1
+KC Concepcion Jr.
+WR · CLE
+· Brown Judkins
+22
+75
+TE5
+=
+Tucker Kraft
+TE · GB
+· Alec MaWoods
+22
+Show more (975 left)
+Home
+Matchup
+Rankings
+League

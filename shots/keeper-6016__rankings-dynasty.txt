@@ -1,0 +1,588 @@
+CM
+Cash Money Heroes League
+CASH MONEY HEROES LEAGUE · KEEPER · HALF PPR
+RANKINGS
+i
+Week
+Week 12
+Season
+Weeks 12–17
+Dynasty
+Long term
+FORMAT
+1QB
+Superflex
+TE PREMIUM
+None
++.5
++1
+
+= your league's setting. Superflex uses FantasyPros' superflex dynasty list. TE premium has no expert list, so TEs are raised by how much the premium adds to their scoring (more catches, bigger boost).
+
+All players
+i
+All
+QB
+RB
+WR
+TE
+FLX
+DST
+Picks
+ECR
+▼
+SHS
+▼
+PLAYER
+▼
+VALUE
+▼
+1
+WR1
+=
+Jaxon Smith-Njigba
+Q
+WR · SEA
+· ShadyDealings
+100
+2
+WR2
+=
+Ja'Marr Chase
+WR · CIN
+· The Louisiana BurrChase
+100
+3
+RB2
+=
+Bijan Robinson
+RB · ATL
+· The Louisiana BurrChase
+93
+4
+WR5
+=
+CeeDee Lamb
+WR · DAL
+· ASwizzleSizzle
+91
+5
+RB1
+=
+Jahmyr Gibbs
+RB · DET
+· Lasciare Louts
+90
+6
+WR4
+=
+Amon-Ra St. Brown
+WR · DET
+· The. Mighty Ducks
+89
+7
+WR3
+=
+Puka Nacua
+IR
+WR · LAR
+· The. Mighty Ducks
+88
+8
+WR7
+=
+Justin Jefferson
+WR · MIN
+· The Louisiana BurrChase
+86
+9
+WR6
+=
+Malik Nabers
+WR · NYG
+· Coke with Nabers
+81
+10
+RB3
+=
+Kenneth Walker III
+OUT
+RB · KC
+· ASwizzleSizzle
+77
+11
+RB4
+=
+Jeremiyah Love
+IR
+RB · ARI
+· The Replacements
+72
+12
+WR8
+=
+Drake London
+WR · ATL
+· The hurts locker
+72
+13
+RB7
+=
+Ashton Jeanty
+RB · LV
+· The. Mighty Ducks
+72
+14
+RB5
+=
+James Cook III
+RB · BUF
+· ASwizzleSizzle
+71
+15
+QB1
+=
+Josh Allen
+QB · BUF
+· ShadyDealings
+69
+16
+WR9
+=
+Tetairoa McMillan
+Q
+WR · CAR
+· The. Mighty Ducks
+68
+17
+RB6
+=
+Jonathan Taylor
+RB · IND
+· ASwizzleSizzle
+67
+18
+WR10
+=
+Chris Olave
+WR · NO
+· The Replacements
+65
+19
+RB9
+=
+Breece Hall
+RB · NYJ
+· The hurts locker
+62
+20
+TE1
+=
+Brock Bowers
+Q
+TE · LV
+· We Are Golden
+61
+21
+WR11
+=
+Nico Collins
+WR · HOU
+· The hurts locker
+60
+22
+WR19
+=
+Garrett Wilson
+WR · NYJ
+· The Louisiana BurrChase
+58
+23
+TE2
+=
+Trey McBride
+TE · ARI
+· The Louisiana BurrChase
+58
+24
+RB8
+=
+De'Von Achane
+IR
+RB · MIA
+· You
+56
+25
+QB2
+=
+Drake Maye
+OUT
+QB · NE
+· We Are Golden
+53
+26
+WR13
+=
+Zay Flowers
+Q
+WR · BAL
+· Coke with Nabers
+50
+27
+WR17
+=
+Carnell Tate
+WR · TEN
+· The Louisiana BurrChase
+49
+28
+WR15
+=
+Emeka Egbuka
+WR · TB
+· We Are Golden
+49
+29
+WR14
+=
+Luther Burden III
+WR · CHI
+· You
+49
+30
+WR12
+=
+George Pickens
+WR · DAL
+· You
+48
+31
+RB12
+=
+Christian McCaffrey
+RB · SF
+· ShadyDealings
+48
+32
+TE3
+=
+Colston Loveland
+TE · CHI
+· Lasciare Louts
+47
+33
+WR22
+=
+DeVonta Smith
+WR · PHI
+· Lasciare Louts
+46
+34
+QB3
+=
+Joe Burrow
+QB · CIN
+· The Louisiana BurrChase
+45
+35
+WR16
+=
+Matthew Golden
+WR · GB
+· We Are Golden
+45
+36
+WR21
+=
+Parker Washington
+WR · JAX
+· You
+41
+37
+QB6
+=
+Lamar Jackson
+IR
+QB · BAL
+· Free agent
+41
+38
+QB9
+=
+Patrick Mahomes
+QB · KC
+· ASwizzleSizzle
+41
+39
+WR20
+=
+Christian Watson
+OUT
+WR · GB
+· Coke with Nabers
+40
+40
+WR18
+=
+Tee Higgins
+WR · CIN
+· Lasciare Louts
+40
+41
+RB10
+=
+Bucky Irving
+RB · TB
+· We Are Golden
+40
+42
+WR23
+=
+Rashee Rice
+WR · KC
+· We Are Golden
+39
+43
+QB4
+=
+Caleb Williams
+QB · CHI
+· The. Mighty Ducks
+38
+44
+RB11
+=
+Chase Brown
+RB · CIN
+· The. Mighty Ducks
+37
+45
+WR29
+=
+Rome Odunze
+WR · CHI
+· ShadyDealings
+37
+46
+WR24
+=
+Jordyn Tyson
+WR · NO
+· You
+36
+47
+TE4
+1
+Tyler Warren
+TE · IND
+· Lasciare Louts
+36
+48
+WR32
+=
+A.J. Brown
+D
+WR · NE
+· We Are Golden
+35
+49
+QB5
+=
+Jayden Daniels
+QB · WAS
+· Lasciare Louts
+35
+50
+WR25
+=
+Ladd McConkey
+WR · LAC
+· ASwizzleSizzle
+35
+51
+TE7
+=
+Sam LaPorta
+TE · DET
+· ASwizzleSizzle
+34
+52
+WR31
+=
+Jaylen Waddle
+WR · DEN
+· Coke with Nabers
+32
+53
+RB13
+=
+Kyren Williams
+RB · LAR
+· ShadyDealings
+32
+54
+RB14
+=
+Bhayshul Tuten
+Q
+RB · JAX
+· The Replacements
+32
+55
+QB7
+=
+Trevor Lawrence
+QB · JAX
+· Lasciare Louts
+31
+56
+RB16
+=
+Omarion Hampton
+RB · LAC
+· The. Mighty Ducks
+30
+57
+TE5
+1
+Tucker Kraft
+TE · GB
+· Coke with Nabers
+30
+58
+RB15
+=
+Quinshon Judkins
+RB · CLE
+· Lasciare Louts
+30
+59
+WR27
+=
+KC Concepcion Jr.
+WR · CLE
+· Lasciare Louts
+30
+60
+WR28
+=
+Makai Lemon
+WR · PHI
+· ASwizzleSizzle
+29
+61
+QB8
+=
+Brock Purdy
+Q
+QB · SF
+· The Replacements
+29
+62
+TE6
+=
+Harold Fannin Jr.
+Q
+TE · CLE
+· The hurts locker
+28
+63
+WR26
+=
+Jameson Williams
+WR · DET
+· We Are Golden
+27
+64
+TE9
+=
+Dalton Kincaid
+Q
+TE · BUF
+· The Replacements
+26
+65
+RB19
+=
+Saquon Barkley
+RB · PHI
+· We Are Golden
+26
+66
+WR30
+=
+Denzel Boston
+Q
+WR · CLE
+· Lasciare Louts
+26
+67
+WR33
+=
+DJ Moore
+WR · BUF
+· Lasciare Louts
+24
+68
+QB13
+=
+Jalen Hurts
+IR
+QB · PHI
+· Free agent
+24
+69
+RB17
+=
+Javonte Williams
+RB · DAL
+· You
+23
+70
+TE10
+=
+Kyle Pitts Sr.
+TE · ATL
+· Free agent
+22
+71
+RB27
+=
+Travis Etienne Jr.
+RB · NO
+· You
+21
+72
+TE8
+=
+Isaiah Likely
+Q
+TE · NYG
+· The Replacements
+21
+73
+QB10
+=
+Jordan Love
+QB · GB
+· The hurts locker
+20
+74
+QB16
+=
+C.J. Stroud
+QB · HOU
+· The Replacements
+20
+75
+WR41
+1
+DK Metcalf
+WR · PIT
+· The Replacements
+19
+Show more (780 left)
+Home
+Matchup
+Rankings
+League

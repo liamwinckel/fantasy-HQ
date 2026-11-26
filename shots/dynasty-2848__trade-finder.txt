@@ -1,0 +1,244 @@
+TG
+The Great Games
+THE GREAT GAMES · DYNASTY · PPR · 6PT PASS TD
+TRADE FINDER
+i
+TEAM NEEDS
+i
+A
+ABCeeDee
+CONTENDER
+5 trades · 4 yrs · Trader
+QB
+1
+RB
+3
+WR
+4
+TE
+1
+Deals
+CC
+Chasin Chips
+CONTENDER
+3 trades · 4 yrs
+QB
+4
+RB
+2
+WR
+5
+TE
+3
+Deals
+AM
+Alec MaWoods
+CONTENDER
+2 trades · 4 yrs
+QB
+2
+RB
+1
+WR
+6
+TE
+5
+Deals
+JO
+Jahmyrical On Ice (you)
+REBUILDER
+QB
+5
+RB
+4
+WR
+3
+TE
+2
+KT
+Kupp the Bass
+REBUILDER
+3 trades · 4 yrs
+QB
+3
+RB
+5
+WR
+2
+TE
+6
+Deals
+BJ
+Brown Judkins
+REBUILDER
+0 trades · 3 yrs · Never trades
+QB
+6
+RB
+6
+WR
+1
+TE
+4
+Deals
+SUGGESTED TRADES
+CC
+WITH CHASIN CHIPS
+YOU GIVE
+Matthew Golden WR
+=
+34
+YOU GET
+Bhayshul Tuten RB
+=
+24
+2027 R1 (late) PICK
+11
+
+SHS AI: agrees with the experts on this deal
+
+Value to you
++2.5
+Value to them
++0.9
+Chance they accept
+95%
+› You're 4th of 6 at RB; Chasin Chips is 2nd of 6 there.
+› Chasin Chips is 5th of 6 at WR, where you're 3rd of 6.
+› Fits both plans: you're a Rebuilder, they're a Contender.
+Open in Trade Analyzer
+AM
+WITH ALEC MAWOODS
+YOU GIVE
+Malik Nabers WR
+=
+64
+Trey McBride TE
+=
+45
+YOU GET
+Brock Purdy QB
+=
+62
+2028 R1 (mid) PICK
+19
+
+SHS AI: the evidence favours them (-9 value vs the expert view)
+
+Value to you
++3.0
+Value to them
++3.6
+Chance they accept
+95%
+› You're 5th of 6 at QB; Alec MaWoods is 2nd of 6 there.
+› Alec MaWoods is 6th of 6 at WR/TE, where you're 3rd of 6.
+› You consolidate depth into one stronger starter, so your roster spots open up.
+› Fits both plans: you're a Rebuilder, they're a Contender.
+Open in Trade Analyzer
+CC
+WITH CHASIN CHIPS
+YOU GIVE
+Trey McBride TE
+=
+45
+YOU GET
+Bucky Irving RB
+=
+28
+2029 R1 (mid) PICK
+17
+
+SHS AI: the evidence favours them (-9 value vs the expert view)
+
+Value to you
++3.5
+Value to them
++2.6
+Chance they accept
+95%
+› You're 4th of 6 at RB; Chasin Chips is 2nd of 6 there.
+› Chasin Chips is 3rd of 6 at TE, where you're 2nd of 6.
+› Fits both plans: you're a Rebuilder, they're a Contender.
+Open in Trade Analyzer
+KT
+WITH KUPP THE BASS
+YOU GIVE
+Sam LaPorta TE
+=
+27
+YOU GET
+Matthew Stafford QB
+=
+12
+2029 R1 (mid) PICK
+17
+
+SHS AI: the evidence favours them (-5.5 value vs the expert view)
+
+Value to you
++2.2
+Value to them
+-2.2
+Chance they accept
+95%
+› You're 5th of 6 at QB; Kupp the Bass is 3rd of 6 there.
+› Kupp the Bass is 6th of 6 at TE, where you're 2nd of 6.
+› Fits both plans: you're a Rebuilder, they're a Rebuilder.
+Open in Trade Analyzer
+KT
+WITH KUPP THE BASS
+YOU GIVE
+Trey McBride TE
+=
+45
+YOU GET
+Baker Mayfield QB
+=
+18
+Cam Ward QB
+=
+13
+2028 R1 (mid) PICK
+19
+
+SHS AI: the evidence favours them (-9 value vs the expert view)
+
+Value to you
+-3.2
+Value to them
++3.2
+Chance they accept
+95%
+› You're 5th of 6 at QB; Kupp the Bass is 3rd of 6 there.
+› Kupp the Bass is 6th of 6 at TE, where you're 2nd of 6.
+› You spread one asset across two lineup holes.
+› Fits both plans: you're a Rebuilder, they're a Rebuilder.
+Open in Trade Analyzer
+AM
+WITH ALEC MAWOODS
+YOU GIVE
+Drake London WR
+=
+57
+YOU GET
+Ashton Jeanty RB
+=
+55
+
+SHS AI: agrees with the experts on this deal
+
+Value to you
+-1.2
+Value to them
++0.8
+Chance they accept
+46%
+› You're 4th of 6 at RB; Alec MaWoods is 1st of 6 there.
+› Alec MaWoods is 6th of 6 at WR, where you're 3rd of 6.
+› Fits both plans: you're a Rebuilder, they're a Contender.
+Open in Trade Analyzer
+Home
+Matchup
+Rankings
+League

@@ -1,0 +1,727 @@
+FB
+Friday Beers
+FRIDAY BEERS · REDRAFT
+ROOKIE REPORT
+i
+HIGHEST-GRADED ROOKIE QB
+Fernando Mendoza
+LV · R1 · #1
+13.0 pts/g over 3 games · score 87
+HIGHEST-GRADED ROOKIE RB
+Jeremiyah Love
+ARI · R1 · #3
+8.0 pts/g over 6 games · score 70
+HIGHEST-GRADED ROOKIE WR
+Carnell Tate
+TEN · R1 · #4
+8.8 pts/g over 8 games · score 83
+HIGHEST-GRADED ROOKIE TE
+Kenyon Sadiq
+NYJ · R1 · #16
+4.4 pts/g over 11 games · score 71
+All rookies
+QB
+RB
+WR
+TE
+2026 CLASS
+i
+Fernando Mendoza
+A
+QB · LV · age 23 · QB #1 by grade
+· R1 · #1
+13.0 pts/g · 3 G · 74% snaps · 505 pass+rush yds · 4 TD
+Free agent
+First-round investment.
+Carnell Tate
+A
+WR · TEN · age 21 · WR #1 by grade
+· R1 · #4
+8.8 pts/g · 8 G · 84% snaps · 471 yds · 2 TD
+Team Fun
+First-round investment.
+KC Concepcion Jr.
+A
+WR · CLE · age 22 · WR #2 by grade
+· R1 · #24
+7.9 pts/g · 10 G · 85% snaps · 501 yds · 2 TD
+Buffalo Big Balls
+First-round investment.
+Makai Lemon
+A
+WR · PHI · age 22 · WR #3 by grade
+· R1 · #20
+5.6 pts/g · 10 G · 90% snaps · 310 yds · 1 TD
+Free agent
+First-round investment.
+Omar Cooper Jr.
+Q
+A
+WR · NYJ · age 23 · WR #4 by grade
+· R1 · #30
+13.2 pts/g · 4 G · 77% snaps · 306 yds · 2 TD
+BigBrownCow
+First-round investment.
+Jordyn Tyson
+A
+WR · NO · age 22 · WR #5 by grade
+· R1 · #8
+5.7 pts/g · 3 G · 48% snaps · 120 yds
+Dirtydars
+First-round investment.
+Kenyon Sadiq
+A
+TE · NYJ · age 21 · TE #1 by grade
+· R1 · #16
+4.4 pts/g · 11 G · 52% snaps · 271 yds · 2 TD
+Free agent
+First-round investment.
+Denzel Boston
+Q
+A
+WR · CLE · age 23 · WR #6 by grade
+· R2 · #39
+8.9 pts/g · 10 G · 87% snaps · 523 yds · 3 TD
+STEEL’in TDs
+Every-down role (87% of snaps lately).
+Jeremiyah Love
+IR
+B
+RB · ARI · age 21 · RB #1 by grade
+· R1 · #3
+8.0 pts/g · 6 G · 38% snaps · 304 scrimmage yds · 2 TD
+Team Fun
+First-round investment.
+Germie Bernard
+B
+WR · PIT · age 23 · WR #7 by grade
+· R2 · #47
+6.5 pts/g · 9 G · 91% snaps · 338 yds · 1 TD
+Team Fun
+Every-down role (91% of snaps lately).
+Antonio Williams
+B
+WR · WAS · age 22 · WR #8 by grade
+· R3 · #71
+7.5 pts/g · 10 G · 85% snaps · 448 yds · 2 TD
+The Wenis Lickers
+Every-down role (85% of snaps lately).
+Eli Raridon
+B
+TE · NE · age 22 · TE #2 by grade
+· R3 · #95
+4.8 pts/g · 9 G · 71% snaps · 231 yds · 2 TD
+Free agent
+Every-down role (71% of snaps lately).
+Jonah Coleman
+B
+RB · DEN · age 23 · RB #2 by grade
+· R4 · #108
+14.9 pts/g · 6 G · 76% snaps · 448 scrimmage yds · 6 TD
+Blue Mountain State
+Every-down role (76% of snaps lately).
+Caleb Douglas
+B
+WR · MIA · age 23 · WR #9 by grade
+· R3 · #75
+9.1 pts/g · 7 G · 78% snaps · 397 yds · 2 TD
+Team Fun
+Every-down role (78% of snaps lately).
+Athan Kaliakmanis
+B
+QB · WAS · age 23 · QB #2 by grade
+· R7 · #223
+11.0 pts/g · 1 G · 89% snaps · 202 pass+rush yds · 1 TD
+Free agent
+Starting.
+Malachi Fields
+B
+WR · NYG · age 23 · WR #10 by grade
+· R3 · #74
+5.6 pts/g · 10 G · 87% snaps · 375 yds · 1 TD
+Free agent
+Every-down role (87% of snaps lately).
+Jadarian Price
+B
+RB · SEA · age 23 · RB #3 by grade
+· R1 · #32
+5.9 pts/g · 6 G · 37% snaps · 299 scrimmage yds · 1 TD
+Dirtydars
+First-round investment.
+Emmett Johnson
+B
+RB · KC · age 23 · RB #4 by grade
+· R5 · #161
+10.7 pts/g · 10 G · 67% snaps · 662 scrimmage yds · 5 TD
+You
+Every-down role (67% of snaps lately).
+Nate Boerkircher
+B
+TE · JAX · age 25 · TE #3 by grade
+· R2 · #56
+4.1 pts/g · 8 G · 51% snaps · 156 yds · 2 TD
+Free agent
+Scoring below his opportunity: due for more.
+Carson Beck
+Q
+B
+QB · ARI · age 24 · QB #3 by grade
+· R3 · #65
+0.4 pts/g · 1 G · 100% snaps · 109 pass+rush yds
+Free agent
+Starting.
+Ja'Kobi Lane
+C
+WR · BAL · age 22 · WR #11 by grade
+· R3 · #80
+3.5 pts/g · 6 G · 62% snaps · 150 yds
+Free agent
+Every-down role (62% of snaps lately).
+Marlin Klein
+C
+TE · HOU · age 24 · TE #4 by grade
+· R2 · #59
+6.3 pts/g · 2 G · 18% snaps · 40 yds · 1 TD
+Free agent
+Part-time role (18% of snaps).
+Cade Klubnik
+C
+QB · NYJ · age 23 · QB #4 by grade
+· R4 · #110
+6.1 pts/g · 1 G · 49% snaps · 163 pass+rush yds
+Free agent
+Jalon Daniels
+C
+QB · TB · age 24 · QB #5 by grade
+· Undrafted
+6.9 pts/g · 5 G · 67% snaps · 624 pass+rush yds · 3 TD
+Free agent
+Scoring below his opportunity: due for more.
+Chris Bell
+C
+WR · MIA · age 22 · WR #12 by grade
+· R3 · #94
+2.7 pts/g · 9 G · 65% snaps · 180 yds
+Free agent
+Every-down role (65% of snaps lately).
+Sam Roush
+C
+TE · CHI · age 23 · TE #5 by grade
+· R3 · #69
+1.5 pts/g · 7 G · 43% snaps · 75 yds
+Free agent
+Scoring below his opportunity: due for more.
+Ty Simpson
+OUT
+C
+QB · LAR · age 23 · QB #6 by grade
+· R1 · #13
+No games yet
+Free agent
+First-round investment.
+Ted Hurst III
+C
+WR · TB · age 22 · WR #13 by grade
+· R3 · #84
+5.4 pts/g · 9 G · 36% snaps · 224 yds · 3 TD
+A Touch of the Downs
+Jack Endries
+C
+TE · CIN · age 22 · TE #6 by grade
+· R7 · #221
+3.4 pts/g · 4 G · 25% snaps · 42 yds · 1 TD
+Free agent
+Part-time role (25% of snaps).
+Eli Stowers
+C
+TE · PHI · age 23 · TE #7 by grade
+· R2 · #54
+2.3 pts/g · 3 G · 16% snaps · 53 yds
+Free agent
+Part-time role (16% of snaps).
+Oscar Delp
+C
+TE · NO · age 23 · TE #8 by grade
+· R3 · #73
+0.7 pts/g · 7 G · 29% snaps · 26 yds
+Free agent
+Part-time role (29% of snaps).
+Kaelon Black
+C
+RB · SF · age 25 · RB #5 by grade
+· R3 · #90
+5.0 pts/g · 10 G · 32% snaps · 388 scrimmage yds · 2 TD
+You
+Scoring below his opportunity: due for more.
+Zavion Thomas
+C
+WR · CHI · age 22 · WR #14 by grade
+· R3 · #89
+2.2 pts/g · 9 G · 17% snaps · 151 yds
+Free agent
+Part-time role (17% of snaps).
+Joe Fagnano
+C
+QB · BAL · age 25 · QB #7 by grade
+· Undrafted
+-0.2 pts/g · 2 G · 88% snaps · 167 pass+rush yds
+Free agent
+Starting.
+Reggie Virgil
+C
+WR · ARI · age 22 · WR #15 by grade
+· R5 · #143
+2.3 pts/g · 3 G · 33% snaps · 54 yds
+Free agent
+Scoring below his opportunity: due for more.
+Zachariah Branch
+Q
+C
+WR · ATL · age 22 · WR #16 by grade
+· R3 · #79
+1.8 pts/g · 8 G · 26% snaps · 72 yds
+Free agent
+Part-time role (26% of snaps).
+Josh Cuevas
+C
+TE · BAL · age 23 · TE #9 by grade
+· R5 · #173
+3.4 pts/g · 9 G · 18% snaps · 179 yds · 1 TD
+Free agent
+Part-time role (18% of snaps).
+Josh Cameron
+C
+WR · JAX · age 23 · WR #17 by grade
+· R6 · #191
+4.9 pts/g · 10 G · 39% snaps · 234 yds · 3 TD
+Free agent
+Usage climbing.
+Mike Washington Jr.
+C
+RB · LV · age 23 · RB #6 by grade
+· R4 · #122
+4.0 pts/g · 11 G · 28% snaps · 355 scrimmage yds · 1 TD
+Free agent
+Part-time role (28% of snaps).
+CJ Daniels
+C
+WR · LAR · age 24 · WR #18 by grade
+· R6 · #197
+2.7 pts/g · 1 G · 61% snaps · 22 yds
+Free agent
+Every-down role (61% of snaps lately).
+De'Zhaun Stribling
+IR
+C
+WR · SF · age 23 · WR #19 by grade
+· R2 · #33
+No games yet
+Free agent
+Injury: IR.
+CJ Donaldson
+D
+RB · NO · age 22 · RB #7 by grade
+· Undrafted
+1.5 pts/g · 7 G · 40% snaps · 108 scrimmage yds
+Free agent
+Scoring below his opportunity: due for more.
+Jack Strand
+D
+QB · ATL · age 22 · QB #8 by grade
+· Undrafted
+0.0 pts/g · 1 G · 47% snaps · 75 pass+rush yds
+Free agent
+Will Kacmarek
+D
+TE · MIA · age 23 · TE #10 by grade
+· R3 · #87
+0.8 pts/g · 8 G · 32% snaps · 35 yds
+Free agent
+Scoring below his opportunity: due for more.
+Skyler Bell
+D
+WR · BUF · age 24 · WR #20 by grade
+· R4 · #125
+0.0 pts/g · 2 G · 53% snaps
+Free agent
+Harrison Wallace III
+D
+WR · ARI · age 23 · WR #21 by grade
+· Undrafted
+4.6 pts/g · 2 G · 39% snaps · 66 yds
+Free agent
+Tanner Koziol
+D
+TE · JAX · age 22 · TE #11 by grade
+· R5 · #164
+1.7 pts/g · 3 G · 22% snaps · 31 yds
+Free agent
+Part-time role (22% of snaps).
+Elijah Sarratt
+D
+WR · BAL · age 23 · WR #22 by grade
+· R4 · #115
+1.8 pts/g · 1 G · 36% snaps · 13 yds
+Free agent
+Cyrus Allen
+D
+WR · KC · age 23 · WR #23 by grade
+· R5 · #176
+3.2 pts/g · 8 G · 29% snaps · 150 yds · 1 TD
+Free agent
+Part-time role (29% of snaps).
+Dohnte Meyers
+D
+WR · CIN · age 26 · WR #24 by grade
+· Undrafted
+4.4 pts/g · 10 G · 40% snaps · 270 yds · 1 TD
+Free agent
+Brenen Thompson
+Q
+D
+WR · LAC · age 23 · WR #25 by grade
+· R4 · #105
+1.8 pts/g · 1 G · 18% snaps · 13 yds
+Free agent
+Part-time role (18% of snaps).
+Max Klare
+D
+TE · LAR · age 23 · TE #12 by grade
+· R2 · #61
+No games yet
+Free agent
+Hasn't played yet.
+Kevin Coleman Jr.
+D
+WR · MIA · age 23 · WR #26 by grade
+· R5 · #177
+3.0 pts/g · 9 G · 30% snaps · 104 yds · 2 TD
+Free agent
+Part-time role (30% of snaps).
+Bryce Lance
+D
+WR · NO · age 24 · WR #27 by grade
+· R4 · #136
+1.8 pts/g · 10 G · 31% snaps · 78 yds · 1 TD
+Free agent
+Scoring below his opportunity: due for more.
+Deion Burks
+D
+WR · IND · age 23 · WR #28 by grade
+· R7 · #254
+1.2 pts/g · 9 G · 50% snaps · 81 yds
+Free agent
+Scoring below his opportunity: due for more.
+Colbie Young
+D
+WR · CIN · age 24 · WR #29 by grade
+· R4 · #140
+2.9 pts/g · 3 G · 19% snaps · 13 yds · 1 TD
+Free agent
+Part-time role (19% of snaps).
+Camden Brown
+D
+WR · DAL · age 22 · WR #30 by grade
+· Undrafted
+0.0 pts/g · 2 G · 22% snaps
+Free agent
+Part-time role (22% of snaps).
+Drew Allar
+D
+QB · PIT · age 22 · QB #9 by grade
+· R3 · #76
+No games yet
+Free agent
+Hasn't played yet.
+J. Michael Sturdivant
+D
+WR · GB · age 24 · WR #31 by grade
+· Undrafted
+1.8 pts/g · 9 G · 27% snaps · 75 yds · 1 TD
+Free agent
+Part-time role (27% of snaps).
+Chris Brazzell II
+IR
+D
+WR · CAR · age 23 · WR #32 by grade
+· R3 · #83
+No games yet
+Free agent
+Injury: IR.
+Jaden Bradley
+D
+WR · WAS · age 23 · WR #33 by grade
+· Undrafted
+1.7 pts/g · 1 G · 27% snaps · 12 yds
+Free agent
+Part-time role (27% of snaps).
+Barion Brown
+D
+WR · NO · age 23 · WR #34 by grade
+· R6 · #190
+1.5 pts/g · 9 G · 7% snaps · 112 yds
+Free agent
+Part-time role (7% of snaps).
+DJ Herman
+D
+RB · MIA · age 24 · RB #8 by grade
+· Undrafted
+1.3 pts/g · 4 G · 44% snaps · 35 scrimmage yds
+Free agent
+Scoring below his opportunity: due for more.
+Lewis Bond
+D
+WR · HOU · age 23 · WR #35 by grade
+· R6 · #204
+0.0 pts/g · 1 G · 17% snaps
+Free agent
+Part-time role (17% of snaps).
+Jordan Hudson
+D
+WR · DAL · age 23 · WR #36 by grade
+· Undrafted
+0.0 pts/g · 1 G · 1% snaps
+Free agent
+Part-time role (1% of snaps).
+Bauer Sharp
+D
+TE · TB · age 23 · TE #13 by grade
+· R6 · #185
+0.3 pts/g · 8 G · 18% snaps · 21 yds
+Free agent
+Part-time role (18% of snaps).
+Tanner Arkin
+D
+TE · NE · age 23 · TE #14 by grade
+· Undrafted
+0.0 pts/g · 2 G · 24% snaps
+Free agent
+Part-time role (24% of snaps).
+Jaydn Ott
+D
+RB · KC · age 23 · RB #9 by grade
+· Undrafted
+1.0 pts/g · 3 G · 12% snaps · 31 scrimmage yds
+Free agent
+Part-time role (12% of snaps).
+Seth McGowan
+OUT
+D
+RB · IND · age 25 · RB #10 by grade
+· R7 · #237
+4.1 pts/g · 11 G · 26% snaps · 302 scrimmage yds · 2 TD
+BigBrownCow
+Part-time role (26% of snaps).
+Nicholas Singleton
+D
+RB · TEN · age 22 · RB #11 by grade
+· R5 · #165
+0.6 pts/g · 2 G · 12% snaps · 12 scrimmage yds
+Free agent
+Part-time role (12% of snaps).
+Malik Benson
+D
+WR · LV · age 24 · WR #37 by grade
+· R6 · #195
+0.2 pts/g · 7 G · 14% snaps · 4 yds
+Free agent
+Part-time role (14% of snaps).
+Max Bredeson
+D
+RB · MIN · age 24 · RB #12 by grade
+· R5 · #159
+0.0 pts/g · 3 G · 21% snaps
+Free agent
+Part-time role (21% of snaps).
+Demond Claiborne
+IR
+D
+RB · MIN · age 23 · RB #13 by grade
+· R6 · #198
+0.8 pts/g · 4 G · 8% snaps · 21 scrimmage yds
+Free agent
+Part-time role (8% of snaps).
+Adam Randall
+D
+RB · BAL · age 22 · RB #14 by grade
+· R5 · #174
+No games yet
+Free agent
+Hasn't played yet.
+Dean Connors
+IR
+D
+RB · LAR · age 23 · RB #15 by grade
+· Undrafted
+0.0 pts/g · 3 G
+Free agent
+Injury: IR.
+Kendrick Law
+IR
+D
+WR · DET · age 23 · WR #38 by grade
+· R5 · #168
+No games yet
+Free agent
+Injury: IR.
+CJ Williams
+D
+WR · JAX · age 23 · WR #39 by grade
+· R6 · #203
+No games yet
+Free agent
+Hasn't played yet.
+Seydou Traore
+D
+TE · MIA · age 24 · TE #15 by grade
+· R5 · #180
+0.0 pts/g · 5 G · 14% snaps
+Free agent
+Part-time role (14% of snaps).
+Justin Joly
+D
+TE · MIA · age 22 · TE #16 by grade
+· R5 · #152
+No games yet
+Free agent
+Hasn't played yet.
+Jam Miller
+D
+RB · ATL · age 22 · RB #16 by grade
+· R7 · #245
+No games yet
+Free agent
+Hasn't played yet.
+Eli Heidenreich
+D
+RB · PIT · age 23 · RB #17 by grade
+· R7 · #230
+0.0 pts/g · 2 G · 4% snaps
+Free agent
+Part-time role (4% of snaps).
+Jaren Kanak
+IR
+D
+TE · TEN · age 22 · TE #17 by grade
+· R7 · #225
+No games yet
+Free agent
+Injury: IR.
+Kaytron Allen
+D
+RB · MIA · age 23 · RB #18 by grade
+· R6 · #187
+1.3 pts/g · 7 G · 7% snaps · 82 scrimmage yds
+Free agent
+Part-time role (7% of snaps).
+Carsen Ryan
+D
+TE · CLE · age 23 · TE #18 by grade
+· R7 · #248
+0.0 pts/g · 2 G
+Free agent
+Emmanuel Henderson Jr.
+D
+WR · SEA · age 23 · WR #40 by grade
+· R6 · #199
+No games yet
+Free agent
+Hasn't played yet.
+Kaden Wetjen
+D
+WR · PIT · age 24 · WR #41 by grade
+· R4 · #121
+0.0 pts/g · 9 G
+Free agent
+Anthony Smith
+D
+WR · DAL · age 24 · WR #42 by grade
+· R7 · #218
+No games yet
+Free agent
+Hasn't played yet.
+Malik McClain
+D
+WR · NYJ · age 24 · WR #43 by grade
+· Undrafted
+0.0 pts/g · 5 G · 4% snaps
+Free agent
+Part-time role (4% of snaps).
+Garrett Nussmeier
+D
+QB · KC · age 24 · QB #10 by grade
+· R7 · #249
+No games yet
+Free agent
+Hasn't played yet.
+Robert Henry Jr.
+D
+RB · WAS · age 24 · RB #19 by grade
+· Undrafted
+0.4 pts/g · 1 G · 4% snaps · 4 scrimmage yds
+Free agent
+Part-time role (4% of snaps).
+Taylen Green
+D
+QB · CLE · age 24 · QB #11 by grade
+· R6 · #182
+No games yet
+Free agent
+Hasn't played yet.
+Gregory Desrosiers Jr.
+D
+RB · NYG · age 25 · RB #20 by grade
+· Undrafted
+1.0 pts/g · 2 G · 7% snaps · 20 scrimmage yds
+Free agent
+Part-time role (7% of snaps).
+Cole Payton
+D
+QB · PHI · age 24 · QB #12 by grade
+· R5 · #178
+No games yet
+Free agent
+Hasn't played yet.
+Jacob De Jesus
+D
+WR · SEA · age 24 · WR #44 by grade
+· Undrafted
+0.0 pts/g · 1 G
+Free agent
+Behren Morton
+D
+QB · NE · age 24 · QB #13 by grade
+· R7 · #234
+No games yet
+Free agent
+Hasn't played yet.
+Joe Royer
+PUP
+D
+TE · CLE · age 24 · TE #19 by grade
+· R5 · #170
+No games yet
+Free agent
+Injury: PUP.
+Kolbe Katsis
+D
+WR · DEN · age 24 · WR #45 by grade
+· Undrafted
+0.0 pts/g · 1 G
+Free agent
+Dallen Bentley
+D
+TE · DEN · age 25 · TE #20 by grade
+· R7 · #256
+No games yet
+Free agent
+Hasn't played yet.
+2027 PROSPECTS
+i
+
+College prospects for the 2027 class arrive once NFLverse publishes combine results and the draft in the spring. Fantasy HQ picks them up automatically.
+
+Home
+Matchup
+Rankings
+League

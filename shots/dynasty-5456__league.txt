@@ -1,0 +1,261 @@
+FF
+Fantasy Football Champions League
+FANTASY FOOTBALL CHAMPIONS LEAGUE · DYNASTY · PPR · 10 TEAMS
+LEAGUE
+i
+Your power rank
+#1
+score 99
+Playoff odds
+100%
+avg finish 3rd
+Title odds
+35%
+simulated
+Roster value
+#1
+players + picks
+POWER RANKINGS
+i
+#
+TEAM
+RECORD
+PROJ.
+POWER
+1
+TR
+The Real Slim Brady
+CONTENDER
+4th in standings
+· 100% playoffs
+7–4
+10–4
+99
+2
+C
+CinciStackin
+CONTENDER
+1st in standings
+· 100% playoffs
+9–2
+11–3
+98
+3
+GW
+Gees Willies
+CONTENDER
+3rd in standings
+· 100% playoffs
+8–3
+10–4
+96
+4
+HF
+Herbie: Fully Loaded
+CONTENDER
+2nd in standings
+· 100% playoffs
+8–3
+10–4
+94
+5
+G
+GunslingerSam
+REBUILDER
+7th in standings
+· 23% playoffs
+4–7
+6–8
+88
+6
+S
+SKOLVID-19
+REBUILDER
+5th in standings
+· 86% playoffs
+6–5
+7–7
+85
+7
+ER
+El Rey
+PRETENDER
+6th in standings
+· 91% playoffs
+6–5
+7–7
+80
+8
+J
+Jeroncanas05
+REBUILDER
+8th in standings
+· 0% playoffs
+3–8
+4–10
+75
+9
+DD
+Dirty Dar’s Old Men
+REBUILDER
+9th in standings
+· 0% playoffs
+3–8
+4–10
+66
+10
+R
+rbroo
+REBUILDER
+10th in standings
+· 0% playoffs
+1–10
+2–12
+65
+POSITIONAL RANKS
+i
+Table
+Chart
+TEAM
+TR
+The Real Slim Brady
+C
+CinciStackin
+GW
+Gees Willies
+HF
+Herbie: Fully Loaded
+G
+GunslingerSam
+S
+SKOLVID-19
+ER
+El Rey
+J
+Jeroncanas05
+DD
+Dirty Dar’s Old Men
+R
+rbroo
+QB
+RB
+WR
+TE
+DEPTH
+PICKS
+8
+6
+2
+4
+4
+9
+1
+1
+6
+9
+1
+10
+10
+4
+4
+7
+5
+8
+6
+3
+5
+5
+6
+7
+7
+7
+3
+3
+9
+4
+2
+10
+1
+6
+7
+5
+3
+5
+10
+1
+2
+6
+9
+2
+9
+10
+8
+3
+5
+9
+7
+2
+10
+2
+4
+8
+8
+8
+3
+1
+DYNASTY OUTLOOK
+i
+1
+TR
+The Real Slim Brady
+avg age 27.1 · 2 firsts · 12 picks
+CONTENDER
+2
+HF
+Herbie: Fully Loaded
+avg age 27.1 · 3 firsts · 12 picks
+CONTENDER
+3
+S
+SKOLVID-19
+avg age 25.2 · 3 firsts · 13 picks
+REBUILDER
+4
+C
+CinciStackin
+avg age 27.1 · 2 firsts · 9 picks
+CONTENDER
+5
+GW
+Gees Willies
+avg age 25.7 · 3 firsts · 12 picks
+CONTENDER
+6
+G
+GunslingerSam
+avg age 27.3 · 3 firsts · 11 picks
+REBUILDER
+7
+DD
+Dirty Dar’s Old Men
+avg age 25.0 · 3 firsts · 16 picks
+REBUILDER
+8
+R
+rbroo
+avg age 26.9 · 5 firsts · 13 picks
+REBUILDER
+9
+ER
+El Rey
+avg age 27.0 · 3 firsts · 10 picks
+PRETENDER
+10
+J
+Jeroncanas05
+avg age 26.8 · 3 firsts · 12 picks
+REBUILDER
+Home
+Matchup
+Rankings
+League

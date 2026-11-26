@@ -1,0 +1,435 @@
+TG
+The Great Games
+TG
+THE GREAT GAMES
+6 teams · Dynasty · PPR · 6pt pass TD
+6–5
+4TH PLACE
+Matchup
+Overview
+WEEK 12
+LIVE
+JO
+Jahmyrical On Ice
+0.0
+6–5 · power #4
+KT
+Kupp the Bass
+0.0
+2–9 · power #5
+93%
+WIN CHANCE
+7%
+JAHMYRICAL ON ICE
++2.6 optimal
+Set
+Optimal
+KUPP THE BASS
++63.4 optimal
+Set
+Optimal
+T. Lawrence
+JAX v TEN
+33.2
+QB
+J. Burrow
+CIN
+36.2
+D. Watson
+CLE v LV
+21.0
+QB
+C. Ward
+TEN
+21.3
+J. Gibbs
+DET v CHI
+32.9
+RB
+T. Allgeier
+ARI
+12.9
+J. Warren
+PIT v DEN
+16.9
+RB
+T. Pollard
+TEN
+18.0
+M. Nabers
+NYG v IND
+17.5
+WR
+X. Worthy
+KC
+5.2
+L. Burden III
+CHI v DET
+17.5
+WR
+R. Odunze
+CHI
+13.5
+T. McBride
+ARI v WAS
+16.0
+TE
+M. Mayer
+LV
+6.6
+S. LaPorta
+DET v CHI
+13.5
+TE
+P. Freiermuth
+PIT
+7.7
+D. Montgomery
+HOU v BAL
+13.9
+FLEX
+D. Moore
+BUF
+10.5
+B. Hall
+NYJ v MIA
+16.2
+FLEX
+Z. Flowers
+Q
+BAL
+17.9
+O. Gordon II
+MIA v NYJ
+18.0
+SFLX
+A. Rodgers
+PIT BYE
+0.0
+J. Coleman
+DEN v PIT
+23.1
+SFLX
+J. McCarthy
+NYG
+21.9
+B. Aubrey
+DAL v PHI
+10.0
+K
+C. Santos
+CHI
+9.0
+C. McLaughlin
+TB v CAR
+9.7
+K
+T. Bass
+BUF
+8.4
+T. Watt
+PIT v DEN
+5.4
+IDP
+F. Warner
+SF
+6.4
+T. Hunter
+JAX v TEN
+8.0
+IDP
+G. Rousseau
+BUF
+6.4
+BENCH ▾
+C. Beck
+Q
+ARI v WAS
+18.9
+BN
+J. Smith-Njigba
+Q
+SEA
+26.3
+M. Golden
+GB v LAR
+16.5
+BN
+M. Stafford
+LAR
+6.0
+proj 21.6
+D. London
+ATL v MIN
+15.8
+BN
+B. Mayfield
+TB
+20.9
+M. Penix Jr.
+ATL v MIN
+15.6
+BN
+S. Barkley
+PHI
+20.4
+J. Mason
+MIN v ATL
+14.3
+BN
+R. Stevenson
+NE
+18.7
+O. Hampton
+LAC v NE
+14.2
+BN
+T. Hockenson
+MIN
+11.2
+C. Tate
+TEN v JAX
+12.7
+BN
+J. Myers
+SEA
+8.7
+R. Rice
+KC v BUF
+12.4
+BN
+C. Godwin Jr.
+TB
+8.7
+J. Coker
+CAR v TB
+11.7
+BN
+D. Carlson
+MIA
+8.1
+J. Waddle
+DEN v PIT
+10.6
+BN
+A. Barner
+SEA
+7.8
+K. Monangai
+CHI v DET
+8.8
+BN
+H. Butker
+KC
+7.2
+D. Metcalf
+PIT v DEN
+8.1
+BN
+K. Allen
+SF
+6.7
+G. Bernard
+PIT v DEN
+7.8
+BN
+C. Kupp
+SEA
+6.5
+K. Black
+SF v SEA
+6.3
+BN
+M. Fields
+NYG
+6.5
+K. Sadiq
+NYJ v MIA
+5.1
+BN
+J. Brooks
+IR
+CAR
+4.4
+O. Gadsden
+LAC v NE
+4.8
+BN
+N. Bosa
+SF
+3.4
+M. Harrison Jr.
+Q
+HOU v BAL
+3.5
+BN
+M. Parsons
+GB
+6.7
+proj 3.4
+K. Murray
+Q
+MIN v ATL
+0.0
+BN
+I. Rodgers
+Q
+MIN
+2.5
+M. Willis
+IR
+MIA v NYJ
+0.0
+BN
+T. Simpson
+OUT
+LAR
+0.0
+J. Dart
+IR
+NYG v IND
+0.0
+BN
+D. Achane
+IR
+MIA
+0.0
+T. Ferguson
+IR
+LAR v GB
+0.0
+BN
+P. Nacua
+IR
+LAR
+0.0
+J. Hurts
+IR
+PHI v DAL
+0.0
+IR
+L. Jackson
+IR
+BAL
+0.0
+D. Jones
+QB
+0.0
+BN
+MATCHUP SIMULATOR
+i
+Win chance
+93%
+Typical result
++70.4 pts
+Jahmyrical On Ice
+270.1
+bad week 224 · great week 325
+Kupp the Bass
+199.6
+bad week 164 · great week 242
+105
+330
+540
+Jahmyrical On Ice
+Kupp the Bass
+· how often each total happens
+85%
+win by 20+
+3%
+within 5
+3%
+lose by 20+
+Find the lineup most likely to win
+WHO SHOULD I START?
+i
+STARTER
+David Montgomery
+RB · vs BAL
+0%
+to outscore · proj 13.9
+VS · FLEX
+START
+Matthew Golden
+WR · vs LAR
+0%
+to outscore · proj 16.5
+David Montgomery
+Boom 20% · Bust 22%
+Floor 4.6
+Ceiling 25.4
+Matthew Golden
+Boom 29% · Bust 9%
+Floor 7.1
+Ceiling 27.6
+Start Matthew Golden (+2.6 projected). Weekly projection: Sleeper. Tough matchup vs LAR.Put him in
+Full comparison
+HEAD TO HEAD BY POSITION
+projected pts
+54.2
+QB
+79.4
+121.0
+RB
+30.9
+35.0
+WR
+47.1
+29.5
+TE
+14.3
+19.7
+K
+17.4
+13.4
+IDP
+12.8
+Jahmyrical On Ice
+Kupp the Bass
+SWING PLAYERS
+widest range
+Jonah Coleman
+Jahmyrical On Ice · RB
+11.1 – 23.1 – 35.1
+David Montgomery
+Jahmyrical On Ice · RB
+3.1 – 13.9 – 24.7
+Trevor Lawrence
+Jahmyrical On Ice · QB
+22.5 – 33.2 – 43.9
+Zay Flowers
+Kupp the Bass · WR
+7.7 – 17.9 – 28.1
+Jahmyr Gibbs
+Jahmyrical On Ice · RB
+22.9 – 32.9 – 42.9
+i
+WEEK 12 SCOREBOARD
+KT
+Kupp the Bass
+0.0
+JO
+Jahmyrical On Ice
+0.0
+7% / 93%
+win chance
+AM
+Alec MaWoods
+0.0
+A
+ABCeeDee
+19.5
+31% / 69%
+win chance
+CC
+Chasin Chips
+0.0
+BJ
+Brown Judkins
+16.5
+82% / 18%
+win chance
+Home
+Matchup
+Rankings
+League

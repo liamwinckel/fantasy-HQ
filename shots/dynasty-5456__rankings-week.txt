@@ -1,0 +1,735 @@
+FF
+Fantasy Football Champions League
+FANTASY FOOTBALL CHAMPIONS LEAGUE · DYNASTY · PPR
+RANKINGS
+i
+Week
+Week 12
+Season
+Weeks 12–17
+Dynasty
+Long term
+PPR
+0
+½
+1
+TE PREMIUM
+None
++.5
++1
+PASS TD
+4 pt
+6 pt
+
+= your league's setting. Changing these re-scores every projection.
+
+SHS AI backtest
+Close calls 54.8% vs experts 52.4% · 11 weeks
++2.4
+All players
+i
+All
+QB
+RB
+WR
+TE
+FLX
+ECR
+▼
+SHS
+▼
+PLAYER
+▼
+MTCH
+PTS
+▼
+1
+RB1
+=
+Jahmyr Gibbs
+RB · DET vs CHI
+· Gees Willies
+C+
+25.8
+12–43
+2
+WR1
+=
+Ja'Marr Chase
+WR · CIN vs NO
+· CinciStackin
+B-
+19.3
+9–32
+3
+QB1
+=
+Joe Burrow
+QB · CIN vs NO
+· CinciStackin
+B
+23.1
+13–34
+4
+QB2
+=
+Josh Allen
+QB · BUF vs KC
+· SKOLVID-19
+C-
+19.7
+10–31
+5
+QB3
+1
+Trevor Lawrence
+QB · JAX vs TEN
+· Dirty Dar’s Old Men
+A+
+22.9
+13–34
+6
+QB4
+1
+Dak Prescott
+QB · DAL vs PHI
+· Herbie: Fully Loaded
+B-
+19.7
+11–30
+7
+WR2
+=
+Jaxon Smith-Njigba
+Q
+WR · SEA vs SF
+· GunslingerSam
+A-
+24.0
+13–37
+8
+RB2
+=
+Christian McCaffrey
+RB · SF vs SEA
+· You
+D+
+18.2
+9–29
+9
+QB5
+1
+Jayden Daniels
+QB · WAS vs ARI
+· GunslingerSam
+A
+21.6
+13–32
+10
+QB6
+1
+Caleb Williams
+QB · CHI vs DET
+· You
+A+
+20.3
+10–33
+11
+QB7
+=
+C.J. Stroud
+QB · HOU vs BAL
+· El Rey
+C+
+21.0
+12–31
+12
+QB8
+2
+Patrick Mahomes
+QB · KC vs BUF
+· rbroo
+C-
+16.2
+8–25
+13
+WR3
+1
+CeeDee Lamb
+WR · DAL vs PHI
+· Herbie: Fully Loaded
+A-
+19.6
+8–33
+14
+RB3
+1
+Bijan Robinson
+RB · ATL vs MIN
+· You
+F
+17.9
+8–29
+15
+WR4
+1
+Amon-Ra St. Brown
+WR · DET vs CHI
+· You
+C+
+20.9
+10–34
+16
+RB4
+1
+Bucky Irving
+RB · TB vs CAR
+· Jeroncanas05
+A+
+20.4
+11–32
+17
+RB5
+=
+James Cook III
+RB · BUF vs KC
+· Herbie: Fully Loaded
+D
+17.1
+8–28
+18
+WR5
+1
+Parker Washington
+WR · JAX vs TEN
+· CinciStackin
+A+
+17.9
+8–30
+19
+RB6
+=
+Jonah Coleman
+RB · DEN vs PIT
+· Jeroncanas05
+B
+17.4
+6–32
+20
+RB7
+=
+Javonte Williams
+RB · DAL vs PHI
+· CinciStackin
+D
+18.8
+8–32
+21
+WR6
+1
+Justin Jefferson
+WR · MIN vs ATL
+· You
+B+
+18.2
+8–30
+22
+QB9
+1
+Jared Goff
+QB · DET vs CHI
+· You
+A
+19.7
+10–31
+23
+WR7
+=
+George Pickens
+WR · DAL vs PHI
+· Gees Willies
+A-
+14.4
+5–26
+24
+RB8
+2
+Chuba Hubbard
+RB · CAR vs TB
+· Gees Willies
+F
+15.6
+8–24
+25
+QB10
+2
+Brock Purdy
+Q
+QB · SF vs SEA
+· El Rey
+F
+15.7
+9–24
+26
+RB9
+1
+Cam Skattebo
+RB · NYG vs IND
+· GunslingerSam
+A
+19.5
+10–31
+27
+QB11
+2
+Jordan Love
+QB · GB vs LAR
+· CinciStackin
+D
+16.9
+10–25
+28
+QB12
+3
+Deshaun Watson
+QB · CLE vs LV
+· Free agent
+A-
+15.6
+9–24
+29
+WR8
+2
+Tee Higgins
+WR · CIN vs NO
+· SKOLVID-19
+B-
+16.5
+7–28
+30
+WR9
+=
+Matthew Golden
+WR · GB vs LAR
+· Gees Willies
+C
+16.3
+8–27
+31
+WR10
+2
+Christian Watson
+OUT
+WR · GB vs LAR
+· SKOLVID-19
+C
+16.2
+6–29
+32
+QB13
+2
+Kirk Cousins
+QB · MIN vs ATL
+· GunslingerSam
+B+
+17.2
+9–26
+33
+WR11
+1
+Malik Nabers
+WR · NYG vs IND
+· SKOLVID-19
+D
+16.1
+7–28
+34
+WR12
+1
+Nico Collins
+WR · HOU vs BAL
+· You
+C+
+17.5
+8–28
+35
+QB14
+1
+Tyler Shough
+QB · NO vs CIN
+· El Rey
+A
+16.3
+8–26
+36
+WR13
+2
+Luther Burden III
+WR · CHI vs DET
+· You
+A
+16.6
+7–29
+37
+RB10
+2
+Chase Brown
+RB · CIN vs NO
+· CinciStackin
+A+
+13.8
+6–23
+38
+QB15
+1
+J.J. McCarthy
+QB · NYG vs IND
+· Free agent
+B
+17.0
+9–27
+39
+WR14
+1
+Chris Olave
+WR · NO vs CIN
+· Herbie: Fully Loaded
+C+
+15.7
+8–25
+40
+RB11
+2
+Emmett Johnson
+RB · KC vs BUF
+· Jeroncanas05
+B+
+18.8
+7–34
+41
+WR15
+1
+Zay Flowers
+Q
+WR · BAL vs HOU
+· Gees Willies
+B+
+16.4
+7–27
+42
+QB16
+2
+Matthew Stafford
+QB · LAR vs GB
+· Gees Willies
+D+
+13.9
+7–22
+43
+RB12
+1
+D'Andre Swift
+RB · CHI vs DET
+· CinciStackin
+C-
+14.7
+5–27
+44
+RB13
+2
+Kyren Williams
+RB · LAR vs GB
+· El Rey
+A-
+14.6
+5–26
+45
+TE1
+=
+Trey McBride
+TE · ARI vs WAS
+· You
+A+
+15.1
+8–24
+46
+QB17
+3
+Bo Nix
+QB · DEN vs PIT
+· SKOLVID-19
+D
+13.9
+7–22
+47
+QB18
+1
+Joe Milton
+QB · PHI vs DAL
+· Free agent
+A+
+13.9
+6–23
+48
+QB19
+4
+Jacoby Brissett
+QB · BAL vs HOU
+· Free agent
+C+
+12.6
+6–21
+49
+RB14
+=
+Saquon Barkley
+RB · PHI vs DAL
+· CinciStackin
+A+
+15.3
+7–26
+50
+RB15
+3
+Breece Hall
+RB · NYJ vs MIA
+· Herbie: Fully Loaded
+B+
+12.2
+6–20
+51
+TE2
+=
+Brock Bowers
+Q
+TE · LV vs CLE
+· GunslingerSam
+B+
+14.5
+6–25
+52
+TE3
+=
+Isaiah Likely
+Q
+TE · NYG vs IND
+· SKOLVID-19
+B+
+14.5
+6–25
+53
+RB16
+1
+Tony Pollard
+RB · TEN vs JAX
+· Herbie: Fully Loaded
+D+
+13.8
+6–23
+54
+WR16
+=
+Garrett Wilson
+WR · NYJ vs MIA
+· CinciStackin
+D
+15.6
+7–26
+55
+WR17
+=
+DeVonta Smith
+WR · PHI vs DAL
+· SKOLVID-19
+A+
+13.9
+6–24
+56
+WR18
+2
+Mike Evans
+Q
+WR · SF vs SEA
+· El Rey
+F
+13.4
+6–22
+57
+QB20
+1
+Bryce Young
+QB · CAR vs TB
+· Jeroncanas05
+D
+14.9
+7–24
+58
+WR19
+=
+Drake London
+WR · ATL vs MIN
+· GunslingerSam
+F
+14.4
+6–24
+59
+QB21
+4
+Fernando Mendoza
+QB · LV vs CLE
+· Gees Willies
+C
+12.6
+6–21
+60
+QB22
+2
+Cam Ward
+QB · TEN vs JAX
+· Gees Willies
+D+
+13.3
+7–21
+61
+RB17
+3
+Jaylen Warren
+RB · PIT vs DEN
+· Jeroncanas05
+B-
+12.8
+4–24
+62
+RB18
+4
+Ashton Jeanty
+RB · LV vs CLE
+· Gees Willies
+C
+12.9
+6–21
+63
+RB19
+2
+Derrick Henry
+Q
+RB · BAL vs HOU
+· El Rey
+B
+13.7
+6–23
+64
+QB23
+5
+Geno Smith
+QB · NYJ vs MIA
+· Free agent
+D+
+17.6
+10–27
+65
+WR20
+2
+Jameson Williams
+WR · DET vs CHI
+· Dirty Dar’s Old Men
+C+
+13.6
+5–24
+66
+QB24
+3
+Baker Mayfield
+QB · TB vs CAR
+· Jeroncanas05
+B
+15.1
+8–24
+67
+QB25
+5
+Anthony Richardson Sr.
+QB · IND vs NYG
+· Free agent
+B+
+13.4
+7–21
+68
+WR21
+2
+DJ Moore
+WR · BUF vs KC
+· Gees Willies
+D+
+10.0
+3–18
+69
+QB26
+4
+Sam Darnold
+QB · SEA vs SF
+· rbroo
+B-
+15.1
+7–24
+70
+QB27
+1
+Justin Herbert
+Q
+QB · LAC vs NE
+· Herbie: Fully Loaded
+C+
+13.4
+8–19
+71
+RB20
+4
+Jonathan Taylor
+RB · IND vs NYG
+· El Rey
+C-
+15.4
+7–26
+72
+WR22
+1
+Tetairoa McMillan
+Q
+WR · CAR vs TB
+· GunslingerSam
+D
+14.2
+4–28
+73
+RB21
+2
+Blake Corum
+RB · LAR vs GB
+· Gees Willies
+A-
+12.2
+6–20
+74
+QB28
+1
+Michael Penix Jr.
+QB · ATL vs MIN
+· Free agent
+F
+11.7
+6–19
+75
+RB22
+1
+Ollie Gordon II
+RB · MIA vs NYJ
+· Gees Willies
+A-
+13.1
+5–23
+Show more (401 left)
+Home
+Matchup
+Rankings
+League

@@ -1,0 +1,375 @@
+FF
+Fantasy Football Champions League
+FF
+FANTASY FOOTBALL CHAMPIONS LEAGUE
+10 teams · Dynasty · PPR
+7–4
+4TH PLACE
+Matchup
+Overview
+WEEK 12
+LIVE
+TR
+The Real Slim Brady
+0.0
+7–4 · power #1
+S
+SKOLVID-19
+16.5
+6–5 · power #6
+81%
+WIN CHANCE
+19%
+THE REAL SLIM BRADY
++2.1 optimal
+Set
+Optimal
+SKOLVID-19
++2.1 optimal
+Set
+Optimal
+C. Williams
+CHI v DET
+20.3
+QB
+J. Allen
+BUF
+19.7
+C. McCaffrey
+SF v SEA
+18.2
+RB
+O. Hampton
+LAC
+10.4
+B. Robinson
+ATL v MIN
+17.9
+RB
+D. Sampson
+CLE
+9.6
+A. St. Brown
+DET v CHI
+20.9
+WR
+R. Rice
+KC
+11.8
+J. Jefferson
+MIN v ATL
+18.2
+WR
+C. Watson
+OUT
+GB
+16.5
+proj 16.2
+T. McBride
+ARI v WAS
+15.1
+TE
+C. Loveland
+CHI
+12.2
+N. Collins
+HOU v BAL
+17.5
+FLEX
+M. Nabers
+NYG
+16.1
+L. Burden III
+CHI v DET
+16.6
+FLEX
+I. Likely
+Q
+NYG
+14.5
+J. Meyers
+Q
+JAX v TEN
+10.1
+FLEX
+T. Higgins
+CIN
+16.5
+BENCH ▾
+J. Goff
+DET v CHI
+19.7
+BN
+B. Nix
+DEN
+13.9
+T. Etienne Jr.
+NO v CIN
+12.2
+BN
+D. Smith
+PHI
+13.9
+J. Mason
+MIN v ATL
+10.8
+BN
+J. Waddle
+DEN
+10.0
+S. Perine
+CIN v NO
+10.6
+BN
+C. Rodriguez Jr.
+JAX
+9.3
+T. Allgeier
+ARI v WAS
+9.9
+BN
+W. Marks
+Q
+HOU
+9.3
+D. Schultz
+HOU v BAL
+8.7
+BN
+A. Mitchell
+NYJ
+9.1
+M. Gesicki
+CIN v NO
+8.0
+BN
+J. Price
+SEA
+8.3
+P. Freiermuth
+PIT v DEN
+7.4
+BN
+C. Kiner
+NE
+7.4
+B. Thomas Jr.
+JAX v TEN
+4.6
+BN
+K. Vidal
+LAC
+6.9
+K. Black
+SF v SEA
+4.3
+BN
+E. Ayomanor
+TEN
+6.9
+C. Allen
+KC v BUF
+2.0
+BN
+J. Downs
+KC
+6.7
+B. Thompson
+Q
+LAC v NE
+0.9
+BN
+M. Fields
+NYG
+6.5
+T. Benson
+IR
+ARI v WAS
+0.0
+IR
+C. Otton
+TB
+6.2
+R. Harvey
+IR
+DEN v PIT
+0.0
+BN
+J. Bech
+LV
+5.9
+T. Henderson
+IR
+NE v LAC
+0.0
+BN
+E. Raridon
+NE
+5.3
+L. Jackson
+IR
+BAL v HOU
+0.0
+IR
+K. Boutte
+Q
+HOU
+4.8
+A. Brown
+D
+NE v LAC
+0.0
+BN
+O. Gadsden
+LAC
+4.5
+J. Dobbins
+SUS
+DEN v PIT
+0.0
+BN
+J. Brooks
+IR
+CAR
+3.6
+T. Goodson
+IR
+DAL v PHI
+0.0
+BN
+N. Singleton
+TEN
+0.8
+T. Bigsby
+IR
+PHI v DAL
+0.0
+BN
+MATCHUP SIMULATOR
+i
+Win chance
+78%
+Typical result
++26.4 pts
+The Real Slim Brady
+152.5
+bad week 120 · great week 193
+SKOLVID-19
+125.5
+bad week 99 · great week 159
+45
+175
+295
+The Real Slim Brady
+SKOLVID-19
+· how often each total happens
+57%
+win by 20+
+8%
+within 5
+10%
+lose by 20+
+Find the lineup most likely to win
+WHO SHOULD I START?
+i
+STARTER
+Jakobi Meyers
+Q
+WR · vs TEN
+0%
+to outscore · proj 10.1
+VS · FLEX
+START
+Travis Etienne Jr.
+RB · vs CIN
+0%
+to outscore · proj 12.2
+Jakobi Meyers
+Boom 5% · Bust 30%
+Floor 4.4
+Ceiling 16.9
+Travis Etienne Jr.
+Boom 8% · Bust 15%
+Floor 6.2
+Ceiling 19.2
+Start Travis Etienne Jr. (+2.1 projected). Weekly projection: Sleeper. Team offense trending down.Put him in
+Full comparison
+HEAD TO HEAD BY POSITION
+projected pts
+20.3
+QB
+19.7
+36.1
+RB
+20.0
+83.3
+WR
+60.6
+15.1
+TE
+26.7
+The Real Slim Brady
+SKOLVID-19
+SWING PLAYERS
+widest range
+Isaiah Likely
+SKOLVID-19 · TE
+5.0 – 14.5 – 24.0
+Malik Nabers
+SKOLVID-19 · WR
+6.9 – 16.1 – 25.3
+Caleb Williams
+The Real Slim Brady · QB
+12.0 – 20.3 – 28.6
+Nico Collins
+The Real Slim Brady · WR
+9.4 – 17.5 – 25.6
+Christian Watson
+SKOLVID-19 · WR
+8.1 – 16.2 – 24.3
+i
+WEEK 12 SCOREBOARD
+C
+CinciStackin
+0.0
+HF
+Herbie: Fully Loaded
+0.0
+64% / 36%
+win chance
+TR
+The Real Slim Brady
+0.0
+S
+SKOLVID-19
+16.5
+81% / 19%
+win chance
+GW
+Gees Willies
+4.9
+J
+Jeroncanas05
+0.0
+60% / 40%
+win chance
+ER
+El Rey
+0.0
+DD
+Dirty Dar’s Old Men
+0.0
+55% / 45%
+win chance
+G
+GunslingerSam
+0.0
+R
+rbroo
+0.0
+82% / 18%
+win chance
+Home
+Matchup
+Rankings
+League

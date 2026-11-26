@@ -1,0 +1,385 @@
+FF
+Fantasy Football Champions League
+FANTASY FOOTBALL CHAMPIONS LEAGUE · DYNASTY · PPR
+TRADE FINDER
+i
+TEAM NEEDS
+i
+TR
+The Real Slim Brady (you)
+CONTENDER
+QB
+8
+RB
+6
+WR
+2
+TE
+4
+C
+CinciStackin
+CONTENDER
+10 trades · 3 yrs · Trader
+QB
+1
+RB
+1
+WR
+6
+TE
+9
+Deals
+GW
+Gees Willies
+CONTENDER
+8 trades · 5 yrs
+QB
+10
+RB
+4
+WR
+4
+TE
+7
+Deals
+HF
+Herbie: Fully Loaded
+CONTENDER
+15 trades · 5 yrs · Trader
+QB
+6
+RB
+3
+WR
+5
+TE
+5
+Deals
+G
+GunslingerSam
+REBUILDER
+4 trades · 5 yrs
+QB
+7
+RB
+7
+WR
+3
+TE
+3
+Deals
+S
+SKOLVID-19
+REBUILDER
+5 trades · 5 yrs
+QB
+2
+RB
+10
+WR
+1
+TE
+6
+Deals
+ER
+El Rey
+PRETENDER
+5 trades · 3 yrs
+QB
+3
+RB
+5
+WR
+10
+TE
+1
+Deals
+J
+Jeroncanas05
+REBUILDER
+8 trades · 5 yrs
+QB
+9
+RB
+2
+WR
+9
+TE
+10
+Deals
+DD
+Dirty Dar’s Old Men
+REBUILDER
+10 trades · 5 yrs
+QB
+5
+RB
+9
+WR
+7
+TE
+2
+Deals
+R
+rbroo
+REBUILDER
+4 trades · 3 yrs
+QB
+4
+RB
+8
+WR
+8
+TE
+8
+Deals
+SUGGESTED TRADES
+J
+WITH JERONCANAS05
+YOU GIVE
+Nico Collins WR
+=
+60
+YOU GET
+Bucky Irving RB
+=
+40
+Jonah Coleman RB
+=
+15
+2028 R1 (mid) PICK
+16
+
+SHS AI: agrees with the experts on this deal
+
+Value to you
+-3.8
+Value to them
+-3.2
+Chance they accept
+95%
+› You're 6th of 10 at RB; Jeroncanas05 is 2nd of 10 there.
+› Jeroncanas05 is 9th of 10 at WR, where you're 2nd of 10.
+› You spread one asset across two lineup holes.
+› Fits both plans: you're a Contender, they're a Rebuilder.
+Open in Trade Analyzer
+J
+WITH JERONCANAS05
+YOU GIVE
+Brian Thomas Jr. WR
+=
+14
+YOU GET
+Jaylen Warren RB
+=
+12
+
+SHS AI: agrees with the experts on this deal
+
+Value to you
+-1.0
+Value to them
++5.6
+Chance they accept
+87%
+› You're 6th of 10 at RB; Jeroncanas05 is 2nd of 10 there.
+› Jeroncanas05 is 9th of 10 at WR, where you're 2nd of 10.
+› Fits both plans: you're a Contender, they're a Rebuilder.
+Open in Trade Analyzer
+C
+WITH CINCISTACKIN
+YOU GIVE
+Nico Collins WR
+=
+60
+YOU GET
+Chase Brown RB
+=
+37
+Javonte Williams RB
+=
+23
+2029 R1 (mid) PICK
+15
+
+SHS AI: agrees with the experts on this deal
+
+Value to you
+-2.0
+Value to them
++2.0
+Chance they accept (their trade history)
+95%
+› You're 6th of 10 at RB; CinciStackin is 1st of 10 there.
+› CinciStackin is 6th of 10 at WR, where you're 2nd of 10.
+› You spread one asset across two lineup holes.
+› Fits both plans: you're a Contender, they're a Contender.
+Open in Trade Analyzer
+ER
+WITH EL REY
+YOU GIVE
+Nico Collins WR
+=
+60
+YOU GET
+Kyren Williams RB
+=
+32
+Brock Purdy QB
+=
+29
+2029 R1 (mid) PICK
+15
+
+SHS AI: agrees with the experts on this deal
+
+Value to you
+-3.3
+Value to them
++0.8
+Chance they accept
+95%
+› You're 6th of 10 at RB/QB; El Rey is 5th of 10 there.
+› El Rey is 10th of 10 at WR, where you're 2nd of 10.
+› You spread one asset across two lineup holes.
+› Fits both plans: you're a Contender, they're a Pretender.
+Open in Trade Analyzer
+ER
+WITH EL REY
+YOU GIVE
+A.J. Brown WR
+=
+35
+Brian Thomas Jr. WR
+=
+14
+YOU GET
+Brock Purdy QB
+=
+29
+2029 R1 (mid) PICK
+15
+
+SHS AI: agrees with the experts on this deal
+
+Value to you
+-0.5
+Value to them
+-3.2
+Chance they accept
+89%
+› You're 8th of 10 at QB; El Rey is 3rd of 10 there.
+› El Rey is 10th of 10 at WR, where you're 2nd of 10.
+› You consolidate depth into one stronger starter, so your roster spots open up.
+› Fits both plans: you're a Contender, they're a Pretender.
+Open in Trade Analyzer
+C
+WITH CINCISTACKIN
+YOU GIVE
+Justin Jefferson WR
+=
+86
+A.J. Brown WR
+=
+35
+YOU GET
+Kenneth Walker III RB
+=
+77
+2028 R1 (mid) PICK
+16
+
+SHS AI: agrees with the experts on this deal
+
+Value to you
+-4.0
+Value to them
++4.0
+Chance they accept (their trade history)
+95%
+› You're 6th of 10 at RB; CinciStackin is 1st of 10 there.
+› CinciStackin is 6th of 10 at WR, where you're 2nd of 10.
+› You consolidate depth into one stronger starter, so your roster spots open up.
+› Fits both plans: you're a Contender, they're a Contender.
+Open in Trade Analyzer
+S
+WITH SKOLVID-19
+YOU GIVE
+TreVeyon Henderson RB
+=
+14
+YOU GET
+Bo Nix QB
+=
+13
+
+SHS AI: agrees with the experts on this deal
+
+Value to you
+-1.2
+Value to them
++0.9
+Chance they accept
+68%
+› You're 8th of 10 at QB; SKOLVID-19 is 2nd of 10 there.
+› SKOLVID-19 is 10th of 10 at RB, where you're 6th of 10.
+› Fits both plans: you're a Contender, they're a Rebuilder.
+Open in Trade Analyzer
+S
+WITH SKOLVID-19
+YOU GIVE
+Bijan Robinson RB
+=
+93
+YOU GET
+Josh Allen QB
+=
+69
+Bo Nix QB
+=
+13
+2027 R1 (mid) PICK
+20
+
+SHS AI: agrees with the experts on this deal
+
+Value to you
+-7.1
+Value to them
++11.9
+Chance they accept
+95%
+› You're 8th of 10 at QB; SKOLVID-19 is 2nd of 10 there.
+› SKOLVID-19 is 10th of 10 at RB, where you're 6th of 10.
+› You spread one asset across two lineup holes.
+› Fits both plans: you're a Contender, they're a Rebuilder.
+Open in Trade Analyzer
+R
+WITH RBROO
+YOU GIVE
+Luther Burden III WR
+=
+49
+YOU GET
+Patrick Mahomes QB
+=
+41
+2027 R1 (late) PICK
+9
+
+SHS AI: agrees with the experts on this deal
+
+Value to you
+-0.1
+Value to them
++6.6
+Chance they accept
+86%
+› You're 8th of 10 at QB; rbroo is 4th of 10 there.
+› rbroo is 8th of 10 at WR, where you're 2nd of 10.
+› Fits both plans: you're a Contender, they're a Rebuilder.
+Open in Trade Analyzer
+Home
+Matchup
+Rankings
+League

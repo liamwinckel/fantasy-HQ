@@ -1,0 +1,276 @@
+FB
+Friday Beers
+FB
+FRIDAY BEERS
+12 teams · Redraft · Half PPR
+6–5
+5TH PLACE
+Matchup
+Overview
+WEEK 12
+LIVE
+BR
+Bower Rangers
+0.0
+6–5 · power #2
+PL
+Purdy Lamb
+0.0
+8–3 · power #5
+80%
+WIN CHANCE
+20%
+BOWER RANGERS
+Set
+Optimal
+PURDY LAMB
++3.1 optimal
+Set
+Optimal
+C. Williams
+CHI v DET
+19.7
+QB
+B. Purdy
+Q
+SF
+14.8
+E. Johnson
+KC v BUF
+17.2
+RB
+D. Henry
+Q
+BAL
+13.0
+J. Warren
+PIT v DEN
+11.4
+RB
+J. Croskey-Merritt
+WAS
+7.0
+L. Burden III
+CHI v DET
+13.3
+WR
+C. Lamb
+DAL
+16.5
+G. Pickens
+DAL v PHI
+12.2
+WR
+S. Diggs
+Q
+WAS
+11.1
+B. Bowers
+Q
+LV v CLE
+12.0
+TE
+M. Gesicki
+CIN
+6.7
+B. Robinson
+ATL v MIN
+16.3
+FLEX
+J. Williams
+DET
+11.8
+J. Mason
+MIN v ATL
+10.1
+FLEX
+D. Samuel Sr.
+SF
+6.7
+W. Reichard
+MIN v ATL
+9.3
+K
+E. Pineiro
+SF
+7.9
+BENCH ▾
+J. Love
+GB v LAR
+16.0
+BN
+D. Goedert
+PHI
+8.6
+J. Waddle
+DEN v PIT
+8.2
+BN
+T. Warren
+IND
+7.9
+A. Mitchell
+NYJ v MIA
+7.6
+BN
+J. Myers
+SEA
+7.9
+M. Mayer
+LV v CLE
+4.8
+BN
+R. White
+WAS
+4.2
+K. Black
+SF v SEA
+4.0
+BN
+D. Adams
+IR
+LAR
+0.0
+BN
+J. Jacobs
+OUT
+GB
+0.0
+MATCHUP SIMULATOR
+i
+Win chance
+79%
+Typical result
++25.2 pts
+Bower Rangers
+119.5
+bad week 89 · great week 157
+Purdy Lamb
+94.1
+bad week 71 · great week 122
+35
+155
+265
+Bower Rangers
+Purdy Lamb
+· how often each total happens
+56%
+win by 20+
+9%
+within 5
+8%
+lose by 20+
+Find the lineup most likely to win
+WHO SHOULD I START?
+i
+STARTER
+START
+Caleb Williams
+QB · vs DET
+0%
+to outscore · proj 19.7
+VS · QB
+Jordan Love
+QB · vs LAR
+0%
+to outscore · proj 16.0
+Caleb Williams
+Boom 25% · Bust 22%
+Floor 8.9
+Ceiling 32.4
+Jordan Love
+Boom 7% · Bust 26%
+Floor 9.3
+Ceiling 23.6
+Start Caleb Williams (+3.7 projected). Weekly projection: Sleeper. Favourable matchup vs DET.
+Full comparison
+HEAD TO HEAD BY POSITION
+projected pts
+19.7
+QB
+14.8
+55.0
+RB
+20.0
+25.5
+WR
+46.1
+12.0
+TE
+6.7
+9.3
+K
+7.9
+Bower Rangers
+Purdy Lamb
+SWING PLAYERS
+widest range
+Emmett Johnson
+Bower Rangers · RB
+7.8 – 17.2 – 26.6
+Caleb Williams
+Bower Rangers · QB
+10.7 – 19.7 – 28.7
+Bijan Robinson
+Bower Rangers · RB
+8.8 – 16.3 – 23.8
+CeeDee Lamb
+Purdy Lamb · WR
+9.5 – 16.5 – 23.5
+Jaylen Warren
+Bower Rangers · RB
+4.7 – 11.4 – 18.1
+i
+WEEK 12 SCOREBOARD
+BM
+Blue Mountain State
+18.9
+D
+Dirtydars
+0.0
+44% / 57%
+win chance
+BR
+Bower Rangers
+0.0
+PL
+Purdy Lamb
+0.0
+80% / 20%
+win chance
+TW
+The Wenis Lickers
+2.6
+B
+BigBrownCow
+0.0
+40% / 60%
+win chance
+TF
+Team Fun
+14.5
+G
+GunslingerSam
+27.5
+15% / 85%
+win chance
+BB
+Buffalo Big Balls
+0.0
+JN
+Je Ne Saquon
+0.0
+79% / 21%
+win chance
+AT
+A Touch of the Downs
+0.0
+ST
+STEEL’in TDs
+0.9
+49% / 51%
+win chance
+Home
+Matchup
+Rankings
+League

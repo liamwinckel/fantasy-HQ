@@ -1,0 +1,582 @@
+FF
+Fantasy Football Champions League
+FANTASY FOOTBALL CHAMPIONS LEAGUE · DYNASTY · PPR
+RANKINGS
+i
+Week
+Week 12
+Season
+Weeks 12–17
+Dynasty
+Long term
+FORMAT
+1QB
+Superflex
+TE PREMIUM
+None
++.5
++1
+
+= your league's setting. Superflex uses FantasyPros' superflex dynasty list. TE premium has no expert list, so TEs are raised by how much the premium adds to their scoring (more catches, bigger boost).
+
+All players
+i
+All
+QB
+RB
+WR
+TE
+FLX
+Picks
+ECR
+▼
+SHS
+▼
+PLAYER
+▼
+VALUE
+▼
+1
+WR1
+=
+Jaxon Smith-Njigba
+Q
+WR · SEA
+· GunslingerSam
+100
+2
+WR2
+=
+Ja'Marr Chase
+WR · CIN
+· CinciStackin
+100
+3
+RB2
+=
+Bijan Robinson
+RB · ATL
+· You
+93
+4
+WR5
+=
+CeeDee Lamb
+WR · DAL
+· Herbie: Fully Loaded
+91
+5
+RB1
+=
+Jahmyr Gibbs
+RB · DET
+· Gees Willies
+90
+6
+WR4
+=
+Amon-Ra St. Brown
+WR · DET
+· You
+89
+7
+WR3
+=
+Puka Nacua
+IR
+WR · LAR
+· Herbie: Fully Loaded
+88
+8
+WR7
+=
+Justin Jefferson
+WR · MIN
+· You
+86
+9
+WR6
+=
+Malik Nabers
+WR · NYG
+· SKOLVID-19
+81
+10
+RB3
+=
+Kenneth Walker III
+OUT
+RB · KC
+· CinciStackin
+77
+11
+RB4
+=
+Jeremiyah Love
+IR
+RB · ARI
+· rbroo
+72
+12
+WR8
+=
+Drake London
+WR · ATL
+· GunslingerSam
+72
+13
+RB7
+=
+Ashton Jeanty
+RB · LV
+· Gees Willies
+72
+14
+RB5
+=
+James Cook III
+RB · BUF
+· Herbie: Fully Loaded
+71
+15
+QB1
+=
+Josh Allen
+QB · BUF
+· SKOLVID-19
+69
+16
+WR9
+=
+Tetairoa McMillan
+Q
+WR · CAR
+· GunslingerSam
+68
+17
+RB6
+=
+Jonathan Taylor
+RB · IND
+· El Rey
+67
+18
+WR10
+=
+Chris Olave
+WR · NO
+· Herbie: Fully Loaded
+65
+19
+RB9
+=
+Breece Hall
+RB · NYJ
+· Herbie: Fully Loaded
+62
+20
+TE1
+=
+Brock Bowers
+Q
+TE · LV
+· GunslingerSam
+61
+21
+WR11
+=
+Nico Collins
+WR · HOU
+· You
+60
+22
+WR19
+1
+Garrett Wilson
+WR · NYJ
+· CinciStackin
+58
+23
+TE2
+=
+Trey McBride
+TE · ARI
+· You
+58
+24
+RB8
+=
+De'Von Achane
+IR
+RB · MIA
+· El Rey
+56
+25
+QB2
+=
+Drake Maye
+OUT
+QB · NE
+· CinciStackin
+53
+26
+WR13
+=
+Zay Flowers
+Q
+WR · BAL
+· Gees Willies
+50
+27
+WR17
+=
+Carnell Tate
+WR · TEN
+· Jeroncanas05
+49
+28
+WR15
+=
+Emeka Egbuka
+WR · TB
+· Herbie: Fully Loaded
+49
+29
+WR14
+=
+Luther Burden III
+WR · CHI
+· You
+49
+30
+WR12
+=
+George Pickens
+WR · DAL
+· Gees Willies
+48
+31
+RB12
+=
+Christian McCaffrey
+RB · SF
+· You
+48
+32
+TE3
+=
+Colston Loveland
+TE · CHI
+· SKOLVID-19
+47
+33
+WR22
+=
+DeVonta Smith
+WR · PHI
+· SKOLVID-19
+46
+34
+QB3
+=
+Joe Burrow
+QB · CIN
+· CinciStackin
+45
+35
+WR16
+=
+Matthew Golden
+WR · GB
+· Gees Willies
+45
+36
+PICK
+1st
+2027 1st · Early
+GunslingerSam · experts rank it like #37 overall
+44
+37
+PICK
+1st
+2027 1st · Early
+Dirty Dar’s Old Men · experts rank it like #37 overall
+44
+38
+PICK
+1st
+2027 1st · Early
+Jeroncanas05 · experts rank it like #37 overall
+44
+39
+PICK
+1st
+2027 1st · Early
+rbroo · experts rank it like #37 overall
+44
+40
+WR21
+=
+Parker Washington
+WR · JAX
+· CinciStackin
+41
+41
+QB6
+=
+Lamar Jackson
+IR
+QB · BAL
+· You
+41
+42
+QB9
+=
+Patrick Mahomes
+QB · KC
+· rbroo
+41
+43
+WR20
+=
+Christian Watson
+OUT
+WR · GB
+· SKOLVID-19
+40
+44
+WR18
+1
+Tee Higgins
+WR · CIN
+· SKOLVID-19
+40
+45
+RB10
+=
+Bucky Irving
+RB · TB
+· Jeroncanas05
+40
+46
+WR23
+=
+Rashee Rice
+WR · KC
+· SKOLVID-19
+39
+47
+QB4
+=
+Caleb Williams
+QB · CHI
+· You
+38
+48
+RB11
+=
+Chase Brown
+RB · CIN
+· CinciStackin
+37
+49
+WR29
+=
+Rome Odunze
+WR · CHI
+· Herbie: Fully Loaded
+37
+50
+WR24
+=
+Jordyn Tyson
+WR · NO
+· Dirty Dar’s Old Men
+36
+51
+TE4
+1
+Tyler Warren
+TE · IND
+· Gees Willies
+36
+52
+WR32
+=
+A.J. Brown
+D
+WR · NE
+· You
+35
+53
+QB5
+=
+Jayden Daniels
+QB · WAS
+· GunslingerSam
+35
+54
+WR25
+=
+Ladd McConkey
+WR · LAC
+· Gees Willies
+35
+55
+TE7
+=
+Sam LaPorta
+TE · DET
+· Gees Willies
+34
+56
+WR31
+=
+Jaylen Waddle
+WR · DEN
+· SKOLVID-19
+32
+57
+RB13
+=
+Kyren Williams
+RB · LAR
+· El Rey
+32
+58
+RB14
+=
+Bhayshul Tuten
+Q
+RB · JAX
+· rbroo
+32
+59
+QB7
+=
+Trevor Lawrence
+QB · JAX
+· Dirty Dar’s Old Men
+31
+60
+RB16
+=
+Omarion Hampton
+RB · LAC
+· SKOLVID-19
+30
+61
+TE5
+1
+Tucker Kraft
+TE · GB
+· Dirty Dar’s Old Men
+30
+62
+RB15
+=
+Quinshon Judkins
+RB · CLE
+· Dirty Dar’s Old Men
+30
+63
+WR27
+=
+KC Concepcion Jr.
+WR · CLE
+· Gees Willies
+30
+64
+WR28
+=
+Makai Lemon
+WR · PHI
+· GunslingerSam
+29
+65
+QB8
+=
+Brock Purdy
+Q
+QB · SF
+· El Rey
+29
+66
+TE6
+=
+Harold Fannin Jr.
+Q
+TE · CLE
+· Dirty Dar’s Old Men
+28
+67
+WR26
+=
+Jameson Williams
+WR · DET
+· Dirty Dar’s Old Men
+27
+68
+TE9
+=
+Dalton Kincaid
+Q
+TE · BUF
+· rbroo
+26
+69
+RB19
+=
+Saquon Barkley
+RB · PHI
+· CinciStackin
+26
+70
+WR30
+=
+Denzel Boston
+Q
+WR · CLE
+· rbroo
+26
+71
+WR33
+=
+DJ Moore
+WR · BUF
+· Gees Willies
+24
+72
+QB13
+=
+Jalen Hurts
+IR
+QB · PHI
+· Dirty Dar’s Old Men
+24
+73
+RB17
+=
+Javonte Williams
+RB · DAL
+· CinciStackin
+23
+74
+TE10
+=
+Kyle Pitts Sr.
+TE · ATL
+· Dirty Dar’s Old Men
+22
+75
+RB27
+=
+Travis Etienne Jr.
+RB · NO
+· You
+21
+Show more (778 left)
+Home
+Matchup
+Rankings
+League

@@ -1,0 +1,657 @@
+FF
+Fantasy Football Champions League
+FANTASY FOOTBALL CHAMPIONS LEAGUE · DYNASTY · PPR
+RANKINGS
+i
+Week
+Week 12
+Season
+Weeks 12–17
+Dynasty
+Long term
+PPR
+0
+½
+1
+TE PREMIUM
+None
++.5
++1
+PASS TD
+4 pt
+6 pt
+
+= your league's setting. Changing these re-scores every projection.
+
+All players
+i
+All
+QB
+RB
+WR
+TE
+FLX
+ECR
+▼
+SHS
+▼
+PLAYER
+▼
+PTS
+▼
+1
+RB1
+=
+Jahmyr Gibbs
+RB · DET
+· Gees Willies
+157.8
+26.3/g
+2
+WR1
+=
+Jaxon Smith-Njigba
+Q
+WR · SEA
+· GunslingerSam
+147.8
+24.6/g
+3
+QB1
+=
+Josh Allen
+QB · BUF
+· SKOLVID-19
+140.4
+23.4/g
+4
+QB2
+=
+Joe Burrow
+QB · CIN
+· CinciStackin
+133.2
+22.2/g
+5
+QB3
+1
+Brock Purdy
+Q
+QB · SF
+· El Rey
+119.8
+20.0/g
+6
+RB2
+1
+Kenneth Walker III
+OUT
+RB · KC
+· CinciStackin
+105.9
+21.2/g
+7
+WR2
+=
+Ja'Marr Chase
+WR · CIN
+· CinciStackin
+114.4
+19.1/g
+8
+QB4
+1
+Caleb Williams
+QB · CHI
+· You
+115.0
+19.2/g
+9
+QB5
+=
+Trevor Lawrence
+QB · JAX
+· Dirty Dar’s Old Men
+128.5
+21.4/g
+10
+RB3
+1
+Bijan Robinson
+RB · ATL
+· You
+116.3
+19.4/g
+11
+QB6
+=
+Jordan Love
+QB · GB
+· CinciStackin
+115.6
+19.3/g
+12
+QB7
+=
+Dak Prescott
+QB · DAL
+· Herbie: Fully Loaded
+87.3
+17.5/g
+13
+QB8
+=
+Jared Goff
+QB · DET
+· You
+113.3
+18.9/g
+14
+WR3
+=
+Amon-Ra St. Brown
+WR · DET
+· You
+120.8
+20.1/g
+15
+WR4
+=
+CeeDee Lamb
+WR · DAL
+· Herbie: Fully Loaded
+94.7
+18.9/g
+16
+QB9
+=
+Patrick Mahomes
+QB · KC
+· rbroo
+114.7
+19.1/g
+17
+QB10
+=
+Jayden Daniels
+QB · WAS
+· GunslingerSam
+119.3
+19.9/g
+18
+QB11
+=
+C.J. Stroud
+QB · HOU
+· El Rey
+111.2
+18.5/g
+19
+RB4
+=
+Christian McCaffrey
+RB · SF
+· You
+124.5
+20.8/g
+20
+RB5
+=
+James Cook III
+RB · BUF
+· Herbie: Fully Loaded
+107.2
+17.9/g
+21
+WR5
+=
+Matthew Golden
+WR · GB
+· Gees Willies
+106.6
+17.8/g
+22
+RB6
+=
+Bucky Irving
+RB · TB
+· Jeroncanas05
+109.1
+18.2/g
+23
+WR6
+=
+Malik Nabers
+WR · NYG
+· SKOLVID-19
+94.3
+15.7/g
+24
+WR7
+=
+Justin Jefferson
+WR · MIN
+· You
+114.4
+19.1/g
+25
+QB12
+=
+Kirk Cousins
+QB · MIN
+· GunslingerSam
+110.4
+18.4/g
+26
+RB7
+=
+Chuba Hubbard
+RB · CAR
+· Gees Willies
+100.2
+16.7/g
+27
+WR8
+2
+Christian Watson
+OUT
+WR · GB
+· SKOLVID-19
+101.1
+16.8/g
+28
+QB13
+=
+Matthew Stafford
+QB · LAR
+· Gees Willies
+89.9
+15.0/g
+29
+WR9
+1
+Tee Higgins
+WR · CIN
+· SKOLVID-19
+98.2
+16.4/g
+30
+WR10
+1
+Chris Olave
+WR · NO
+· Herbie: Fully Loaded
+92.7
+15.5/g
+31
+QB14
+=
+Bryce Young
+QB · CAR
+· Jeroncanas05
+98.6
+16.4/g
+32
+WR11
+=
+Drake London
+WR · ATL
+· GunslingerSam
+99.7
+16.6/g
+33
+QB15
+=
+Tyler Shough
+QB · NO
+· El Rey
+95.9
+16.0/g
+34
+WR12
+=
+Parker Washington
+WR · JAX
+· CinciStackin
+100.6
+16.8/g
+35
+RB8
+=
+Javonte Williams
+RB · DAL
+· CinciStackin
+82.3
+16.5/g
+36
+WR13
+=
+Nico Collins
+WR · HOU
+· You
+95.4
+15.9/g
+37
+RB9
+1
+D'Andre Swift
+RB · CHI
+· CinciStackin
+89.0
+14.8/g
+38
+QB16
+=
+Bo Nix
+QB · DEN
+· SKOLVID-19
+100.2
+16.7/g
+39
+RB10
+1
+Jaylen Warren
+RB · PIT
+· Jeroncanas05
+85.4
+14.2/g
+40
+WR14
+1
+Zay Flowers
+Q
+WR · BAL
+· Gees Willies
+84.2
+16.8/g
+41
+WR15
+1
+Luther Burden III
+WR · CHI
+· You
+96.6
+16.1/g
+42
+RB11
+2
+Chase Brown
+RB · CIN
+· CinciStackin
+76.8
+12.8/g
+43
+RB12
+2
+Bhayshul Tuten
+Q
+RB · JAX
+· rbroo
+94.5
+15.8/g
+44
+TE1
+=
+Brock Bowers
+Q
+TE · LV
+· GunslingerSam
+91.0
+18.2/g
+45
+QB17
+=
+Aaron Rodgers
+QB · PIT
+· GunslingerSam
+0.0
+46
+QB18
+=
+J.J. McCarthy
+QB · NYG
+· Free agent
+87.5
+14.6/g
+47
+QB19
+4
+Drake Maye
+OUT
+QB · NE
+· CinciStackin
+44.0
+22.0/g
+48
+RB13
+1
+Kyren Williams
+RB · LAR
+· El Rey
+87.6
+14.6/g
+49
+RB14
+1
+Jonathan Taylor
+RB · IND
+· El Rey
+81.1
+16.2/g
+50
+QB20
+1
+Michael Penix Jr.
+QB · ATL
+· Free agent
+87.4
+14.6/g
+51
+QB21
+1
+Geno Smith
+QB · NYJ
+· Free agent
+80.6
+16.1/g
+52
+QB22
+1
+Jacoby Brissett
+QB · BAL
+· Free agent
+62.0
+12.4/g
+53
+WR16
+=
+Garrett Wilson
+WR · NYJ
+· CinciStackin
+72.7
+14.5/g
+54
+WR17
+1
+Tetairoa McMillan
+Q
+WR · CAR
+· GunslingerSam
+87.1
+14.5/g
+55
+QB23
+1
+Deshaun Watson
+QB · CLE
+· Free agent
+90.6
+15.1/g
+56
+RB15
+=
+Jonah Coleman
+RB · DEN
+· Jeroncanas05
+93.1
+15.5/g
+57
+TE2
+=
+Trey McBride
+TE · ARI
+· You
+83.6
+16.7/g
+58
+WR18
+1
+George Pickens
+WR · DAL
+· Gees Willies
+69.9
+14.0/g
+59
+TE3
+=
+George Kittle
+TE · SF
+· Herbie: Fully Loaded
+83.4
+13.9/g
+60
+TE4
+=
+Isaiah Likely
+Q
+TE · NYG
+· SKOLVID-19
+84.4
+14.1/g
+61
+RB16
+2
+Derrick Henry
+Q
+RB · BAL
+· El Rey
+70.8
+14.2/g
+62
+RB17
+1
+Cam Skattebo
+RB · NYG
+· GunslingerSam
+92.9
+15.5/g
+63
+QB24
+=
+Sam Darnold
+QB · SEA
+· rbroo
+95.1
+15.8/g
+64
+WR19
+=
+DJ Moore
+WR · BUF
+· Gees Willies
+78.1
+13.0/g
+65
+WR20
+=
+Rashee Rice
+WR · KC
+· SKOLVID-19
+86.9
+14.5/g
+66
+WR21
+=
+Jameson Williams
+WR · DET
+· Dirty Dar’s Old Men
+78.8
+13.1/g
+67
+WR22
+4
+Puka Nacua
+IR
+WR · LAR
+· Herbie: Fully Loaded
+0.0
+68
+RB18
+1
+Tony Pollard
+RB · TEN
+· Herbie: Fully Loaded
+91.7
+15.3/g
+69
+QB25
+=
+Cam Ward
+QB · TEN
+· Gees Willies
+92.9
+15.5/g
+70
+WR23
+1
+Carnell Tate
+WR · TEN
+· Jeroncanas05
+76.9
+12.8/g
+71
+WR24
+5
+Stefon Diggs
+Q
+WR · WAS
+· rbroo
+75.4
+12.6/g
+72
+TE5
+=
+Colston Loveland
+TE · CHI
+· SKOLVID-19
+69.1
+11.5/g
+73
+QB26
+=
+Baker Mayfield
+QB · TB
+· Jeroncanas05
+90.1
+15.0/g
+74
+WR25
+2
+Jordyn Tyson
+WR · NO
+· Dirty Dar’s Old Men
+71.0
+11.8/g
+75
+RB19
+1
+Ollie Gordon II
+RB · MIA
+· Gees Willies
+71.1
+11.8/g
+Show more (461 left)
+Home
+Matchup
+Rankings
+League

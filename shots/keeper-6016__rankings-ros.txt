@@ -1,0 +1,730 @@
+CM
+Cash Money Heroes League
+CASH MONEY HEROES LEAGUE · KEEPER · HALF PPR
+RANKINGS
+i
+Week
+Week 12
+Season
+Weeks 12–17
+Dynasty
+Long term
+PPR
+0
+½
+1
+TE PREMIUM
+None
++.5
++1
+KEEPER COST
+Off
+Some
+Full
+PASS TD
+4 pt
+6 pt
+
+= your league's setting. Keeper cost moves bargain keepers (cheap round for what they're worth next year) up and overpriced ones down: Some ≈ up to 25%, Full ≈ up to 50%. Changing these re-scores every projection.
+
+All players
+i
+All
+QB
+RB
+WR
+TE
+FLX
+DST
+ECR
+▼
+SHS
+▼
+PLAYER
+▼
+PTS
+▼
+1
+RB1
+=
+Jahmyr Gibbs
+RB · DET
+· Lasciare Louts
+Keep R1
+142.5
+23.8/g
+2
+QB1
+=
+Josh Allen
+QB · BUF
+· ShadyDealings
+Keep R1
+135.5
+22.6/g
+3
+QB2
+=
+Joe Burrow
+QB · CIN
+· The Louisiana BurrChase
+Keep R3
+130.4
+21.7/g
+4
+WR1
+=
+Jaxon Smith-Njigba
+Q
+WR · SEA
+· ShadyDealings
+Keep R3
+126.3
+21.1/g
+5
+QB3
+1
+Brock Purdy
+Q
+QB · SF
+· The Replacements
+Keep R3
+115.1
+19.2/g
+6
+QB4
+1
+Caleb Williams
+QB · CHI
+· The. Mighty Ducks
+Keep R3
+110.9
+18.5/g
+7
+QB5
+=
+Trevor Lawrence
+QB · JAX
+· Lasciare Louts
+Keep R3
+124.6
+20.8/g
+8
+RB2
+1
+Kenneth Walker III
+OUT
+RB · KC
+· ASwizzleSizzle
+Keep R3
+96.6
+19.3/g
+9
+QB6
+=
+Jordan Love
+QB · GB
+· The hurts locker
+Keep R3
+111.4
+18.6/g
+10
+QB7
+=
+Dak Prescott
+QB · DAL
+· Coke with Nabers
+Keep R3
+83.7
+16.7/g
+11
+QB8
+=
+Jared Goff
+QB · DET
+· ASwizzleSizzle
+Keep R3
+109.5
+18.3/g
+12
+QB9
+=
+Patrick Mahomes
+QB · KC
+· ASwizzleSizzle
+Keep R3
+111.2
+18.5/g
+13
+QB10
+=
+Jayden Daniels
+QB · WAS
+· Lasciare Louts
+Keep R3
+116.9
+19.5/g
+14
+QB11
+=
+C.J. Stroud
+QB · HOU
+· The Replacements
+Keep R3
+109.1
+18.2/g
+15
+RB3
+1
+Bijan Robinson
+RB · ATL
+· The Louisiana BurrChase
+Keep R1
+106.3
+17.7/g
+16
+RB4
+=
+Christian McCaffrey
+RB · SF
+· ShadyDealings
+Keep R1
+112.8
+18.8/g
+17
+WR2
+=
+Ja'Marr Chase
+WR · CIN
+· The Louisiana BurrChase
+Keep R1
+96.3
+16.1/g
+18
+WR3
+=
+Amon-Ra St. Brown
+WR · DET
+· The. Mighty Ducks
+Keep R3
+100.1
+16.7/g
+19
+RB5
+=
+James Cook III
+RB · BUF
+· ASwizzleSizzle
+Keep R1
+103.0
+17.2/g
+20
+QB12
+=
+Kirk Cousins
+QB · MIN
+· The Replacements
+Keep R3
+106.8
+17.8/g
+21
+RB6
+=
+Bucky Irving
+RB · TB
+· We Are Golden
+Keep R3
+99.9
+16.7/g
+22
+WR4
+=
+CeeDee Lamb
+WR · DAL
+· ASwizzleSizzle
+Keep R3
+78.4
+15.7/g
+23
+WR5
+=
+Matthew Golden
+WR · GB
+· We Are Golden
+Keep R3
+101.0
+16.8/g
+24
+WR6
+=
+Malik Nabers
+WR · NYG
+· Coke with Nabers
+Keep R1
+76.8
+12.8/g
+25
+RB7
+=
+Chuba Hubbard
+RB · CAR
+· Coke with Nabers
+Keep R3
+92.5
+15.4/g
+26
+QB13
+=
+Matthew Stafford
+QB · LAR
+· The. Mighty Ducks
+Keep R3
+84.2
+14.0/g
+27
+RB8
+=
+Javonte Williams
+RB · DAL
+· You
+Keep R1
+76.3
+15.3/g
+28
+QB14
+=
+Bryce Young
+QB · CAR
+· The Louisiana BurrChase
+Keep R3
+93.8
+15.6/g
+29
+QB15
+=
+Tyler Shough
+QB · NO
+· Coke with Nabers
+Keep R3
+91.4
+15.2/g
+30
+QB16
+=
+Bo Nix
+QB · DEN
+· We Are Golden
+Keep R3
+97.3
+16.2/g
+31
+QB17
+=
+Aaron Rodgers
+QB · PIT
+· Free agent
+0.0
+32
+WR7
+=
+Justin Jefferson
+WR · MIN
+· The Louisiana BurrChase
+Keep R3
+95.5
+15.9/g
+33
+RB9
+1
+D'Andre Swift
+RB · CHI
+· The Replacements
+Keep R3
+81.3
+13.5/g
+34
+QB18
+=
+J.J. McCarthy
+QB · NYG
+· Free agent
+82.2
+13.7/g
+35
+RB10
+1
+Jaylen Warren
+RB · PIT
+· The Louisiana BurrChase
+Keep R3
+77.5
+12.9/g
+36
+RB11
+2
+Chase Brown
+RB · CIN
+· The. Mighty Ducks
+Keep R3
+66.3
+11.0/g
+37
+QB19
+4
+Drake Maye
+OUT
+QB · NE
+· We Are Golden
+Keep R3
+42.2
+21.1/g
+38
+WR8
+2
+Christian Watson
+OUT
+WR · GB
+· Coke with Nabers
+Keep R3
+87.8
+14.6/g
+39
+QB20
+1
+Michael Penix Jr.
+QB · ATL
+· Free agent
+82.2
+13.7/g
+40
+RB12
+2
+Bhayshul Tuten
+Q
+RB · JAX
+· The Replacements
+Keep R3
+94.0
+15.7/g
+41
+WR9
+1
+Tee Higgins
+WR · CIN
+· Lasciare Louts
+Keep R3
+83.1
+13.8/g
+42
+WR10
+1
+Chris Olave
+WR · NO
+· The Replacements
+Keep R3
+75.7
+12.6/g
+43
+QB21
+1
+Geno Smith
+QB · NYJ
+· The hurts locker
+Keep R3
+78.0
+15.6/g
+44
+QB22
+1
+Jacoby Brissett
+QB · BAL
+· Free agent
+58.4
+11.7/g
+45
+RB13
+1
+Kyren Williams
+RB · LAR
+· ShadyDealings
+Keep R2
+79.1
+13.2/g
+46
+WR11
+=
+Drake London
+WR · ATL
+· The hurts locker
+Keep R1
+82.5
+13.8/g
+47
+WR12
+=
+Parker Washington
+WR · JAX
+· You
+Keep R3
+95.9
+16.0/g
+48
+WR13
+=
+Nico Collins
+WR · HOU
+· The hurts locker
+Keep R3
+81.0
+13.5/g
+49
+RB14
+1
+Jonathan Taylor
+RB · IND
+· ASwizzleSizzle
+Keep R1
+76.0
+15.2/g
+50
+WR14
+3
+Zay Flowers
+Q
+WR · BAL
+· Coke with Nabers
+Keep R2
+69.4
+13.9/g
+51
+QB23
+1
+Deshaun Watson
+QB · CLE
+· You
+Keep R3
+88.4
+14.7/g
+52
+QB24
+=
+Sam Darnold
+QB · SEA
+· The. Mighty Ducks
+Keep R3
+88.0
+14.7/g
+53
+RB15
+=
+Jonah Coleman
+RB · DEN
+· The. Mighty Ducks
+Keep R3
+87.2
+14.5/g
+54
+WR15
+1
+Luther Burden III
+WR · CHI
+· You
+Keep R3
+83.9
+14.0/g
+55
+RB16
+2
+Derrick Henry
+Q
+RB · BAL
+· Coke with Nabers
+Keep R1
+67.3
+13.5/g
+56
+RB17
+1
+Cam Skattebo
+RB · NYG
+· The Louisiana BurrChase
+Keep R2
+84.9
+14.2/g
+57
+WR16
+1
+Garrett Wilson
+WR · NYJ
+· The Louisiana BurrChase
+Keep R2
+60.0
+12.0/g
+58
+WR17
+2
+Tetairoa McMillan
+Q
+WR · CAR
+· The. Mighty Ducks
+Keep R3
+71.8
+12.0/g
+59
+TE1
+=
+Brock Bowers
+Q
+TE · LV
+· We Are Golden
+Keep R3
+75.5
+15.1/g
+60
+WR18
+2
+George Pickens
+WR · DAL
+· You
+Keep R2
+58.1
+11.6/g
+61
+QB25
+=
+Cam Ward
+QB · TEN
+· Free agent
+89.1
+14.8/g
+62
+WR19
+1
+DJ Moore
+WR · BUF
+· Lasciare Louts
+Keep R3
+66.3
+11.0/g
+63
+RB18
+1
+Tony Pollard
+RB · TEN
+· We Are Golden
+Keep R3
+83.3
+13.9/g
+64
+WR20
+=
+Rashee Rice
+WR · KC
+· We Are Golden
+Keep R3
+71.1
+11.8/g
+65
+QB26
+=
+Baker Mayfield
+QB · TB
+· The. Mighty Ducks
+Keep R3
+85.9
+14.3/g
+66
+RB19
+=
+Ollie Gordon II
+RB · MIA
+· The Louisiana BurrChase
+Keep R3
+66.7
+11.1/g
+67
+WR21
+=
+Jameson Williams
+WR · DET
+· We Are Golden
+Keep R3
+68.2
+11.4/g
+68
+WR22
+4
+Puka Nacua
+IR
+WR · LAR
+· The. Mighty Ducks
+Keep R2
+0.0
+69
+TE2
+=
+Trey McBride
+TE · ARI
+· The Louisiana BurrChase
+Keep R3
+66.1
+13.2/g
+70
+TE3
+=
+George Kittle
+TE · SF
+· The hurts locker
+Keep R3
+69.2
+11.5/g
+71
+WR23
+1
+Carnell Tate
+WR · TEN
+· The Louisiana BurrChase
+Keep R3
+63.6
+10.6/g
+72
+RB20
+=
+Breece Hall
+RB · NYJ
+· The hurts locker
+Keep R1
+52.4
+10.5/g
+73
+QB27
+1
+Justin Herbert
+Q
+QB · LAC
+· Free agent
+78.3
+13.0/g
+74
+RB21
+2
+Saquon Barkley
+RB · PHI
+· We Are Golden
+Keep R1
+85.5
+14.3/g
+75
+RB22
+=
+Blake Corum
+RB · LAR
+· ASwizzleSizzle
+Keep R3
+71.1
+11.8/g
+Show more (492 left)
+Home
+Matchup
+Rankings
+League

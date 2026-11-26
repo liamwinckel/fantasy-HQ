@@ -1,0 +1,208 @@
+FF
+Fantasy Football Champions League
+FANTASY FOOTBALL CHAMPIONS LEAGUE · DYNASTY · PPR
+WAIVER ASSISTANT
+i
+YOUR NEEDS
+i
+QB · 8th of 10 at QB
+RB · 6th of 10 at RB
+BEST ADDS FOR YOUR TEAM
+i
+Roster spots:
+24/24
+· full: every add needs a drop
+· Tap a player to see the impact on your team
+PLAYER	PROJ · WK	GAIN ROS	
+
+Geno Smith
+wk
+9%
+dyn
+=
+QB · NYJ · age 36
+FILLS QB NEED
+	17.6	+1.4	
+
+
+Michael Penix Jr.
+wk
+=
+dyn
+=
+QB · ATL · age 26
+	11.7	—	
+
+
+J.J. McCarthy
+wk
+=
+dyn
+=
+QB · NYG · age 23
+	17.0	—	
+
+
+Anthony Richardson Sr.
+wk
+=
+dyn
+=
+QB · IND · age 24
+	13.4	—	
+
+
+AJ Barner
+wk
+=
+dyn
+16%
+TE · SEA · age 24
+	7.3	—	
+
+
+Gunnar Helm
+wk
+=
+dyn
+7%
+TE · TEN · age 24
+	5.6	—	
+
+
+Greg Dulcich
+wk
+=
+dyn
+7%
+TE · MIA · age 26
+	6.9	—	
+
+
+Jerry Jeudy
+wk
+7%
+dyn
+=
+WR · CLE · age 27
+	3.8	—	
+
+
+Mason Taylor
+wk
+4%
+dyn
+4%
+TE · NYJ · age 22
+	7.1	—	
+
+
+Jauan Jennings
+wk
+=
+dyn
+=
+WR · MIN · age 29
+	4.6	—	
+STREAMERS THIS WEEK
+i
+
+None right now.
+
+RISING USAGE
+i
+J.J. McCarthy
+=
+QB · NYG · vs IND
+13.7
+proj pts/g
+Jacoby Brissett
+=
+QB · BAL · vs HOU
+12.8
+proj pts/g
+Tommy DeVito
+1
+QB · NE · vs LAC
+10.4
+proj pts/g
+Mason Rudolph
+=
+QB · PIT · vs DEN
+9.1
+proj pts/g
+Austin Ekeler
+1
+RB · WAS · vs ARI
+6.5
+proj pts/g
+Anthony Gould
+WR · IND · vs NYG
+6.3
+proj pts/g
+HANDCUFFS
+i
+Khalil Herbert
+3
+RB · ATL · vs MIN
+4.6
+pts/game
+Ty Johnson
+4
+RB · BUF · vs KC
+6.1
+pts/game
+Will Shipley
+2
+RB · PHI · vs DAL
+3.2
+pts/game
+Jaydn Ott
+6
+RB · KC · vs BUF
+1.6
+pts/game
+Austin Ekeler
+1
+RB · WAS · vs ARI
+6.5
+pts/game
+WAIVER PLANNER · NEXT 4 WEEKS
+i
+Week 12
+157 pts
+Lineup set
+Week 13
+155 pts
+Lineup set
+Week 14
+156 pts
+Lineup set
+Week 15
+157 pts
+Lineup set
+Geno Smith
+QB · NYJ
+BYE/HOLE FILL
+Fills your week 15 hole (+1.4 pts): add now, before others plan for it
+
+Roster full? Your least valuable bench player is Tyler Goodson.
+
+Bars = points added to your best lineup, weeks 12–15.
+
+DROP CANDIDATES
+i
+Mike Gesicki TE · CIN
+AJ Barner (free agent) is worth more (2 vs 0).
+4
+0.2
+dynasty value
+Pat Freiermuth TE · PIT
+AJ Barner (free agent) is worth more (2 vs 1).
+1
+0.9
+dynasty value
+Home
+Matchup
+Rankings
+League

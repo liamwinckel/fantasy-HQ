@@ -1,0 +1,659 @@
+FB
+Friday Beers
+FRIDAY BEERS · REDRAFT · HALF PPR
+RANKINGS
+i
+Week
+Week 12
+Season
+Weeks 12–17
+Dynasty
+Long term
+PPR
+0
+½
+1
+TE PREMIUM
+None
++.5
++1
+PASS TD
+4 pt
+6 pt
+
+= your league's setting. Changing these re-scores every projection.
+
+All players
+i
+All
+QB
+RB
+WR
+TE
+FLX
+K
+ECR
+▼
+SHS
+▼
+PLAYER
+▼
+PTS
+▼
+1
+RB1
+=
+Jahmyr Gibbs
+RB · DET
+· GunslingerSam
+142.5
+23.8/g
+2
+QB1
+=
+Josh Allen
+QB · BUF
+· BigBrownCow
+135.5
+22.6/g
+3
+QB2
+=
+Joe Burrow
+QB · CIN
+· A Touch of the Downs
+130.4
+21.7/g
+4
+WR1
+=
+Jaxon Smith-Njigba
+Q
+WR · SEA
+· Dirtydars
+126.3
+21.1/g
+5
+QB3
+1
+Brock Purdy
+Q
+QB · SF
+· Purdy Lamb
+115.1
+19.2/g
+6
+QB4
+1
+Caleb Williams
+QB · CHI
+· You
+110.9
+18.5/g
+7
+QB5
+=
+Trevor Lawrence
+QB · JAX
+· STEEL’in TDs
+124.6
+20.8/g
+8
+RB2
+1
+Kenneth Walker III
+OUT
+RB · KC
+· Je Ne Saquon
+96.6
+19.3/g
+9
+QB6
+=
+Jordan Love
+QB · GB
+· You
+111.4
+18.6/g
+10
+QB7
+=
+Dak Prescott
+QB · DAL
+· Blue Mountain State
+83.7
+16.7/g
+11
+QB8
+=
+Jared Goff
+QB · DET
+· Buffalo Big Balls
+109.5
+18.3/g
+12
+QB9
+=
+Patrick Mahomes
+QB · KC
+· Je Ne Saquon
+111.2
+18.5/g
+13
+QB10
+=
+Jayden Daniels
+QB · WAS
+· Buffalo Big Balls
+116.9
+19.5/g
+14
+QB11
+=
+C.J. Stroud
+QB · HOU
+· Team Fun
+109.1
+18.2/g
+15
+RB3
+1
+Bijan Robinson
+RB · ATL
+· You
+106.3
+17.7/g
+16
+RB4
+=
+Christian McCaffrey
+RB · SF
+· Team Fun
+112.8
+18.8/g
+17
+WR2
+=
+Ja'Marr Chase
+WR · CIN
+· BigBrownCow
+96.3
+16.1/g
+18
+RB5
+=
+James Cook III
+RB · BUF
+· Buffalo Big Balls
+103.0
+17.2/g
+19
+QB12
+=
+Kirk Cousins
+QB · MIN
+· GunslingerSam
+106.8
+17.8/g
+20
+RB6
+=
+Bucky Irving
+RB · TB
+· STEEL’in TDs
+99.9
+16.7/g
+21
+WR3
+=
+Amon-Ra St. Brown
+WR · DET
+· A Touch of the Downs
+100.1
+16.7/g
+22
+WR4
+=
+CeeDee Lamb
+WR · DAL
+· Purdy Lamb
+78.4
+15.7/g
+23
+QB13
+=
+Matthew Stafford
+QB · LAR
+· The Wenis Lickers
+84.2
+14.0/g
+24
+QB14
+=
+Bryce Young
+QB · CAR
+· Free agent
+93.8
+15.6/g
+25
+RB7
+=
+Chuba Hubbard
+RB · CAR
+· GunslingerSam
+90.0
+15.0/g
+26
+QB15
+=
+Tyler Shough
+QB · NO
+· Dirtydars
+91.4
+15.2/g
+27
+QB16
+=
+Bo Nix
+QB · DEN
+· BigBrownCow
+97.3
+16.2/g
+28
+QB17
+=
+Aaron Rodgers
+QB · PIT
+· Free agent
+0.0
+29
+WR5
+=
+Matthew Golden
+WR · GB
+· Blue Mountain State
+84.7
+14.1/g
+30
+QB18
+=
+J.J. McCarthy
+QB · NYG
+· Free agent
+82.2
+13.7/g
+31
+RB8
+=
+Javonte Williams
+RB · DAL
+· The Wenis Lickers
+76.3
+15.3/g
+32
+RB9
+1
+D'Andre Swift
+RB · CHI
+· Dirtydars
+81.3
+13.5/g
+33
+RB10
+1
+Jaylen Warren
+RB · PIT
+· You
+76.0
+12.7/g
+34
+WR6
+=
+Malik Nabers
+WR · NYG
+· STEEL’in TDs
+76.8
+12.8/g
+35
+QB19
+4
+Drake Maye
+OUT
+QB · NE
+· GunslingerSam
+42.2
+21.1/g
+36
+QB20
+1
+Michael Penix Jr.
+QB · ATL
+· Free agent
+82.2
+13.7/g
+37
+WR7
+=
+Justin Jefferson
+WR · MIN
+· Blue Mountain State
+95.5
+15.9/g
+38
+RB11
+2
+Chase Brown
+RB · CIN
+· Buffalo Big Balls
+66.3
+11.0/g
+39
+WR8
+2
+Christian Watson
+OUT
+WR · GB
+· Blue Mountain State
+87.8
+14.6/g
+40
+RB12
+2
+Bhayshul Tuten
+Q
+RB · JAX
+· The Wenis Lickers
+82.9
+13.8/g
+41
+QB21
+1
+Geno Smith
+QB · NYJ
+· Free agent
+78.0
+15.6/g
+42
+QB22
+1
+Jacoby Brissett
+QB · BAL
+· Free agent
+58.4
+11.7/g
+43
+WR9
+1
+Tee Higgins
+WR · CIN
+· Buffalo Big Balls
+83.1
+13.8/g
+44
+RB13
+1
+Kyren Williams
+RB · LAR
+· Team Fun
+78.4
+13.1/g
+45
+WR10
+1
+Chris Olave
+WR · NO
+· Buffalo Big Balls
+75.7
+12.6/g
+46
+WR11
+=
+Drake London
+WR · ATL
+· GunslingerSam
+82.5
+13.8/g
+47
+WR12
+=
+Parker Washington
+WR · JAX
+· Dirtydars
+82.1
+13.7/g
+48
+RB14
+1
+Jonathan Taylor
+RB · IND
+· STEEL’in TDs
+76.0
+15.2/g
+49
+QB23
+1
+Deshaun Watson
+QB · CLE
+· Free agent
+88.4
+14.7/g
+50
+QB24
+=
+Sam Darnold
+QB · SEA
+· Free agent
+88.0
+14.7/g
+51
+WR13
+=
+Nico Collins
+WR · HOU
+· Dirtydars
+81.0
+13.5/g
+52
+WR14
+1
+Zay Flowers
+Q
+WR · BAL
+· Je Ne Saquon
+69.4
+13.9/g
+53
+RB15
+=
+Jonah Coleman
+RB · DEN
+· Blue Mountain State
+85.5
+14.3/g
+54
+RB16
+1
+Derrick Henry
+Q
+RB · BAL
+· Purdy Lamb
+67.3
+13.5/g
+55
+RB17
+1
+Cam Skattebo
+RB · NYG
+· Blue Mountain State
+84.9
+14.2/g
+56
+WR15
+1
+Luther Burden III
+WR · CHI
+· You
+77.9
+13.0/g
+57
+TE1
+=
+Brock Bowers
+Q
+TE · LV
+· You
+75.5
+15.1/g
+58
+QB25
+=
+Cam Ward
+QB · TEN
+· The Wenis Lickers
+89.1
+14.8/g
+59
+WR16
+=
+Garrett Wilson
+WR · NYJ
+· The Wenis Lickers
+60.0
+12.0/g
+60
+WR17
+2
+Tetairoa McMillan
+Q
+WR · CAR
+· A Touch of the Downs
+71.8
+12.0/g
+61
+QB26
+=
+Baker Mayfield
+QB · TB
+· Free agent
+85.9
+14.3/g
+62
+WR18
+1
+George Pickens
+WR · DAL
+· You
+58.1
+11.6/g
+63
+TE2
+=
+Trey McBride
+TE · ARI
+· A Touch of the Downs
+66.1
+13.2/g
+64
+TE3
+=
+George Kittle
+TE · SF
+· Je Ne Saquon
+69.2
+11.5/g
+65
+WR19
+1
+DJ Moore
+WR · BUF
+· GunslingerSam
+66.3
+11.0/g
+66
+QB27
+1
+Justin Herbert
+Q
+QB · LAC
+· Free agent
+78.3
+13.0/g
+67
+RB18
+=
+Tony Pollard
+RB · TEN
+· GunslingerSam
+82.5
+13.8/g
+68
+RB19
+1
+Ollie Gordon II
+RB · MIA
+· Blue Mountain State
+66.7
+11.1/g
+69
+WR20
+=
+Rashee Rice
+WR · KC
+· GunslingerSam
+71.1
+11.8/g
+70
+RB20
+1
+Breece Hall
+RB · NYJ
+· BigBrownCow
+52.4
+10.5/g
+71
+TE4
+=
+Isaiah Likely
+Q
+TE · NYG
+· Dirtydars
+68.5
+11.4/g
+72
+QB28
+1
+Fernando Mendoza
+QB · LV
+· Free agent
+72.8
+14.6/g
+73
+RB21
+2
+Saquon Barkley
+RB · PHI
+· Je Ne Saquon
+85.5
+14.3/g
+74
+RB22
+=
+Blake Corum
+RB · LAR
+· GunslingerSam
+59.3
+9.9/g
+75
+QB29
+2
+Malik Willis
+IR
+QB · MIA
+· Free agent
+60.6
+15.2/g
+Show more (486 left)
+Home
+Matchup
+Rankings
+League
