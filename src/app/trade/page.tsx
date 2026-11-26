@@ -46,7 +46,11 @@ function TradePageBody({ setup, league, ctx, sp }: LeagueData) {
 
   return (
     <div className="flex flex-col gap-5">
-      <PageHeader eyebrow={`${league.name} · ${formatLabel(league)} · ${ctx.scoring}${ctx.superflex ? " · Superflex" : ""} · ${ctx.teamsCount} teams`} title="Trade Analyzer" />
+      <PageHeader eyebrow={`${league.name} · ${formatLabel(league)} · ${ctx.scoring}${ctx.superflex ? " · Superflex" : ""} · ${ctx.teamsCount} teams`} title="Trade Analyzer" info={<>
+        <p><b>How values work.</b> Every player is projected in <b>this league&apos;s exact scoring</b> — PPR level, bonuses, TE premium, superflex, even kick/punt return yards — then valued by points above a replacement starter for your roster size and lineup.</p>
+        <p className="mt-2">{ctx.format === "dynasty" ? "Dynasty: the FantasyPros/DynastyProcess market, blended with our model for age, role and durability." : ctx.format === "keeper" ? "Keeper: rest-of-season value plus next season's keep value — his projected points over what his keep round usually returns, using your keeper rules." : "Redraft: rest-of-season points, weighted toward the playoff weeks."} Expert ranks count for less when a player scores in ways they ignore (e.g. return yards). Picks are valued as the player usually taken there.</p>
+        <p className="mt-2"><b>Why it beats generic trade charts:</b> those use one standard scoring setup for every league. These numbers are built for your league&apos;s settings, roster, rules and schedule.</p>
+      </>} />
       {ctx.warnings.map((w) => <Notice key={w} tone="warn">{w}</Notice>)}
       <TradeAnalyzer
         key={`${leagueId}:${sp.partner ?? ""}:${sp.a ?? ""}:${sp.b ?? ""}`}
