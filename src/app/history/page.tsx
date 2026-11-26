@@ -121,7 +121,7 @@ function Drafts({ d, ctx }: { d: Loaded; ctx: LeagueContext }) {
   if (!g) return <Notice>No completed drafts found for this league on Sleeper.</Notice>;
   return (
     <div className="flex flex-col gap-4">
-      {tabs.length > 1 && <div className="mx-auto max-w-full overflow-x-auto"><Segmented label="Draft season" options={tabs} value={draftId} onChange={setDraftId} /></div>}
+      {tabs.length > 1 && <div className="max-w-full overflow-x-auto"><div className="mx-auto w-max"><Segmented label="Draft season" options={tabs} value={draftId} onChange={setDraftId} /></div></div>}
       <Card title={`${g.season} draft grades`} info={<>Hindsight grades. Every drafted player is scored by what he became ({g.basis.toLowerCase()}), then re-ranked. Each pick is compared
         with the player who finished at that same spot: <b className="text-fg">+</b> means you got more than the slot was worth. Keepers are left out. Grades are curved within the league.</>} pad={false}>
         <ul className="divide-y divide-line">

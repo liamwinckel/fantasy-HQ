@@ -119,7 +119,7 @@ export function rankings(ctx: LeagueContext, scope: RankScope, opts: RankOpts = 
   for (const r of rows) (byPos.get(r.pos) ?? byPos.set(r.pos, []).get(r.pos)!).push(r);
   const shsCurve = new Map<string, number[]>();
   for (const [pos, arr] of byPos) {
-    const sorted = [...arr].sort((a, b) => b.pts - a.pts);
+    const sorted = [...arr].sort((a, b) => (b.pts || 0) - (a.pts || 0));
     sorted.forEach((r, i) => (r.shsPos = i + 1));
     shsCurve.set(pos, sorted.map((r) => r.pts));
     [...arr].filter((r) => r.ecr !== null).sort((a, b) => a.ecr! - b.ecr!).forEach((r, i) => (r.ecrPos = i + 1));
@@ -143,7 +143,13 @@ export function rankings(ctx: LeagueContext, scope: RankScope, opts: RankOpts = 
     // "Some" (0.5) moves the biggest bargain up 25%, "Full" (1) up 50%.
     const maxKeep = Math.max(1e-9, ...[...ctx.keeperCost.values()].map((k) => Math.abs(k.surplus)));
     const kf = (r: RankRow) => (opt.keep && r.keepSurplus != null ? Math.max(0.7, 1 + opt.keep * 0.5 * (r.keepSurplus / maxKeep)) : 1);
-    const key = (r: RankRow) => (r.ecrPos !== null ? atRank(r.pos, r.ecrPos) * kf(r) + 1e6 : r.pts * kf(r));
+    // Converted points never rise down the experts' list at a position, so their order there is always kept.
+    const conv = new Map<string, number>();
+    for (const arr of byPos.values()) {
+      let prev = Infinity;
+      for (const r of arr.filter((x) => x.ecrPos !== null).sort((a, b) => a.ecrPos! - b.ecrPos!)) { prev = Math.min(prev, atRank(r.pos, r.ecrPos!) || 0); conv.set(r.id, prev); }
+    }
+    const key = (r: RankRow) => (r.ecrPos !== null ? (conv.get(r.id) ?? 0) * kf(r) + 1e6 : (r.pts || 0) * kf(r));
     // Equal converted points (common: projections are rounded) keep the experts' order within a position.
     rows.sort((a, b) => key(b) - key(a) || (a.pos === b.pos ? (a.ecrPos ?? 1e9) - (b.ecrPos ?? 1e9) : 0) || b.pts - a.pts);
   }
