@@ -6,7 +6,6 @@ import type { LeagueContext } from "@/lib/services/league";
 import { formatLabel } from "@/lib/services/portfolio";
 import { gameView, lineupSwaps, opponentOf } from "@/lib/services/views";
 import { waiverReport } from "@/lib/services/waivers";
-import { breakouts } from "@/lib/services/breakouts";
 import { loadKeeperPlan } from "@/lib/services/keeperData";
 import { powerRankings } from "@/lib/engine/power";
 import { winProbability } from "@/lib/engine/simulate";
@@ -52,7 +51,6 @@ export function LeagueOverview({ setup, league, ctx, sp }: LeagueData) {
   const cls = ctx.showClasses ? ctx.classifications.get(me.rosterId) : undefined;
   const swaps = ctx.seasonOver ? [] : lineupSwaps(ctx, me.rosterId);
   const waivers = ctx.seasonOver ? [] : waiverReport(ctx, me.rosterId).topAdds.slice(0, 3);
-  const breaks = breakouts(ctx).filter((b) => b.owner === "Free agent" || b.mine).slice(0, 4);
   const injured = me.players.map((id) => ctx.players.get(id)).filter((p) => p?.injury) as NonNullable<ReturnType<typeof ctx.players.get>>[];
   const keeper = keeperQ.data;
   const myPicks = ctx.picks.filter((p) => p.ownerRosterId === me.rosterId);
@@ -139,7 +137,7 @@ export function LeagueOverview({ setup, league, ctx, sp }: LeagueData) {
         </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-2">
         <Card title="Waiver targets" href="/waivers/">
           <ul className="flex flex-col gap-3">
             {waivers.map((w) => (
@@ -150,18 +148,6 @@ export function LeagueOverview({ setup, league, ctx, sp }: LeagueData) {
               </li>
             ))}
             {waivers.length === 0 && <li className="text-sm text-muted">Nothing stands out.</li>}
-          </ul>
-        </Card>
-        <Card title={fmt === "dynasty" ? "Future stars to watch" : "Breakout watch"} href="/breakouts/">
-          <ul className="flex flex-col gap-3">
-            {breaks.map((b) => (
-              <li key={b.id} className="flex items-center gap-3">
-                <PlayerImg id={b.id} name={b.name} pos={b.pos} size={32} />
-                <div className="min-w-0 flex-1"><div className="truncate text-sm font-semibold"><PlayerLink id={b.id} name={b.name} /> <span className="font-medium text-muted">{b.pos}</span></div><div className="truncate text-xs text-muted">{b.mine ? "On your team" : "Free agent"} · {b.evidence[0] ?? ""}</div></div>
-                <span className="num font-bold text-acc-ink">{b.score}</span>
-              </li>
-            ))}
-            {breaks.length === 0 && <li className="text-sm text-muted">No breakout candidates available to you right now.</li>}
           </ul>
         </Card>
         <Card title="Injury report" right={<Tag kind="SLEEPER" />}>
