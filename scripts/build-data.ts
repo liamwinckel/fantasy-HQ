@@ -165,6 +165,92 @@ async function main() {
     write("player-names.json", JSON.stringify(names));
   }]);
 
+  // Dynasty market values month by month (DynastyProcess's public git history), so old trades can be graded on what
+  // the assets were worth the day they were made. Players: 1QB and superflex values (÷50, so 0–205). Picks: "2024 1".
+  jobs.push(["values history", async () => {
+    const ROUND: Record<string, number> = { "1st": 1, "2nd": 2, "3rd": 3, "4th": 4, "5th": 5 };
+    let months: string[] = [];
+    let snapshot: (i: number) => { pv: string; pc: string; drift?: (id: string) => number } | null;
+    let idsCsv: string;
+    if (FX && !process.env.DP_REPO) {
+      // Fixtures: one snapshot of the fixture values, drifting over time so "then" and "now" differ.
+      const rd = (f: string) => (fs.existsSync(path.join(FX, f)) ? fs.readFileSync(path.join(FX, f), "utf8") : "");
+      const fx = parseCsv(rd("values-history-fixture.csv"));
+      if (!fx.length) return;
+      idsCsv = ["fantasypros_id,sleeper_id", ...fx.map((r) => `${r.sleeper_id},${r.sleeper_id}`)].join("\n");
+      const pv = ["fp_id,value_1qb,value_2qb", ...fx.map((r) => `${r.sleeper_id},${r.value_1qb},${r.value_2qb}`)].join("\n"), pc = "";
+      for (let y = 2024; y <= 2026; y++) for (let m = 1; m <= 12; m++) if (y < 2026 || m <= 11) months.push(`${y}-${String(m).padStart(2, "0")}`);
+      const n = months.length;
+      snapshot = (i) => ({ pv, pc, drift: (id) => { const h = [...id].reduce((a, c) => a + c.charCodeAt(0), 0); const t = i / (n - 1); return h % 2 ? 0.6 + 0.4 * t : 1.3 - 0.3 * t; } });
+    } else {
+      const { execFileSync } = await import("node:child_process");
+      let repo = process.env.DP_REPO ?? "";
+      if (!repo) {
+        repo = fs.mkdtempSync(path.join((await import("node:os")).tmpdir(), "dp-"));
+        execFileSync("git", ["clone", "-q", "--filter=blob:none", "--no-checkout", "https://github.com/dynastyprocess/data", repo], { stdio: "inherit" });
+      }
+      const git = (...a: string[]) => execFileSync("git", ["-C", repo, ...a], { encoding: "utf8", maxBuffer: 64 << 20 });
+      idsCsv = git("show", "HEAD:files/db_playerids.csv");
+      // First commit of each month since 2020 that touched the values file.
+      const log = git("log", "--reverse", "--since=2020-01-01", "--format=%H %cs", "--", "files/values-players.csv").trim().split("\n");
+      const firstOfMonth = new Map<string, string>();
+      for (const line of log) { const [sha, d] = line.split(" "); if (sha && d && !firstOfMonth.has(d.slice(0, 7))) firstOfMonth.set(d.slice(0, 7), sha); }
+      months = [...firstOfMonth.keys()];
+      snapshot = (i) => {
+        const sha = firstOfMonth.get(months[i])!;
+        let pv = "", pc = "";
+        try { pv = git("show", `${sha}:files/values-players.csv`); } catch { return null; }
+        try { pc = git("show", `${sha}:files/values-picks.csv`); } catch { /* older snapshots */ }
+        return { pv, pc };
+      };
+    }
+    const toSleeper = new Map<string, string>();
+    for (const r of parseCsv(idsCsv)) if (r.fantasypros_id && r.fantasypros_id !== "NA" && r.sleeper_id && r.sleeper_id !== "NA") toSleeper.set(r.fantasypros_id, r.sleeper_id);
+    const v1: Record<string, number[]> = {}, v2: Record<string, number[]> = {}, pk1: Record<string, number[]> = {}, pk2: Record<string, number[]> = {};
+    months.forEach((_, i) => {
+      const snap = snapshot(i);
+      if (!snap) return;
+      const pv = parseCsv(snap.pv), pc = snap.pc ? parseCsv(snap.pc) : [];
+      for (const r of pv) {
+        const id = toSleeper.get(r.fp_id);
+        if (!id) continue;
+        const k = snap.drift?.(id) ?? 1;
+        const a = Math.round((Number(r.value_1qb) * k) / 50), b = Math.round((Number(r.value_2qb) * k) / 50);
+        if (!(a > 0 || b > 0)) continue;
+        (v1[id] ??= Array(months.length).fill(0))[i] = a || 0;
+        (v2[id] ??= Array(months.length).fill(0))[i] = b || 0;
+      }
+      // Picks: DynastyProcess ranks them against players (an equivalent ECR); map that to a value with the players' curve.
+      const curve = (ek: string, vk: string) => pv.map((r) => [Number(r[ek]), Number(r[vk])] as const).filter(([e, v]) => e > 0 && v > 0).sort((x, y) => x[0] - y[0]);
+      const c1 = curve("ecr_1qb", "value_1qb"), c2 = curve("ecr_2qb", "value_2qb");
+      const at = (c: readonly (readonly [number, number])[], e: number) => {
+        if (!c.length || !(e > 0)) return 0;
+        if (e <= c[0][0]) return c[0][1];
+        for (let k = 1; k < c.length; k++) if (e <= c[k][0]) { const [e0, a0] = c[k - 1], [e1, a1] = c[k]; return a0 + ((a1 - a0) * (e - e0)) / Math.max(1e-9, e1 - e0); }
+        return c[c.length - 1][1];
+      };
+      const acc = new Map<string, [number[], number[]]>();
+      for (const r of pc) {
+        const name = r.player ?? "";
+        let key = "";
+        const slot = /^(\d{4}) Pick (\d+)\.(\d+)$/.exec(name), gen = /^(\d{4}) (1st|2nd|3rd|4th|5th)$/.exec(name);
+        if (slot) key = `${slot[1]} ${Number(slot[2])}`; else if (gen) key = `${gen[1]} ${ROUND[gen[2]]}`; else continue;
+        const e1 = Number(r.ecr_1qb), e2 = Number(r.ecr_2qb || r.ecr_1qb);
+        const x = acc.get(key) ?? [[], []];
+        x[0].push(at(c1, e1)); x[1].push(at(c2, e2) || at(c1, e1));
+        acc.set(key, x);
+      }
+      for (const [key, [a, b]] of acc) {
+        const mean = (v: number[]) => v.reduce((s, y) => s + y, 0) / Math.max(1, v.length);
+        (pk1[key] ??= Array(months.length).fill(0))[i] = Math.round(mean(a) / 50);
+        (pk2[key] ??= Array(months.length).fill(0))[i] = Math.round(mean(b) / 50);
+      }
+    });
+    // Drop players who were never worth much (keeps the file small).
+    for (const id of Object.keys(v1)) if (Math.max(...v1[id], ...v2[id]) < 4) { delete v1[id]; delete v2[id]; }
+    write("values-history.json", JSON.stringify({ months, v1, v2, p1: pk1, p2: pk2 }));
+  }]);
+
   // FantasyPros expert consensus rankings + dynasty market values, published openly by DynastyProcess
   // (the same files nflverse's load_ff_rankings() uses). Mapped to Sleeper IDs with their ID crosswalk.
   jobs.push(["consensus", async () => {
@@ -460,9 +546,12 @@ async function main() {
   }]);
 
   const failed: string[] = [];
+  const only = process.argv.includes("--only") ? process.argv[process.argv.indexOf("--only") + 1] : null;
   for (const [name, job] of jobs) {
+    if (only && name !== only) continue;
     try { await job(); } catch (e) { failed.push(name); console.error(`✗ ${name}: ${(e as Error).message}`); }
   }
+  if (only) return;
   fs.writeFileSync(path.join(OUT, "meta.json"), JSON.stringify({ builtAt: new Date().toISOString(), season: s, failed }));
   // Keep going if a non-essential file failed; the app degrades gracefully. Fail the build only if nothing worked.
   if (failed.length === jobs.length) process.exit(1);

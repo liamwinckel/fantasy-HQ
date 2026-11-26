@@ -60,9 +60,9 @@ function HistoryBody({ league, ctx }: LeagueData) {
 }
 
 // ------------------------------------------------------------------------------------------------
-function GradeChip({ g, size = "md" }: { g: string; size?: "md" | "lg" }) {
+function GradeChip({ g, size = "md" }: { g: string; size?: "sm" | "md" | "lg" }) {
   const tone = g.startsWith("A") ? "bg-pos/20 text-pos" : g.startsWith("B") ? "bg-pos/10 text-pos" : g.startsWith("C") ? "bg-panel2 text-fg" : "bg-neg/15 text-neg";
-  return <span className={cx("num inline-flex items-center justify-center rounded-lg font-extrabold", tone, size === "lg" ? "h-10 w-12 text-lg" : "h-7 w-9 text-sm")}>{g}</span>;
+  return <span className={cx("num inline-flex items-center justify-center rounded-lg font-extrabold", tone, size === "lg" ? "h-10 w-12 text-lg" : size === "sm" ? "h-6 w-8 text-xs opacity-80" : "h-7 w-9 text-sm")}>{g}</span>;
 }
 const ownerName = (d: Loaded, o: string) => d.h.owners.get(o)?.name ?? "Manager";
 
@@ -160,27 +160,33 @@ function Trades({ d, ctx }: { d: Loaded; ctx: LeagueContext }) {
       </div>
 
       {list.map((t) => (
-        <Card key={t.id} title={<span>{t.season} · Week {t.week}</span>} right={<span className="text-xs font-bold text-acc-ink">{t.verdict}</span>} pad={false}>
+        <Card key={t.id} title={<span className="whitespace-nowrap">{t.season} · {t.week ? `Wk ${t.week}` : "Offseason"}</span>} right={<span className="text-xs font-bold text-acc-ink">{t.verdict}</span>} pad={false}
+          info={<>{t.atBasis && <><b>At the time:</b> {t.atBasis}. </>}<b>Hindsight:</b> {t.basis}</>}>
           <div className="grid divide-y divide-line sm:grid-cols-2 sm:divide-x sm:divide-y-0">
             {t.sides.map((x) => (
               <div key={x.rosterId} className="flex flex-col gap-2 px-4 py-3">
-                <button type="button" onClick={() => setOpen(x.owner)} className="flex items-center gap-2 text-left"><GradeChip g={x.grade} /><span className={cx("min-w-0 flex-1 truncate font-bold", x.owner === myOwner && "text-acc-ink")}>{ownerName(d, x.owner)}</span></button>
+                <button type="button" onClick={() => setOpen(x.owner)} className="flex items-center gap-2 text-left">
+                  <span className={cx("min-w-0 flex-1 truncate font-bold", x.owner === myOwner && "text-acc-ink")}>{ownerName(d, x.owner)}</span>
+                  {x.atGrade && <span className="flex flex-col items-center gap-0.5"><GradeChip g={x.atGrade} size="sm" /><span className="text-[9px] font-bold uppercase tracking-wide text-muted">Then</span></span>}
+                  <span className="flex flex-col items-center gap-0.5"><GradeChip g={x.grade} /><span className="text-[9px] font-bold uppercase tracking-wide text-muted">{x.atGrade ? "Hindsight" : "Grade"}</span></span>
+                </button>
+                {x.titles.length > 0 && <span className="self-start rounded-md bg-acc/15 px-2 py-0.5 text-[11px] font-bold text-acc-ink">🏆 Won {x.titles.join(" & ")} title</span>}
                 <ul className="flex flex-col gap-1 text-sm">
                   {x.got.map((g) => (
                     <li key={g.id} className="flex items-center gap-2">
                       <span className="w-9 shrink-0 text-[10px] font-bold text-muted">{g.pos}</span>
-                      <span className="min-w-0 flex-1 truncate">{g.pos === "PICK" ? g.name : <PlayerLink id={g.id} name={g.name} />}</span>
+                      <span className="min-w-0 flex-1 truncate">{g.pos === "PICK" ? g.name : <PlayerLink id={g.id} name={g.name} />}{g.note?.startsWith("traded on") ? <span className="ml-1 text-[10px] text-muted">({g.note})</span> : null}</span>
                       {g.pts > 0 && <span className="num shrink-0 text-xs text-muted">{g.pts.toFixed(0)} pts</span>}
-                      {g.value > 0 && <span className="num w-10 shrink-0 text-right text-xs font-bold">{g.value.toFixed(0)}</span>}
+                      {(g.value > 0 || g.then > 0) && <span className="num w-14 shrink-0 text-right text-xs font-bold">{g.then > 0 ? <span className="font-normal text-muted">{g.then.toFixed(0)}→</span> : null}{g.value.toFixed(0)}</span>}
                     </li>
                   ))}
                   {!x.got.length && <li className="text-muted">Nothing</li>}
                 </ul>
-                <div className="text-[11px] text-muted">{x.pts.toFixed(0)} starter pts since{x.value > 0 ? ` · ${x.value.toFixed(0)} value today` : ""}</div>
+                {x.got.length > 1 && <div className="text-[11px] text-muted">{x.then > 0 ? `${x.then.toFixed(0)} then · ` : ""}{x.pts.toFixed(0)} starter pts since{x.value > 0 ? ` · ${x.value.toFixed(0)} now` : ""}</div>}
               </div>
             ))}
           </div>
-          <div className="border-t border-line px-4 py-2 text-[11px] text-muted">Graded on: {t.basis}</div>
+          {t.story && <div className="border-t border-line px-4 py-2 text-xs font-semibold text-acc-ink">{t.story}</div>}
         </Card>
       ))}
       {!list.length && <Notice>No trades match.</Notice>}
@@ -197,7 +203,7 @@ function TraderProfile({ x, d, onShow }: { x: TraderStats; d: Loaded; onShow: ()
   const tags = tendency(x, habit);
   const pos = [...x.pos].sort((a, b) => b[1] - a[1]);
   const partners = [...x.partners].sort((a, b) => b[1] - a[1]);
-  const line = (t: TradeGrade | null) => { if (!t) return null; const me = t.sides.find((s) => s.owner === x.owner)!; return <>{t.season} wk {t.week}: got {me.got.map((g) => g.name).join(", ") || "nothing"} <b>({me.grade})</b></>; };
+  const line = (t: TradeGrade | null) => { if (!t) return null; const me = t.sides.find((s) => s.owner === x.owner)!; return <>{t.season} wk {t.week}: got {me.got.map((g) => g.name).join(", ") || "nothing"} <b>({me.atGrade ? `${me.atGrade} → ${me.grade}` : me.grade})</b></>; };
   return (
     <div className="flex flex-col gap-4 text-sm">
       <div className="grid grid-cols-4 gap-2 text-center">

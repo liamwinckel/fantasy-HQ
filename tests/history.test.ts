@@ -41,7 +41,13 @@ describe.skipIf(!have)("league history on fixtures", () => {
     const mine = trades.find((t) => t.season === "2026" && t.sides.some((s) => s.rosterId === 1))!;
     expect(mine.sides).toHaveLength(2);
     expect(mine.sides.find((s) => s.rosterId === 4)!.got.some((g) => g.pos === "PICK")).toBe(true);
-    for (const t of trades) expect(t.sides.reduce((a, s) => a + s.share, 0)).toBeCloseTo(1, 5);
+    for (const t of trades) if (!t.sides.some((s) => s.titles.length)) expect(t.sides.reduce((a, s) => a + s.share, 0)).toBeCloseTo(1, 5);
+    // Two grades: at the time (market value that month) and hindsight; last season's champion gets "worth it".
+    for (const t of trades) for (const s of t.sides) expect(s.grade).toMatch(/^[A-F]/);
+    if (fs.existsSync(path.join(__dirname, "..", "public", "data", "values-history.json"))) expect(trades.filter((t) => t.sides.every((s) => s.atGrade)).length).toBeGreaterThan(2);
+    const won = trades.find((t) => t.season === "2025" && t.sides.some((s) => s.rosterId === 1))!;
+    const me = won.sides.find((s) => s.rosterId === 1)!;
+    if (me.pts > 0) { expect(me.titles).toEqual(["2025"]); expect(won.story).toMatch(/title/); expect(me.share).toBeGreaterThanOrEqual(0.55); }
     const g = await hist.gradeDraft(drafts[1], h, ctx);
     expect(g.teams).toHaveLength(10);
     expect(g.teams[0].surplus).toBeGreaterThanOrEqual(g.teams.at(-1)!.surplus);

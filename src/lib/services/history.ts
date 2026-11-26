@@ -10,9 +10,10 @@
  */
 import { sleeper } from "../sleeper/client";
 import { loadNames } from "../news";
-import type { Draft, DraftPick, League, Matchup, Player, Roster, SleeperUser, Transaction } from "../sleeper/types";
+import type { BracketGame, Draft, DraftPick, League, Matchup, Player, Roster, SleeperUser, Transaction } from "../sleeper/types";
 import type { LeagueContext } from "./league";
 import { scoreSleeperStats } from "../engine/scoring";
+import { valuesHistory } from "../nflverse";
 
 export interface SeasonHist {
   leagueId: string;
@@ -171,60 +172,206 @@ export function suggestBid(opts: { market: FaabMarket; myLeft: number; rivalsLef
 // =====================================================================================================
 // Trades
 // =====================================================================================================
-export interface TradeSide { owner: string; rosterId: number; got: { id: string; name: string; pos: string; pts: number; value: number; note?: string }[]; pts: number; value: number; grade: string; share: number }
-export interface TradeGrade { id: string; season: string; week: number; sides: TradeSide[]; verdict: string; basis: string }
+export interface TradeAsset { id: string; name: string; pos: string; pts: number; value: number; then: number; note?: string }
+export interface TradeSide {
+  owner: string; rosterId: number; got: TradeAsset[];
+  /** Hindsight: starter points the acquired assets produced for this manager, and what they are worth now (or fetched when moved on). */
+  pts: number; value: number; grade: string; share: number;
+  /** At the time: what the assets were worth the day of the trade. */
+  then: number; atGrade: string | null; atShare: number | null;
+  /** Seasons this manager won the title with help from what they got. */
+  titles: string[];
+}
+export interface TradeGrade { id: string; season: string; week: number; at: number; sides: TradeSide[]; verdict: string; basis: string; atBasis: string | null; story: string | null }
+
+/** Champion (Sleeper user) of a finished season, from the winners bracket. */
+async function championOf(s: SeasonHist): Promise<string | null> {
+  const b = await sleeper.winnersBracket(s.leagueId).then((r) => r.data).catch(() => [] as BracketGame[]);
+  const final = b.find((g) => g.p === 1) ?? [...b].sort((a, c) => c.r - a.r || a.m - c.m)[0];
+  return final?.w ? ownerOf(s, final.w) : null;
+}
 
 /** Call after loadDrafts, so picks that have been used are valued as the player they became. */
 export async function tradeGrades(h: History, ctx: LeagueContext): Promise<TradeGrade[]> {
   const dyn = ctx.valuationMode === "dynasty";
+  const keeper = ctx.format === "keeper";
+  const multi = dyn || keeper; // judged across seasons
   const out: TradeGrade[] = [];
-  for (const s of h.seasons) {
+  const hist = await valuesHistory().then((r) => r.data).catch(() => null);
+  const vh = hist ? (ctx.superflex ? hist.v2 : hist.v1) : null, ph = hist ? (ctx.superflex ? hist.p2 : hist.p1) : null;
+  const monthIdx = (ms: number) => {
+    if (!hist || !ms) return -1;
+    const m = new Date(ms).toISOString().slice(0, 7);
+    let i = hist.months.findIndex((x) => x > m);
+    i = i < 0 ? hist.months.length - 1 : i - 1;
+    return Math.max(0, i);
+  };
+  const marketAt = (pid: string, i: number) => (vh && i >= 0 ? vh[pid]?.[i] ?? 0 : 0);
+  const pickAt = (season: string, round: number, i: number) => {
+    if (!ph || i < 0) return 0;
+    const row = ph[`${season} ${round}`];
+    if (row?.[i]) return row[i];
+    // Far-future picks are listed as next year's: use the latest year that has this round.
+    const keys = Object.keys(ph).filter((k) => k.endsWith(` ${round}`) && ph[k][i] > 0).sort();
+    return keys.length ? ph[keys[keys.length - 1]][i] : 0;
+  };
+  // Today's values in this league's scoring, on the same scale as the market history (so "now" and "then" compare).
+  const nowIdx = hist ? hist.months.length - 1 : -1;
+  const topNow = vh ? Math.max(1, ...Object.values(vh).map((r) => r[nowIdx] ?? 0)) : 100;
+  const ctxTop = Math.max(1e-9, ...[...ctx.values.values()].map((v) => (dyn ? v.dynasty : v.redraft)));
+  const valueNow = (pid: string) => ((dyn ? ctx.values.get(pid)?.dynasty : ctx.values.get(pid)?.redraft) ?? 0) * (topNow / ctxTop);
+
+  // Weekly lineups per season (cached), champions, and who owns which roster each season.
+  const weeksCache = new Map<string, Promise<Matchup[][]>>();
+  const weeksOf = (s: SeasonHist) => {
+    if (!weeksCache.has(s.leagueId)) weeksCache.set(s.leagueId, s.current ? Promise.resolve(ctx.matchupsByWeek)
+      : Promise.all(Array.from({ length: 18 }, (_, i) => sleeper.pastMatchups(s.leagueId, i + 1).then((r) => r.data).catch(() => [] as Matchup[]))));
+    return weeksCache.get(s.leagueId)!;
+  };
+  const champs = new Map<string, string | null>();
+  await Promise.all(h.seasons.filter((s) => !s.current || ctx.seasonOver).map(async (s) => champs.set(s.season, await championOf(s))));
+  const rosterOf = (s: SeasonHist, owner: string) => s.rosters.find((r) => r.owner_id === owner)?.roster_id ?? null;
+  const allTrades = h.seasons.flatMap((s) => s.tx.filter((t) => t.type === "trade" && t.status === "complete").map((t) => ({ s, t })));
+  const curOwnerHas = (owner: string, pid: string) => !!h.seasons[0]?.rosters.find((r) => r.owner_id === owner)?.players?.includes(pid);
+
+  // Starter points a player scored for one manager from (season, week) on — one season for redraft, every later one otherwise.
+  const startedFor = async (si: number, owner: string, pid: string, fromWeek: number, until?: { si: number; week: number }) => {
+    let pts = 0;
+    const per: Record<string, number> = {};
+    for (let k = si; k >= (multi ? 0 : si); k--) {
+      const s = h.seasons[k];
+      const rid = rosterOf(s, owner);
+      if (rid == null) continue;
+      const weeks = await weeksOf(s);
+      weeks.forEach((ms, i) => {
+        const w = i + 1;
+        if (k === si && w < fromWeek) return;
+        if (until && (k < until.si || (k === until.si && w >= until.week))) return;
+        const m = ms.find((x) => x.roster_id === rid);
+        if (m?.starters?.includes(pid)) { const p = m.players_points?.[pid] ?? 0; pts += p; per[s.season] = (per[s.season] ?? 0) + p; }
+      });
+    }
+    return { pts, per };
+  };
+  // When (if ever) a manager traded the player on, and what he was worth then.
+  const movedOn = (owner: string, pid: string, after: number) => {
+    const later = allTrades.filter(({ s, t }) => (t.created ?? 0) > after && t.drops?.[pid] != null && ownerOf(s, t.drops[pid]) === owner)
+      .sort((a, b) => (a.t.created ?? 0) - (b.t.created ?? 0))[0];
+    if (!later) return null;
+    return { si: h.seasons.indexOf(later.s), week: later.t.leg ?? 0, value: marketAt(pid, monthIdx(later.t.created ?? 0)), season: later.s.season };
+  };
+
+  // Redraft/keeper "at the time": recent points per game × games left. Picks = a player taken at that spot last season.
+  const seasonTotals = new Map<string, number[]>();
+  const totalsFor = async (s: SeasonHist) => {
+    if (!seasonTotals.has(s.leagueId)) {
+      const tot = new Map<string, number>();
+      for (const ms of await weeksOf(s)) for (const m of ms) for (const [pid, p] of Object.entries(m.players_points ?? {})) tot.set(pid, (tot.get(pid) ?? 0) + p);
+      seasonTotals.set(s.leagueId, [...tot.values()].sort((a, b) => b - a));
+    }
+    return seasonTotals.get(s.leagueId)!;
+  };
+  const ppgBefore = async (si: number, pid: string, week: number) => {
+    const s = h.seasons[si];
+    const weeks = await weeksOf(s);
+    const pts: number[] = [];
+    for (let w = week - 1; w >= 1 && pts.length < 4; w--) for (const m of weeks[w - 1] ?? []) if (m.players_points?.[pid] != null && m.players?.includes(pid)) { pts.push(m.players_points[pid]); break; }
+    if (pts.length >= 2) return pts.reduce((a, b) => a + b, 0) / pts.length;
+    // Early-season or offseason trade: last season's average.
+    const prev = h.seasons[si + 1];
+    if (!prev) return pts.length ? pts[0] : 0;
+    const pw = await weeksOf(prev);
+    let tot = 0, n = 0;
+    for (const ms of pw) for (const m of ms) if (m.players?.includes(pid) && m.players_points?.[pid] != null) { tot += m.players_points[pid]; n++; break; }
+    return n ? tot / n : 0;
+  };
+
+  for (let si = 0; si < h.seasons.length; si++) {
+    const s = h.seasons[si];
     const trades = s.tx.filter((t) => t.type === "trade" && t.status === "complete");
     if (!trades.length) continue;
-    // Weekly starter points this season (who actually helped which team).
-    const weeks: Matchup[][] = s.current ? ctx.matchupsByWeek : await Promise.all(Array.from({ length: 17 }, (_, i) => sleeper.pastMatchups(s.leagueId, i + 1).then((r) => r.data).catch(() => [] as Matchup[])));
-    // Redraft/keeper picks: worth what a player taken at that spot is worth today (the redraft value at that overall rank).
     const byValue = [...ctx.values.values()].map((v) => v.redraft).sort((a, b) => b - a);
     const slotValue = (round: number, slot: number | null) => byValue[Math.min(byValue.length - 1, Math.max(0, (round - 1) * ctx.teamsCount + (slot ?? Math.ceil(ctx.teamsCount / 2)) - 1))] ?? 0;
-    const startedFor = (rid: number, pid: string, from: number) => {
-      let pts = 0;
-      weeks.forEach((ms, i) => { if (i + 1 < from) return; const m = ms.find((x) => x.roster_id === rid); if (m?.starters.includes(pid)) pts += m.players_points[pid] ?? 0; });
-      return pts;
-    };
+    const lastWeek = Number((s.league.settings as Record<string, unknown>).last_scored_leg) || ctx.lastWeek || 17;
+    const refTotals = await totalsFor(h.seasons[si + 1] ?? s);
+    const pickPts = (round: number) => (refTotals[Math.min(refTotals.length - 1, (round - 1) * ctx.teamsCount + Math.ceil(ctx.teamsCount / 2) - 1)] ?? 0) * 0.85;
+
     for (const t of trades) {
       const week = t.leg ?? 0;
-      const sides: TradeSide[] = t.roster_ids.map((rid) => {
-        const got: TradeSide["got"] = Object.entries(t.adds).filter(([, r]) => r === rid).map(([pid]) => ({
-          id: pid, name: playerName(h, ctx, pid), pos: playerPos(h, ctx, pid), pts: startedFor(rid, pid, week), value: dyn ? ctx.values.get(pid)?.dynasty ?? 0 : s.current ? ctx.values.get(pid)?.redraft ?? 0 : 0,
-        }));
-        for (const pk of t.draft_picks.filter((p) => p.owner_id === rid)) {
+      const created = t.created ?? 0;
+      const mi = monthIdx(created);
+      const gamesLeft = Math.max(1, lastWeek - Math.max(1, week) + 1);
+      const sides: TradeSide[] = await Promise.all(t.roster_ids.map(async (rid) => {
+        const owner = ownerOf(s, rid);
+        const got: TradeAsset[] = [];
+        const per: Record<string, number> = {};
+        const addPlayer = async (pid: string, name: string, pos: string, fromSi: number, fromWeek: number, then: number, note?: string) => {
+          const moved = multi ? movedOn(owner, pid, created) : null;
+          const r = await startedFor(fromSi, owner, pid, fromWeek, moved ?? undefined);
+          for (const [k, v] of Object.entries(r.per)) per[k] = (per[k] ?? 0) + v;
+          const value = dyn ? (moved ? moved.value : curOwnerHas(owner, pid) ? valueNow(pid) : 0)
+            : keeper ? (curOwnerHas(owner, pid) ? valueNow(pid) : 0)
+            : s.current ? ctx.values.get(pid)?.redraft ?? 0 : 0;
+          got.push({ id: pid, name, pos, pts: r.pts, value, then, note: note ?? (moved ? `traded on in ${moved.season}` : undefined) });
+        };
+        for (const [pid] of Object.entries(t.adds ?? {}).filter(([, r]) => r === rid)) {
+          const then = dyn ? marketAt(pid, mi) : (await ppgBefore(si, pid, Math.max(1, week))) * gamesLeft;
+          await addPlayer(pid, playerName(h, ctx, pid), playerPos(h, ctx, pid), si, week, then);
+        }
+        for (const pk of (t.draft_picks ?? []).filter((p) => p.owner_id === rid)) {
           const became = draftedFrom(pk.season, pk.round, pk.roster_id ?? 0);
           const future = ctx.picks.find((p) => p.season === pk.season && p.round === pk.round && p.originalRosterId === pk.roster_id);
-          const pv = dyn ? future?.value ?? 0 : s.current || Number(pk.season) > Number(s.season) ? slotValue(pk.round, future?.estimatedSlot ?? null) : 0;
-          got.push(became
-            ? { id: became, name: `${pk.season} R${pk.round} → ${playerName(h, ctx, became)}`, pos: "PICK", pts: 0, value: (dyn ? ctx.values.get(became)?.dynasty : ctx.values.get(became)?.redraft) ?? 0, note: "pick used" }
-            : { id: `${pk.season}-${pk.round}-${pk.roster_id}`, name: future?.label ?? `${pk.season} round ${pk.round}`, pos: "PICK", pts: 0, value: pv, note: dyn ? undefined : "valued as a player taken at that pick" });
+          const then = dyn ? pickAt(pk.season, pk.round, mi) : pickPts(pk.round);
+          const label = `${pk.season} R${pk.round}`;
+          if (became) {
+            const dsi = h.seasons.findIndex((x) => x.season === pk.season);
+            if (multi && dsi >= 0) await addPlayer(became, `${label} → ${playerName(h, ctx, became)}`, "PICK", dsi, 1, then, "pick used");
+            else got.push({ id: became, name: `${label} → ${playerName(h, ctx, became)}`, pos: "PICK", pts: 0, value: valueNow(became), then, note: "pick used" });
+          } else {
+            const value = dyn ? (future?.value ?? 0) * (topNow / ctxTop) : s.current || Number(pk.season) > Number(s.season) ? slotValue(pk.round, future?.estimatedSlot ?? null) : 0;
+            got.push({ id: `${pk.season}-${pk.round}-${pk.roster_id}`, name: future?.label ?? `${pk.season} round ${pk.round}`, pos: "PICK", pts: 0, value, then, note: dyn ? undefined : "valued as a player taken at that pick" });
+          }
         }
-        return { owner: ownerOf(s, rid), rosterId: rid, got, pts: got.reduce((a, g) => a + g.pts, 0), value: got.reduce((a, g) => a + g.value, 0), grade: "C", share: 0.5 };
-      });
-      // Score: points gained for starting lineups since the trade, plus value today (dynasty, or redraft this season).
-      const usesValue = dyn || s.current;
-      const P = sides.reduce((a, x) => a + x.pts, 0), V = sides.reduce((a, x) => a + x.value, 0);
+        const titles = Object.keys(per).filter((season) => per[season] > 0 && champs.get(season) === owner);
+        return { owner, rosterId: rid, got, pts: got.reduce((a, g) => a + g.pts, 0), value: got.reduce((a, g) => a + g.value, 0), then: got.reduce((a, g) => a + g.then, 0), grade: "C", share: 0.5, atGrade: null, atShare: null, titles };
+      }));
+
+      const n = sides.length;
+      const P = sides.reduce((a, x) => a + x.pts, 0), V = sides.reduce((a, x) => a + x.value, 0), T = sides.reduce((a, x) => a + x.then, 0);
+      const years = Math.max(0, (Date.now() - created) / (365 * 86_400_000));
+      // Points matter more the longer ago the trade was; value today matters more for recent ones.
+      const wP = dyn ? Math.min(0.7, 0.2 + 0.2 * years) : keeper ? 0.75 : s.current ? (P > 30 ? 0.5 : 0) : 1;
       for (const x of sides) {
-        const pShare = P > 0 ? x.pts / P : 1 / sides.length, vShare = V > 0 ? x.value / V : 1 / sides.length;
-        x.share = usesValue ? (dyn ? 0.65 * vShare + 0.35 * pShare : P > 30 ? 0.5 * vShare + 0.5 * pShare : vShare) : pShare;
-        x.grade = gradeOf(x.share * sides.length / 2);
+        const pShare = P > 0 ? x.pts / P : 1 / n, vShare = V > 0 ? x.value / V : 1 / n;
+        let share = P > 0 ? wP * pShare + (1 - wP) * vShare : vShare;
+        if (!s.current && !multi) share = pShare;
+        // A trade that helped win the title was worth it, whatever it cost.
+        if (x.titles.length) share = Math.max(share + 0.1, 0.55);
+        x.share = share;
+        x.grade = gradeOf(share * n / 2);
+        if (T > 0) { x.atShare = x.then / T; x.atGrade = gradeOf(x.atShare * n / 2); }
       }
       const best = [...sides].sort((a, b) => b.share - a.share);
       const margin = best[0].share - (best[1]?.share ?? 0);
+      const nm = (o: string) => h.owners.get(o)?.name ?? "Team";
+      const champ = sides.find((x) => x.titles.length);
+      const atBest = T > 0 ? [...sides].sort((a, b) => (b.atShare ?? 0) - (a.atShare ?? 0)) : null;
+      const atMargin = atBest ? (atBest[0].atShare ?? 0) - (atBest[1]?.atShare ?? 0) : 0;
+      let story: string | null = null;
+      if (champ) story = `${nm(champ.owner)} won the ${champ.titles.join(" & ")} title with it — worth it.`;
+      else if (atBest && atMargin >= 0.1 && margin >= 0.08 && atBest[0].owner !== best[0].owner) story = `Looked like a win for ${nm(atBest[0].owner)}, but ${nm(best[0].owner)} came out ahead.`;
+      else if (atBest && atMargin < 0.08 && margin >= 0.15) story = `Looked even at the time; ${nm(best[0].owner)} got the better of it.`;
       out.push({
-        id: t.transaction_id, season: s.season, week, sides,
-        verdict: margin < 0.08 ? "Even so far" : `${h.owners.get(best[0].owner)?.name ?? "Team"} ${margin > 0.3 ? "won big" : "is winning"}`,
-        basis: dyn ? "65% value today, 35% starter points since" : s.current ? `Starter points since + value today in your scoring${ctx.format === "keeper" ? " (incl. keeper value)" : ""}; picks valued as a player taken there` : "Starter points gained after the trade",
+        id: t.transaction_id, season: s.season, week, at: created, sides, story,
+        verdict: champ ? `Worth it for ${nm(champ.owner)}` : margin < 0.08 ? (s.current ? "Even so far" : "Even") : `${nm(best[0].owner)} ${margin > 0.3 ? "won big" : s.current && !multi ? "is winning" : "won"}`,
+        basis: dyn ? "Starter points the assets scored for each team (every season since), plus what they're worth now in your scoring — or what they were worth when traded on. Titles count."
+          : keeper ? "Starter points for each team across every season since, plus keeper value now in your scoring. Titles count."
+          : s.current ? "Starter points since, plus rest-of-season value in your scoring" : "Starter points gained over the rest of that season. A title counts.",
+        atBasis: T > 0 ? (dyn ? "Dynasty market value the month of the trade (DynastyProcess)" : "Each player's recent points per game in your scoring × games left; picks as a player taken there") : null,
       });
     }
   }
-  return out.sort((a, b) => Number(b.season) - Number(a.season) || b.week - a.week);
+  return out.sort((a, b) => Number(b.season) - Number(a.season) || b.week - a.week || b.at - a.at);
 }
 /** share (0.5 = even) → letter. */
 export function gradeOf(share: number) {

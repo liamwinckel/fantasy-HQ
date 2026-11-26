@@ -114,6 +114,7 @@ export const BracketGame = z.object({
   t2: z.number().nullish(),
   w: z.number().nullish(),
   l: z.number().nullish(),
+  p: z.number().nullish(),
 });
 export type BracketGame = z.infer<typeof BracketGame>;
 

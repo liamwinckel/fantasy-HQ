@@ -105,8 +105,8 @@ function claims(rosterIds: number[], fas: string[], week: number, budget: number
   if (rand() < 0.6 && fas.length) { const rid = rosterIds[Math.floor(rand() * rosterIds.length)]; const pid = fas.pop()!; out.push({ transaction_id: `t${txSeq++}`, type: "free_agent", status: "complete", leg: week, created: 1_700_000_000_000 + week * 6e8 + 9, roster_ids: [rid], adds: { [pid]: rid }, drops: null, draft_picks: [], settings: null }); }
   return out;
 }
-const trade = (week: number, a: number, b: number, aGets: string[], bGets: string[], picks: Tx[] = []): Tx => ({
-  transaction_id: `t${txSeq++}`, type: "trade", status: "complete", leg: week, created: 1_700_000_000_000 + week * 6e8 + 5, roster_ids: [a, b],
+const trade = (week: number, a: number, b: number, aGets: string[], bGets: string[], picks: Tx[] = [], season = 2026): Tx => ({
+  transaction_id: `t${txSeq++}`, type: "trade", status: "complete", leg: week, created: Date.UTC(season, 8, 1) + week * 7 * 86_400_000, roster_ids: [a, b],
   adds: Object.fromEntries([...aGets.map((p) => [p, a]), ...bGets.map((p) => [p, b])]), drops: Object.fromEntries([...aGets.map((p) => [p, b]), ...bGets.map((p) => [p, a])]), draft_picks: picks, settings: null,
 });
 
@@ -233,12 +233,20 @@ function makeLeague(opts: { id: string; name: string; type: number; teams: numbe
     write(`/league/${prevId}/rosters`, prevRosters.map((r) => ({ roster_id: r.roster_id, owner_id: r.owner_id, players: r.players, starters: [], reserve: [], taxi: [], settings: { wins: 7, losses: 7, ties: 0, fpts: 1500, fpts_against: 1500, waiver_budget_used: opts.faab ? Math.round(opts.faab * (0.5 + rand() * 0.5)) : 0 } })));
     write(`/league/${prevId}/drafts`, [{ draft_id: `${prevId}-d`, season: "2025", status: "complete", type: "snake", draft_order: order, slot_to_roster_id: Object.fromEntries(rosters.map((r) => [String(r.roster_id), r.roster_id])), settings: { rounds: Math.min(rosterSize, 14), teams: T } }]);
     write(`/draft/${prevId}-d/picks`, prevPicks);
+    write(`/league/${prevId}/winners_bracket`, [{ r: 1, m: 1, t1: 3, t2: 6, w: 6, l: 3 }, { r: 3, m: 7, t1: 1, t2: 6, w: 1, l: 6, p: 1 }, { r: 3, m: 8, t1: 3, t2: 5, w: 3, l: 5, p: 3 }]);
     const prevRostered = new Set(prevRosters.flatMap((r) => r.players));
     const prevFas = prevPool.filter((p) => !prevRostered.has(p.player_id as string) && !["K", "DEF"].includes(p.position as string)).slice(0, 120).map((p) => p.player_id as string);
     for (let w = 1; w <= pT + 1; w++) {
       const tx = w <= pT ? claims(rids, prevFas, w, opts.faab ?? null) : [];
-      if (w === 5) tx.push(trade(w, 1, 6, [prevRosters[5].players[1]], [prevRosters[0].players[2]]));
-      if (w === 8) tx.push(trade(w, 3, 7, [prevRosters[6].players[3], prevRosters[6].players[9]], [prevRosters[2].players[1]]));
+      // Trades move players for the rest of the season, so hindsight grades see who started where.
+      const swap = (a: number, b: number, aGets: string[], bGets: string[]) => {
+        const ra = prevRosters[a - 1], rb = prevRosters[b - 1];
+        ra.players = [...ra.players.filter((p) => !bGets.includes(p)), ...aGets];
+        rb.players = [...rb.players.filter((p) => !aGets.includes(p)), ...bGets];
+        tx.push(trade(w, a, b, aGets, bGets, [], 2025));
+      };
+      if (w === 5) swap(1, 6, [prevRosters[5].players[1]], [prevRosters[0].players[2]]);
+      if (w === 8) swap(3, 7, [prevRosters[6].players[3], prevRosters[6].players[9]], [prevRosters[2].players[1]]);
       write(`/league/${prevId}/transactions/${w}`, tx);
       // weekly scores: each rostered player scores around his per-game rate
       if (w <= pT) write(`/league/${prevId}/matchups/${w}`, prevRosters.map((r, i) => {
@@ -250,6 +258,13 @@ function makeLeague(opts: { id: string; name: string; type: number; teams: numbe
     }
   }
   return { id };
+}
+
+// Dynasty market values for the "values history" data job (sleeper_id, 1QB, superflex), by last season's points.
+{
+  const ranked = Object.values(players).filter((p) => ["QB", "RB", "WR", "TE"].includes(p.position as string)).sort((a, b) => (seasonPpr.get(b.player_id as string) ?? 0) - (seasonPpr.get(a.player_id as string) ?? 0)).slice(0, 300);
+  const rows = ranked.map((p, i) => { const v = Math.round(10000 * Math.exp(-i / 60)); return `${p.player_id},${v},${Math.round(p.position === "QB" ? v * 1.3 : v * 0.9)}`; });
+  fs.writeFileSync(path.join(NV, "values-history-fixture.csv"), ["sleeper_id,value_1qb,value_2qb", ...rows].join("\n"));
 }
 
 const leagues = [

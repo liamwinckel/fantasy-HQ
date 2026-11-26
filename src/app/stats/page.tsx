@@ -67,12 +67,17 @@ function Sos({ ctx, sched }: { ctx: Ctx; sched: ReturnType<typeof scheduleTable>
   const rows = [...sched.rows].sort((a, b) => sort === "team" ? a.team.localeCompare(b.team) : sort === "ros" ? (a.rosRank[pos] ?? 99) - (b.rosRank[pos] ?? 99) : (a.playoffRank[pos] ?? 99) - (b.playoffRank[pos] ?? 99));
   const me = ctx.teams.find((t) => t.rosterId === ctx.myRosterId);
   const starters = me ? (ctx.lineups.get(me.rosterId)?.optimal.map((s) => s.playerId).filter(Boolean) as string[]) : [];
+  // Whole roster: starters first (lineup order), then everyone else by position and value.
+  const ORDER = ["QB", "RB", "WR", "TE", "K", "DEF"];
+  const bench = me ? [...new Set(me.players)].filter((id) => !starters.includes(id) && ctx.players.get(id) && (SOS_POS as readonly string[]).includes(ctx.players.get(id)!.pos))
+    .sort((a, b) => ORDER.indexOf(ctx.players.get(a)!.pos) - ORDER.indexOf(ctx.players.get(b)!.pos) || (ctx.values.get(b)?.redraft ?? 0) - (ctx.values.get(a)?.redraft ?? 0)) : [];
+  const roster = [...starters.filter((id) => ctx.players.get(id)), ...bench];
   const byTeam = new Map(sched.rows.map((r) => [r.team, r]));
   const defF = (opp: string | null, p: string) => (opp ? defTableFactor(ctx, opp, p) : undefined);
   return (
     <>
-      {me && starters.length > 0 && (
-        <Card title="Your starters' schedule" info={<>For each starter, how easy (+%) or hard (−%) each upcoming NFL opponent is: how many more or fewer fantasy points that defence allows to his position than an average defence.</>} right={<Tag kind="MODEL" />} pad={false}>
+      {me && roster.length > 0 && (
+        <Card title="Your roster's schedule" info={<>For each player on your roster (starters first), how easy (+%) or hard (−%) each upcoming NFL opponent is: how many more or fewer fantasy points that defence allows to his position than an average defence.</>} right={<Tag kind="MODEL" />} pad={false}>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead><tr className="text-left text-[11px] uppercase tracking-wider text-muted">
@@ -82,12 +87,13 @@ function Sos({ ctx, sched }: { ctx: Ctx; sched: ReturnType<typeof scheduleTable>
                 {sched.weeks.map((w) => <th key={w} className={cx("px-1 py-2 text-center font-semibold", w >= ctx.playoffStart && "text-acc-ink")}><span className="hidden sm:inline">Wk </span>{w}</th>)}
               </tr></thead>
               <tbody>
-                {starters.map((id) => {
+                {roster.map((id, i) => {
                   const p = ctx.players.get(id)!;
+                  const benchStart = i === starters.filter((x) => ctx.players.get(x)).length && bench.length > 0;
                   const r = p.team ? byTeam.get(p.team) : undefined;
                   const sp = p.pos as SosPos;
                   return (
-                    <tr key={id} className="border-t border-line">
+                    <tr key={id} className={cx("border-t", benchStart ? "border-t-2 border-acc/40" : "border-line", i >= roster.length - bench.length && "opacity-80")}>
                       <td className="max-w-32 px-3 py-2 sm:max-w-none sm:px-5"><div className="flex items-center gap-2"><span className="hidden sm:block"><PlayerImg id={id} name={p.name} pos={p.pos} size={28} /></span><div className="min-w-0"><PlayerLink id={id} name={p.name} className="block max-w-full text-xs font-semibold sm:text-sm" /><div className="text-[11px] text-muted">{p.pos} · {p.team} · <span className="sm:hidden">RoS {r?.ros[sp] ? signed((r.ros[sp]! - 1) * 100, 0) + "%" : "—"}</span></div></div></div></td>
                       <td className="num hidden px-2 py-2 text-right sm:table-cell">{r?.ros[sp] ? signed((r.ros[sp]! - 1) * 100, 0) + "%" : "—"}</td>
                       <td className="num hidden px-2 py-2 text-right sm:table-cell">{r?.playoffs[sp] ? signed((r.playoffs[sp]! - 1) * 100, 0) + "%" : "—"}</td>

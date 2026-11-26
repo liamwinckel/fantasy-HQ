@@ -66,6 +66,10 @@ export const ecrWeekly = (season: string, force = false) =>
 export interface ReturnsFile { season: number; keys: string[]; weeks: Record<string, Record<string, number[]>> }
 export const returnStats = (season: string, force = false) =>
   cached(`data:returns:${season}`, "nflverse", 6 * HOUR, get(`returns-${season}.json`), (b) => JSON.parse(b) as ReturnsFile, { force });
+/** Dynasty market values month by month (DynastyProcess history): v1 = 1QB, v2 = superflex; p1/p2 = picks "2024 1". */
+export interface ValuesHistory { months: string[]; v1: Record<string, number[]>; v2: Record<string, number[]>; p1: Record<string, number[]>; p2: Record<string, number[]> }
+export const valuesHistory = (force = false) =>
+  cached("data:values-history", "nflverse", 24 * HOUR, get("values-history.json"), (b) => JSON.parse(b) as ValuesHistory, { force });
 /** Prediction-market lines; refreshed hourly on game days, so cache briefly. */
 export const markets = (force = false) =>
   cached("data:markets", "nflverse", 20 * 60_000, get("markets.json"), (b) => JSON.parse(b) as MarketsFile, { force });
