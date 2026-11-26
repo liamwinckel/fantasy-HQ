@@ -86,6 +86,16 @@ export function TradeAnalyzer({ leagueId, views, me, teams: rawTeams, initialPar
     else setB(s.action === "add" ? [...bSends, s.assetId] : bSends.filter((x) => x !== s.assetId));
   };
 
+  const [step, setStep] = useState<"build" | "analysis">("build");
+  const [pickSide, setPickSide] = useState<"a" | "b">("a");
+  const valueOf = (a: Asset) => (a.kind === "pick" && mode === "dynasty" && tiers[a.id] && a.tierValues ? a.tierValues[tiers[a.id]] : a.value);
+  const sumOf = (team: TeamOpt | undefined, ids: string[]) => ids.reduce((t, id) => { const x = team?.assets.find((z) => z.id === id); return t + (x ? valueOf(x) : 0); }, 0);
+  const sendTotal = result ? result.market.aSends : sumOf(mine, aSends);
+  // What you get counts after any roster spots it costs you (cuts to make room).
+  const getTotal = result ? Math.max(0, result.market.bSends - result.rosterSpots.a.cost) : sumOf(theirs, bSends);
+  const ready = aSends.length + bSends.length > 0;
+  const partnerName = theirs?.name ?? "Partner";
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end gap-3">
@@ -95,107 +105,219 @@ export function TradeAnalyzer({ leagueId, views, me, teams: rawTeams, initialPar
         </div>
         <label className="flex w-full flex-col gap-1 text-[11px] uppercase tracking-wider text-muted sm:w-auto">
           Trade partner
-          <select value={partner} onChange={(e) => { setPartner(Number(e.target.value)); setB([]); }}
+          <select value={partner} onChange={(e) => { setPartner(Number(e.target.value)); setB([]); setStep("build"); }}
             className="w-full min-w-0 rounded-lg border border-line bg-panel px-3 py-2.5 text-sm font-semibold normal-case tracking-normal text-fg sm:w-auto sm:min-w-64">
             {teams.filter((t) => t.rosterId !== me).map((t) => <option key={t.rosterId} value={t.rosterId}>{t.name} · {t.record}{t.cls ? ` · ${t.cls}` : ""}</option>)}
           </select>
         </label>
       </div>
 
-      {result && <div className="lg:hidden"><Card><Spectrum balance={result.balance} partner={theirs?.name ?? "Partner"} /></Card></div>}
-
-      <div className="grid min-w-0 grid-cols-2 gap-2 sm:gap-4">
-        <Side title="You send" team={mine} selected={aSends} onChange={setA} tiers={tiers} setTiers={setTiers} mode={mode} ai={ai} />
-        {theirs && <Side title="You receive" team={theirs} selected={bSends} onChange={setB} tiers={tiers} setTiers={setTiers} mode={mode} ai={ai} />}
+      {/* Value bar: both totals and who's winning, pinned while you scroll. */}
+      <div className="sticky top-0 z-20 -mx-1 rounded-2xl border border-line bg-panel/95 px-3 py-2.5 shadow-lg backdrop-blur sm:mx-0 sm:px-4">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+          <div className="min-w-0">
+            <div className="truncate text-[10px] font-bold uppercase tracking-wider text-muted">You send</div>
+            <div className="num h-display text-2xl leading-none sm:text-3xl">{tv(sendTotal)}</div>
+          </div>
+          <div className="text-center text-[10px] font-bold uppercase tracking-wider text-muted">{result ? (result.market.aSends !== result.market.aSendsRaw || result.market.bSends !== result.market.bSendsRaw ? "package value" : "value") : "value"}</div>
+          <div className="min-w-0 text-right">
+            <div className="truncate text-[10px] font-bold uppercase tracking-wider text-muted">You get</div>
+            <div className="num h-display text-2xl leading-none text-acc-ink sm:text-3xl">{tv(getTotal)}</div>
+          </div>
+        </div>
+        <MiniSpectrum balance={result?.balance ?? null} partner={partnerName} />
       </div>
 
+      {step === "build" && (
+        <>
+          <div className="grid min-w-0 grid-cols-2 items-start gap-2 sm:gap-4">
+            <DealColumn title="You send" team={mine} selected={aSends} onChange={setA} tiers={tiers} setTiers={setTiers} mode={mode} valueOf={valueOf} active={pickSide === "a"} onPick={() => setPickSide("a")} />
+            {theirs && <DealColumn title="You get" team={theirs} selected={bSends} onChange={setB} tiers={tiers} setTiers={setTiers} mode={mode} valueOf={valueOf} active={pickSide === "b"} onPick={() => setPickSide("b")} />}
+          </div>
+          {theirs && <Picker team={pickSide === "a" ? mine : theirs} tabs={[{ v: "a", label: "Your roster" }, { v: "b", label: `${partnerName}` }]} side={pickSide} setSide={setPickSide}
+            selected={pickSide === "a" ? aSends : bSends} onAdd={(id) => (pickSide === "a" ? setA([...aSends, id]) : setB([...bSends, id]))} mode={mode} />}
+          <div className="sticky bottom-24 z-20 flex justify-center md:bottom-4">
+            <button type="button" disabled={!ready || !result} onClick={() => { setStep("analysis"); document.getElementById("fhq-scroll")?.scrollTo({ top: 0 }); }}
+              className="rounded-full bg-acc px-6 py-3 text-sm font-extrabold text-on-acc shadow-lg transition-transform active:scale-95 disabled:opacity-40">
+              {!ready ? "Add players to start" : busy || !result ? "Analyzing…" : "Analyze trade →"}
+            </button>
+          </div>
+        </>
+      )}
+
       {err && <div className="rounded-lg border border-neg px-3 py-2 text-sm text-neg">{err}</div>}
-      {!result && !err && <Card><p className="text-sm text-muted">Add players or picks to either side to see who wins, how both teams change, and how to make it fair.</p></Card>}
-      {result && <AiTake ai={ai} aSends={aSends} bSends={bSends} teams={teams} me={me} partner={partner} partnerName={theirs?.name ?? "Partner"} mode={mode} />}
-      {result && <Result r={result} view={view} partner={theirs?.name ?? "Partner"} busy={busy} onApply={apply} me={me} partnerId={partner} />}
+      {step === "analysis" && result && (
+        <>
+          <button type="button" onClick={() => setStep("build")} className="self-start rounded-full border border-line px-4 py-2 text-sm font-semibold">← Edit trade</button>
+          <DealSummary mine={mine} theirs={theirs} aSends={aSends} bSends={bSends} valueOf={valueOf} />
+          <ValueStack r={result} partner={partnerName} assets={[...aSends.map((id) => mine.assets.find((x) => x.id === id)), ...bSends.map((id) => theirs?.assets.find((x) => x.id === id))].filter((x): x is Asset => !!x)} aSends={aSends} valueOf={valueOf} />
+          <AiTake ai={ai} aSends={aSends} bSends={bSends} teams={teams} me={me} partner={partner} partnerName={partnerName} mode={mode} />
+          <Result r={result} view={view} partner={partnerName} busy={busy} onApply={(s) => { apply(s); }} me={me} partnerId={partner} />
+        </>
+      )}
     </div>
   );
 }
 
-function Side({ title, team, selected, onChange, tiers, setTiers, mode, ai }: {
-  title: string; team: TeamOpt; selected: string[]; onChange: (v: string[]) => void;
-  tiers: Record<string, Tier>; setTiers: (t: Record<string, Tier>) => void; mode: "redraft" | "dynasty"; ai: Map<string, ShsAi>;
+/** One side of the deal: just the assets in it, compact and the same row height on both sides. */
+function DealColumn({ title, team, selected, onChange, tiers, setTiers, mode, valueOf, active, onPick }: {
+  title: string; team: TeamOpt; selected: string[]; onChange: (v: string[]) => void; tiers: Record<string, Tier>; setTiers: (t: Record<string, Tier>) => void;
+  mode: "redraft" | "dynasty"; valueOf: (a: Asset) => number; active: boolean; onPick: () => void;
+}) {
+  const byId = new Map(team.assets.map((a) => [a.id, a]));
+  return (
+    <div className={cx("flex min-w-0 flex-col gap-1.5 rounded-2xl border bg-panel p-2 transition-colors sm:p-3", active ? "border-acc/60" : "border-line")}>
+      <button type="button" onClick={onPick} className="flex min-w-0 items-center gap-2 px-0.5 text-left">
+        <Logo src={team.avatar} name={team.name} size={26} />
+        <div className="min-w-0 flex-1">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-muted">{title}</div>
+          <div className="truncate text-sm font-bold">{team.name}</div>
+        </div>
+        {team.cls && <span className="hidden sm:block"><ClassBadge cls={team.cls} /></span>}
+      </button>
+      {selected.map((id) => {
+        const a = byId.get(id);
+        if (!a) return null;
+        return (
+          <div key={id} className="fhq-in flex h-12 items-center gap-1.5 rounded-lg bg-panel2 px-2">
+            <div className="min-w-0 flex-1">
+              <div className="flex min-w-0 items-center gap-1 text-xs font-semibold sm:text-sm">{a.kind === "player" ? <PlayerLink id={a.id.slice(2)} name={a.name} className="truncate" /> : <span className="truncate">{a.name}</span>}<InjuryChip status={a.injury} /></div>
+              {a.kind === "pick" && mode === "dynasty" ? (
+                <div className="flex gap-0.5" role="group" aria-label="Pick position">
+                  {(["early", "mid", "late"] as Tier[]).map((t) => (
+                    <button key={t} type="button" onClick={() => setTiers({ ...tiers, [id]: t })}
+                      className={cx("rounded px-1.5 text-[10px] font-semibold capitalize", (tiers[id] ?? a.tier) === t ? "bg-acc text-on-acc" : "text-muted")}>{t}</button>
+                  ))}
+                </div>
+              ) : <div className="truncate text-[10px] text-muted">{a.sub}</div>}
+            </div>
+            <span className="num shrink-0 text-sm font-bold">{tv(valueOf(a))}</span>
+            <button type="button" aria-label={`Take ${a.name} out of the trade`} onClick={() => onChange(selected.filter((x) => x !== id))}
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-muted hover:text-neg active:scale-90"><Minus size={14} /></button>
+          </div>
+        );
+      })}
+      <button type="button" onClick={onPick} className={cx("flex h-10 items-center justify-center gap-1 rounded-lg border border-dashed text-xs font-semibold", active ? "border-acc/60 text-acc-ink" : "border-line text-muted")}>
+        <Plus size={14} /> Add
+      </button>
+    </div>
+  );
+}
+
+/** One roster picker for both sides, so the two columns stay tidy. */
+function Picker({ team, tabs, side, setSide, selected, onAdd, mode }: {
+  team: TeamOpt; tabs: { v: "a" | "b"; label: string }[]; side: "a" | "b"; setSide: (s: "a" | "b") => void; selected: string[]; onAdd: (id: string) => void; mode: "redraft" | "dynasty";
 }) {
   const [q, setQ] = useState("");
   const [pos, setPos] = useState("ALL");
-  const byId = useMemo(() => new Map(team.assets.map((a) => [a.id, a])), [team]);
-  const valueOf = (a: Asset) => (a.kind === "pick" && mode === "dynasty" && tiers[a.id] && a.tierValues ? a.tierValues[tiers[a.id]] : a.value);
-  const total = selected.reduce((t, id) => t + (byId.get(id) ? valueOf(byId.get(id)!) : 0), 0);
   const positions = ["ALL", ...new Set(team.assets.filter((a) => mode === "dynasty" || a.kind === "player").map((a) => a.pos))];
   const pool = team.assets.filter((a) => !selected.includes(a.id) && (mode === "dynasty" || a.kind === "player") && (pos === "ALL" || a.pos === pos) && (!q || a.name.toLowerCase().includes(q.toLowerCase())));
   return (
-    <Card className="!p-0" pad={false}>
-      <div className="p-2.5 sm:p-5">
-      <div className="mb-3 flex flex-col items-center gap-1.5 text-center sm:flex-row sm:items-start sm:justify-between sm:text-left">
-        <div className="flex min-w-0 flex-col items-center gap-1.5 sm:flex-row sm:gap-3">
-          <Logo src={team.avatar} name={team.name} size={40} />
-          <div className="min-w-0 max-w-full">
-            <div className="text-[10px] uppercase tracking-wider text-muted sm:text-[11px]">{title}</div>
-            <div className="h-display truncate text-lg sm:text-2xl">{team.name}</div>
-            <div className="text-[10px] text-muted sm:text-xs">{team.record}<span className="hidden sm:inline"> · {team.playoff.toFixed(0)}% playoffs · {team.title.toFixed(0)}% title</span></div>
-          </div>
+    <Card pad={false}>
+      <div className="flex flex-col gap-2 p-3 sm:p-4">
+        <div className="grid grid-cols-2 gap-1 rounded-xl bg-panel2 p-1">
+          {tabs.map((t) => (
+            <button key={t.v} type="button" onClick={() => setSide(t.v)} className={cx("truncate rounded-lg px-2 py-1.5 text-xs font-bold", side === t.v ? "bg-acc text-on-acc" : "text-muted")}>{t.label}</button>
+          ))}
         </div>
-        {team.cls && <div className="sm:text-right"><ClassBadge cls={team.cls} /><div className="mt-1 hidden text-[11px] text-muted sm:block">{team.conf}% conf.{team.overridden && " · manual"}</div></div>}
-      </div>
-      <div className="flex min-h-16 flex-col gap-2 rounded-xl border border-dashed border-line p-1.5">
-        {selected.length === 0 && <p className="px-2 py-4 text-center text-[11px] text-muted">Tap + below to add</p>}
-        {selected.map((id) => {
-          const a = byId.get(id);
-          if (!a) return null;
-          return (
-            <div key={id} className="fhq-in flex items-center gap-1.5 rounded-lg bg-panel2 p-1.5 sm:gap-3 sm:p-2.5">
-              <span className="hidden sm:block">{a.kind === "player" ? <PlayerImg id={id.slice(2)} name={a.name} pos={a.pos} /> : <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-acc text-[11px] font-extrabold text-on-acc">R{a.name.split("Round ")[1]}</span>}</span>
-              <div className="min-w-0 flex-1">
-                <div className="flex min-w-0 items-center gap-1.5 text-xs font-semibold sm:text-sm">{a.kind === "player" ? <PlayerLink id={a.id.slice(2)} name={a.name} /> : <span className="truncate">{a.name}</span>}<InjuryChip status={a.injury} /></div>
-                <div className="flex items-center gap-1 truncate text-[10px] text-muted sm:text-xs"><NflLogo team={a.team} size={12} /><span className="truncate">{a.sub}</span></div>
-                {a.kind === "pick" && mode === "dynasty" && (
-                  <div className="mt-1.5 flex gap-1" role="group" aria-label="Pick position">
-                    {(["early", "mid", "late"] as Tier[]).map((t) => (
-                      <button key={t} type="button" onClick={() => setTiers({ ...tiers, [id]: t })}
-                        className={cx("rounded px-2 py-1 text-[11px] font-semibold capitalize", (tiers[id] ?? a.tier) === t ? "bg-acc text-on-acc" : "border border-line text-muted")}>{t}</button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div className="text-right"><div className="num font-[family-name:var(--font-display)] text-lg font-bold leading-none sm:text-2xl">{tv(valueOf(a))}</div>{(() => { const p = a.kind === "player" ? ai.get(a.id.slice(2))?.pct ?? null : null; return p !== null ? <div className={cx("num text-[10px] font-bold", p >= 5 ? "text-pos" : p <= -5 ? "text-neg" : "text-muted")} title="SHS AI vs expert consensus">AI {p > 0 ? "+" : ""}{p}%</div> : <div className="hidden text-[10px] text-muted sm:block">value</div>; })()}</div>
-              <button type="button" aria-label={`Take ${a.name} out of the trade`} onClick={() => onChange(selected.filter((x) => x !== id))}
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-neg/60 text-neg transition-transform hover:bg-neg/10 active:scale-90 sm:h-9 sm:w-9"><Minus size={16} /></button>
-            </div>
-          );
-        })}
-      </div>
-      <div className="mt-2 flex justify-between text-xs sm:text-sm"><span className="text-muted">Total value</span><span className="num font-bold">{tv(total)}</span></div>
-      <div className="mt-3 border-t border-line pt-3">
-        <div className="mb-2 flex flex-wrap items-center gap-1.5">
-          <label className="relative w-full min-w-0 sm:w-auto sm:flex-1">
-            <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" aria-label={`Search ${team.name} roster`} className="w-full rounded-lg border border-line bg-panel2 py-2 pl-8 pr-2.5 text-sm" />
-          </label>
-          <div className="flex w-full gap-1 overflow-x-auto sm:w-auto">
-            {positions.map((p) => <button key={p} type="button" onClick={() => setPos(p)} className={cx("rounded-full px-2.5 py-1 text-[11px] font-semibold", pos === p ? "bg-acc text-on-acc" : "bg-panel2 text-muted")}>{p === "ALL" ? "All" : p}</button>)}
-          </div>
+        <label className="relative">
+          <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" aria-label={`Search ${team.name} roster`} className="w-full rounded-lg border border-line bg-panel2 py-2 pl-8 pr-2.5 text-sm" />
+        </label>
+        <div className="flex gap-1 overflow-x-auto">
+          {positions.map((p) => <button key={p} type="button" onClick={() => setPos(p)} className={cx("shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold", pos === p ? "bg-acc text-on-acc" : "bg-panel2 text-muted")}>{p === "ALL" ? "All" : p}</button>)}
         </div>
-        <ul className="flex max-h-80 flex-col gap-1 overflow-y-auto">
+        <ul className="flex flex-col gap-0.5">
           {pool.map((a) => (
-            <li key={a.id} className="flex items-center gap-1.5 rounded-lg px-1 py-1.5 hover:bg-panel2 sm:gap-2.5 sm:px-1.5">
-              <span className="hidden sm:block">{a.kind === "player" ? <PlayerImg id={a.id.slice(2)} name={a.name} pos={a.pos} size={30} /> : <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-panel2 text-[10px] font-extrabold">R{a.name.split("Round ")[1]}</span>}</span>
-              <div className="min-w-0 flex-1">
-                <div className="flex min-w-0 items-center gap-1 text-xs sm:text-sm">{a.kind === "player" ? <PlayerLink id={a.id.slice(2)} name={a.name} className="font-semibold" /> : <span className="truncate font-semibold">{a.name}</span>}<InjuryChip status={a.injury} /></div>
-                <div className="flex items-center gap-1 truncate text-[10px] text-muted sm:text-xs"><NflLogo team={a.team} size={12} /><span className="truncate">{a.sub}</span></div>
-              </div>
-              <span className="num w-8 text-right text-xs font-bold sm:w-10 sm:text-sm">{tv(a.value)}</span>
-              <button type="button" aria-label={`Add ${a.name} to the trade`} onClick={() => onChange([...selected, a.id])}
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-acc text-on-acc transition-transform active:scale-90 sm:h-9 sm:w-9"><Plus size={16} /></button>
+            <li key={a.id}>
+              <button type="button" onClick={() => onAdd(a.id)} className="flex w-full items-center gap-2.5 rounded-lg px-1.5 py-1.5 text-left hover:bg-panel2 active:bg-panel2">
+                {a.kind === "player" ? <PlayerImg id={a.id.slice(2)} name={a.name} pos={a.pos} size={30} /> : <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-panel2 text-[10px] font-extrabold">R{a.name.split("Round ")[1]}</span>}
+                <div className="min-w-0 flex-1">
+                  <div className="flex min-w-0 items-center gap-1 text-sm font-semibold"><span className="truncate">{a.name}</span><InjuryChip status={a.injury} /></div>
+                  <div className="flex items-center gap-1 truncate text-[11px] text-muted"><NflLogo team={a.team} size={12} /><span className="truncate">{a.sub}</span></div>
+                </div>
+                <span className="num w-10 text-right text-sm font-bold">{tv(a.value)}</span>
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-acc text-on-acc"><Plus size={15} /></span>
+              </button>
             </li>
           ))}
           {pool.length === 0 && <li className="px-2 py-3 text-xs text-muted">Nobody matches.</li>}
         </ul>
       </div>
+    </Card>
+  );
+}
+
+/** Analysis screen header: the deal in two even lists. */
+function DealSummary({ mine, theirs, aSends, bSends, valueOf }: { mine: TeamOpt; theirs?: TeamOpt; aSends: string[]; bSends: string[]; valueOf: (a: Asset) => number }) {
+  const col = (team: TeamOpt | undefined, ids: string[], label: string) => (
+    <div className="min-w-0">
+      <div className="mb-1.5 truncate text-[10px] font-bold uppercase tracking-wider text-muted">{label}</div>
+      <ul className="flex flex-col gap-1">
+        {ids.map((id) => { const a = team?.assets.find((x) => x.id === id); return a ? (
+          <li key={id} className="flex items-center gap-2 text-sm"><span className="min-w-0 flex-1 truncate font-semibold">{a.name}</span><span className="num text-xs text-muted">{tv(valueOf(a))}</span></li>
+        ) : null; })}
+        {!ids.length && <li className="text-xs text-muted">Nothing</li>}
+      </ul>
+    </div>
+  );
+  return <Card><div className="grid grid-cols-2 gap-4">{col(mine, aSends, "You send")}{col(theirs, bSends, `You get from ${theirs?.name ?? "partner"}`)}</div></Card>;
+}
+
+/** Slim who-wins bar for the pinned value bar. */
+function MiniSpectrum({ balance, partner }: { balance: number | null; partner: string }) {
+  const pos = balance === null ? 50 : 50 - balance / 2;
+  const fair = balance !== null && Math.abs(balance) < 8;
+  const label = balance === null ? "Add players to both sides" : fair ? "Fair trade" : balance > 0 ? (balance > 40 ? "You win big" : "You win") : balance < -40 ? `${partner} wins big` : `${partner} wins`;
+  return (
+    <div className="mt-2">
+      <div className="relative h-2 rounded-full" style={{ background: "linear-gradient(90deg, var(--pos) 0%, var(--panel2) 40%, var(--panel2) 60%, var(--neg) 100%)" }}>
+        <div className="absolute inset-y-0 left-[45%] right-[45%] rounded bg-acc/40" aria-hidden />
+        {balance !== null && <div className="absolute -top-1 h-4 w-1.5 -translate-x-1/2 rounded-full border-2 border-bg bg-acc transition-[left] duration-500" style={{ left: `${Math.max(1, Math.min(99, pos))}%` }} />}
+      </div>
+      <div className={cx("mt-1 truncate text-center text-xs font-bold", balance === null || fair ? "text-muted" : balance > 0 ? "text-pos" : "text-neg")}>{label}</div>
+    </div>
+  );
+}
+
+/**
+ * How each side's value adds up: the straight sum, the depth discount ("four quarters don't make a dollar"), the roster
+ * spots it costs, and who holds the best player in the deal. The shaded band is the range the weighting moves through.
+ */
+function ValueStack({ r, partner, assets, aSends, valueOf }: { r: TradeResult; partner: string; assets: Asset[]; aSends: string[]; valueOf: (a: Asset) => number }) {
+  const best = assets.reduce<Asset | null>((m, a) => (!m || valueOf(a) > valueOf(m) ? a : m), null);
+  const bestSide = best ? (aSends.includes(best.id) ? "send" : "get") : null;
+  const rows = [
+    { key: "send", label: "You send", raw: r.market.aSendsRaw, pkg: r.market.aSends, spot: r.rosterSpots.b.cost, spotNote: r.rosterSpots.b.extra > 0 ? `${partner} cuts ${r.rosterSpots.b.extra}` : null, fill: "bg-fg" },
+    { key: "get", label: "You get", raw: r.market.bSendsRaw, pkg: r.market.bSends, spot: r.rosterSpots.a.cost, spotNote: r.rosterSpots.a.extra > 0 ? `you cut ${r.rosterSpots.a.drops.join(", ")}` : r.rosterSpots.a.extra < 0 ? "frees roster spots" : null, fill: "bg-acc" },
+  ];
+  const max = Math.max(1, ...rows.map((x) => x.raw));
+  return (
+    <Card title="How the value adds up" info={<>Every asset&apos;s value is its points above a replacement starter in this league&apos;s scoring. Then: <b>depth discount</b> — several smaller pieces can&apos;t fill one star&apos;s lineup spot (&quot;four quarters ≠ a dollar&quot;); <b>roster spots</b> — taking back more players means cutting someone; <b>best player</b> — managers want a clear premium (~7%) to give up the best player in the deal.</>}>
+      <div className="flex flex-col gap-4">
+        {rows.map((x) => {
+          const eff = Math.max(0, x.pkg - (x.key === "get" ? x.spot : 0));
+          return (
+            <div key={x.key} className="flex flex-col gap-1.5">
+              <div className="flex items-baseline justify-between gap-2 text-sm">
+                <span className="font-semibold">{x.label}{bestSide === x.key && <span className="ml-1.5 rounded bg-acc/15 px-1.5 py-0.5 text-[10px] font-bold text-acc-ink">★ best player</span>}</span>
+                <span className="num"><b className="text-base">{tv(eff)}</b> <span className="text-xs text-muted">of {tv(x.raw)}</span></span>
+              </div>
+              <div className="relative h-6 rounded-lg bg-panel2">
+                {/* weighted range: from what it counts for to the straight sum */}
+                <div className="absolute inset-y-0 rounded-lg border border-dashed border-muted/50" style={{ left: `${(100 * eff) / max}%`, width: `${Math.max(0, (100 * (x.raw - eff)) / max)}%`, background: "repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--muted) 18%, transparent) 6px 8px)" }} />
+                <div className={cx("absolute inset-y-1 left-1 rounded-md transition-[width] duration-500", x.fill)} style={{ width: `calc(${(100 * eff) / max}% - 4px)` }} />
+              </div>
+              <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted">
+                <span>Straight sum <b className="num text-fg">{tv(x.raw)}</b></span>
+                {x.raw - x.pkg > 0.05 && <span>Depth discount <b className="num text-neg">−{tv(x.raw - x.pkg)}</b></span>}
+                {x.key === "get" && x.spot !== 0 && <span>Roster spots <b className={cx("num", x.spot > 0 ? "text-neg" : "text-pos")}>{x.spot > 0 ? "−" : "+"}{tv(Math.abs(x.spot))}</b>{x.spotNote ? ` (${x.spotNote})` : ""}</span>}
+                {x.key === "send" && x.spotNote && <span>{x.spotNote}</span>}
+              </div>
+            </div>
+          );
+        })}
+        <p className="text-[11px] text-muted">Solid = what each side counts for · striped = the range the weighting takes off.</p>
       </div>
     </Card>
   );
@@ -309,7 +431,7 @@ function Result({ r, view, partner, busy, onApply, me, partnerId }: { r: TradeRe
             <ul className="flex flex-col gap-1 text-sm leading-relaxed">{r.explanation.map((e) => <li key={e}>{e}</li>)}</ul>
           </div>
           <div className="grid grid-cols-2 gap-2 lg:w-[400px]">
-            <Mini label="Package value: you get" value={signed(r.market.netForA)} sub={`send ${r.market.aSends} · receive ${r.market.bSends}`} tone={r.market.netForA >= 0 ? "pos" : "neg"} />
+            <Mini label="Package value: you get" value={`${r.market.netForA >= 0 ? "+" : "−"}${tv(Math.abs(r.market.netForA))}`} sub={`send ${tv(r.market.aSends)} · receive ${tv(r.market.bSends)}`} tone={r.market.netForA >= 0 ? "pos" : "neg"} />
             <Mini label="Your lineup, rest of season" value={r.lineup.weeks ? `${signed(r.lineup.aRosDelta)}/g` : "—"} sub={r.lineup.weeks ? `${r.lineup.aRosBefore} → ${r.lineup.aRosAfter} pts/g · tap` : undefined} tone={r.lineup.aRosDelta >= 0 ? "pos" : "neg"} onClick={r.lineup.weeks ? () => setRosOpen(true) : undefined} />
             <Mini label="Your power rank" value={meP ? `#${meP.before.rank} → #${meP.after.rank}` : "—"} tone={meP && meP.after.rank <= meP.before.rank ? "pos" : "neg"} />
             <Mini label="Your title odds" value={r.odds ? `${r.odds.aTitleBefore.toFixed(0)}% → ${r.odds.aTitleAfter.toFixed(0)}%` : "—"} tone={r.odds && r.odds.aTitleAfter >= r.odds.aTitleBefore ? "pos" : "neg"} />
@@ -341,28 +463,6 @@ function Result({ r, view, partner, busy, onApply, me, partnerId }: { r: TradeRe
         </Card>
       )}
 
-      <Card title="Package value" info={<>Two ways to total each side. <b>Simple sum</b> adds every asset&apos;s trade value (0–999 each). <b>Consolidated</b> weights stars more, because one great player is worth more than two average ones who take up two roster spots. The verdict uses consolidated.</>} right={<span className="text-[11px] text-muted">simple sum vs consolidated</span>}>
-        <div className="flex flex-col gap-3">
-          {[{ label: "You send", raw: r.market.aSendsRaw, pkg: r.market.aSends, tone: "bg-fg" }, { label: "You receive", raw: r.market.bSendsRaw, pkg: r.market.bSends, tone: "bg-acc" }].map((row) => {
-            const max = Math.max(1, r.market.aSendsRaw, r.market.bSendsRaw);
-            return (
-              <div key={row.label} className="grid grid-cols-[6rem_1fr_6.5rem] items-center gap-3 text-sm">
-                <span className="text-muted">{row.label}</span>
-                <div className="relative h-5 rounded-md bg-panel2">
-                  <div className="absolute inset-y-0 left-0 rounded-md border border-dashed border-muted/60 transition-[width] duration-500" style={{ width: `${(100 * row.raw) / max}%` }} />
-                  <div className={cx("absolute inset-y-1 left-0 rounded transition-[width] duration-500", row.tone)} style={{ width: `${(100 * row.pkg) / max}%` }} />
-                </div>
-                <span className="num text-right"><b>{tv(row.pkg)}</b> <span className="text-xs text-muted">/ {tv(row.raw)}</span></span>
-              </div>
-            );
-          })}
-        </div>
-        <Info className="mt-3">Solid bar = package value, dashed = simple sum. Several smaller pieces are discounted because they can&apos;t fill one star&apos;s lineup spot (&quot;four quarters ≠ a dollar&quot;). This applies to picks too.
-          {r.rosterSpots.a.extra > 0 && <> You&apos;d need to cut <b className="text-fg">{r.rosterSpots.a.drops.join(", ")}</b> to make room (−{r.rosterSpots.a.cost}).</>}
-          {r.rosterSpots.b.extra > 0 && <> {partner} would need to cut {r.rosterSpots.b.drops.length} player{r.rosterSpots.b.drops.length > 1 ? "s" : ""} (−{r.rosterSpots.b.cost}).</>}
-        </Info>
-      </Card>
-
       <Card title="Make it fair" info={<>Smallest additions (players or picks) that would bring the two sides within a fair range by consolidated value.</>} right={<Tag kind="MODEL" />}>
         {r.suggestions.length === 0 ? (
           <p className="text-sm text-muted">{Math.abs(r.market.netForA) <= Math.max(3, 0.08 * Math.max(r.market.aSends, r.market.bSends)) ? "Values are already within a fair range. No changes needed." : "No single asset closes the gap neatly. Try adding a smaller piece or swapping the main player."}</p>
@@ -373,7 +473,7 @@ function Result({ r, view, partner, busy, onApply, me, partnerId }: { r: TradeRe
                 <span className={cx("flex h-8 w-8 shrink-0 items-center justify-center rounded-full", s.action === "add" ? "bg-acc text-on-acc" : "border border-line")}>{s.action === "add" ? <Plus size={16} /> : <Minus size={16} />}</span>
                 <div className="min-w-0 flex-1 text-sm">
                   <div><b>{s.action === "add" ? "Add" : "Remove"} {s.name}</b> <span className="text-muted">({tv(s.value)})</span></div>
-                  <div className="truncate text-xs text-muted">{s.side === "a" ? (s.action === "add" ? "You also send" : "You keep") : s.action === "add" ? `${partner} also sends` : `${partner} keeps`} · gap after: {signed(s.gapAfter)}</div>
+                  <div className="truncate text-xs text-muted">{s.side === "a" ? (s.action === "add" ? "You also send" : "You keep") : s.action === "add" ? `${partner} also sends` : `${partner} keeps`} · gap after: {s.gapAfter >= 0 ? "+" : "−"}{tv(Math.abs(s.gapAfter))}</div>
                 </div>
                 <button type="button" onClick={() => onApply(s)} className="rounded-md bg-acc px-3 py-1.5 text-xs font-bold text-on-acc">Apply</button>
               </li>

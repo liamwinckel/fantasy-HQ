@@ -356,13 +356,15 @@ export function evaluateTrade(ctx: LeagueContext, req: TradeRequest): TradeResul
   else { verdict = "Roughly even"; verdictTone = "even"; }
 
   const explanation: string[] = [];
-  explanation.push(`Package value: you send ${r1(aSendsMkt)}, you receive ${r1(bSendsMkt)} (${netForA >= 0 ? "+" : ""}${netForA}).`);
+  // Text uses the 0–999 display scale.
+  const k9 = (x: number) => Math.round(x * 9.99).toLocaleString();
+  explanation.push(`Package value: you send ${k9(aSendsMkt)}, you receive ${k9(bSendsMkt)} (${netForA >= 0 ? "+" : "−"}${k9(Math.abs(netForA))}).`);
   if (Math.abs(aSendsRaw - aSendsMkt) > 2 || Math.abs(bSendsRaw - bSendsMkt) > 2)
-    explanation.push(`Straight sums would be ${r1(aSendsRaw)} vs ${r1(bSendsRaw)}. Packages are discounted because several smaller pieces can't fill one star's lineup spot.`);
-  if (rosterSpots.a.extra > 0) explanation.push(`You take back ${rosterSpots.a.extra} more player${rosterSpots.a.extra > 1 ? "s" : ""} than you send, so you'd cut ${rosterSpots.a.drops.join(", ")} (−${rosterSpots.a.cost}).`);
-  if (rosterSpots.a.extra < 0) explanation.push(`You free ${-rosterSpots.a.extra} roster spot${rosterSpots.a.extra < -1 ? "s" : ""} for waiver pickups (+${-rosterSpots.a.cost}).`);
+    explanation.push(`Straight sums would be ${k9(aSendsRaw)} vs ${k9(bSendsRaw)}. Packages are discounted because several smaller pieces can't fill one star's lineup spot.`);
+  if (rosterSpots.a.extra > 0) explanation.push(`You take back ${rosterSpots.a.extra} more player${rosterSpots.a.extra > 1 ? "s" : ""} than you send, so you'd cut ${rosterSpots.a.drops.join(", ")} (−${k9(rosterSpots.a.cost)}).`);
+  if (rosterSpots.a.extra < 0) explanation.push(`You free ${-rosterSpots.a.extra} roster spot${rosterSpots.a.extra < -1 ? "s" : ""} for waiver pickups (+${k9(-rosterSpots.a.cost)}).`);
   if (classA && classB)
-    explanation.push(`As a ${classA}, the trade is worth ${aNet >= 0 ? "+" : ""}${aNet} to you strategically. As a ${classB}, it's worth ${bNet >= 0 ? "+" : ""}${bNet} to ${teamB.name}.`);
+    explanation.push(`As a ${classA}, the trade is worth ${aNet >= 0 ? "+" : "−"}${k9(Math.abs(aNet))} to you strategically. As a ${classB}, it's worth ${bNet >= 0 ? "+" : "−"}${k9(Math.abs(bNet))} to ${teamB.name}.`);
   const dA = r1(lineup.aWeekAfter - lineup.aWeekBefore);
   if (!ctx.seasonOver) explanation.push(`Your best lineup this week: ${dA >= 0 ? "+" : ""}${dA} pts. Rest of season: ${lineup.aRosBefore} → ${lineup.aRosAfter} pts/g (${lineup.aRosDelta >= 0 ? "+" : ""}${lineup.aRosDelta}), counting byes, matchups and who steps in from your bench.`);
   explanation.push(`Chance ${teamB.name} says yes: about ${Math.round(accept * 100)}%. Managers judge by market value, want to come out a little ahead, and want a clear premium to give up the best player in the deal.`);
