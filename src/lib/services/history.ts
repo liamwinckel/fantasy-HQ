@@ -306,12 +306,12 @@ export async function tradeGrades(h: History, ctx: LeagueContext): Promise<Trade
         const got: TradeAsset[] = [];
         const per: Record<string, number> = {};
         const addPlayer = async (pid: string, name: string, pos: string, fromSi: number, fromWeek: number, then: number, note?: string) => {
-          const moved = multi ? movedOn(owner, pid, created) : null;
+          const moved = movedOn(owner, pid, created); // redraft too: points stop if he's flipped later that season
           const r = await startedFor(fromSi, owner, pid, fromWeek, moved ?? undefined);
           for (const [k, v] of Object.entries(r.per)) per[k] = (per[k] ?? 0) + v;
           const value = dyn ? (moved ? moved.value : curOwnerHas(owner, pid) ? valueNow(pid) : 0)
             : keeper ? (curOwnerHas(owner, pid) ? valueNow(pid) : 0)
-            : s.current ? ctx.values.get(pid)?.redraft ?? 0 : 0;
+            : 0; // redraft: judged on production only, never on today's projections
           got.push({ id: pid, name, pos, pts: r.pts, value, then, note: note ?? (moved ? `traded on in ${moved.season}` : undefined) });
         };
         for (const [pid] of Object.entries(t.adds ?? {}).filter(([, r]) => r === rid)) {
@@ -340,15 +340,18 @@ export async function tradeGrades(h: History, ctx: LeagueContext): Promise<Trade
       const P = sides.reduce((a, x) => a + x.pts, 0), V = sides.reduce((a, x) => a + x.value, 0), T = sides.reduce((a, x) => a + x.then, 0);
       const years = Math.max(0, (Date.now() - created) / (365 * 86_400_000));
       // Points matter more the longer ago the trade was; value today matters more for recent ones.
-      const wP = dyn ? Math.min(0.7, 0.2 + 0.2 * years) : keeper ? 0.75 : s.current ? (P > 30 ? 0.5 : 0) : 1;
+      const wP = dyn ? Math.min(0.7, 0.2 + 0.2 * years) : keeper ? 0.75 : 1;
+      // Redraft, this season: graded on what the trade has produced so far; too early until there's a game or two of it.
+      const tooEarly = !multi && s.current && P < 15;
       for (const x of sides) {
         const pShare = P > 0 ? x.pts / P : 1 / n, vShare = V > 0 ? x.value / V : 1 / n;
         let share = P > 0 ? wP * pShare + (1 - wP) * vShare : vShare;
-        if (!s.current && !multi) share = pShare;
+        if (!multi) share = pShare;
+        if (tooEarly) share = 0.5;
         // A trade that helped win the title was worth it, whatever it cost.
         if (x.titles.length) share = Math.max(share + 0.1, 0.55);
         x.share = share;
-        x.grade = gradeOf(share * n / 2);
+        x.grade = tooEarly ? "—" : gradeOf(share * n / 2);
         if (T > 0) { x.atShare = x.then / T; x.atGrade = gradeOf(x.atShare * n / 2); }
       }
       const best = [...sides].sort((a, b) => b.share - a.share);
@@ -363,10 +366,10 @@ export async function tradeGrades(h: History, ctx: LeagueContext): Promise<Trade
       else if (atBest && atMargin < 0.08 && margin >= 0.15) story = `Looked even at the time; ${nm(best[0].owner)} got the better of it.`;
       out.push({
         id: t.transaction_id, season: s.season, week, at: created, sides, story,
-        verdict: champ ? `Worth it for ${nm(champ.owner)}` : margin < 0.08 ? (s.current ? "Even so far" : "Even") : `${nm(best[0].owner)} ${margin > 0.3 ? "won big" : s.current && !multi ? "is winning" : "won"}`,
+        verdict: champ ? `Worth it for ${nm(champ.owner)}` : tooEarly ? "Too early to tell" : margin < 0.08 ? (s.current ? "Even so far" : "Even") : `${nm(best[0].owner)} ${margin > 0.3 ? "won big" : s.current && !multi ? "is winning" : "won"}`,
         basis: dyn ? "Starter points the assets scored for each team (every season since), plus what they're worth now in your scoring — or what they were worth when traded on. Titles count."
           : keeper ? "Starter points for each team across every season since, plus keeper value now in your scoring. Titles count."
-          : s.current ? "Starter points since, plus rest-of-season value in your scoring" : "Starter points gained over the rest of that season. A title counts.",
+          : s.current ? "Starter points each side has got from the trade so far this season (only while on that roster)" : "Starter points each side got over the rest of that season, while the players were on their roster. A title counts.",
         atBasis: T > 0 ? (dyn ? "Dynasty market value the month of the trade (DynastyProcess)" : "Each player's recent points per game in your scoring × games left; picks as a player taken there") : null,
       });
     }

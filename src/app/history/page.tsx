@@ -61,7 +61,7 @@ function HistoryBody({ league, ctx }: LeagueData) {
 
 // ------------------------------------------------------------------------------------------------
 function GradeChip({ g, size = "md" }: { g: string; size?: "sm" | "md" | "lg" }) {
-  const tone = g.startsWith("A") ? "bg-pos/20 text-pos" : g.startsWith("B") ? "bg-pos/10 text-pos" : g.startsWith("C") ? "bg-panel2 text-fg" : "bg-neg/15 text-neg";
+  const tone = g === "—" ? "bg-panel2 text-muted" : g.startsWith("A") ? "bg-pos/20 text-pos" : g.startsWith("B") ? "bg-pos/10 text-pos" : g.startsWith("C") ? "bg-panel2 text-fg" : "bg-neg/15 text-neg";
   return <span className={cx("num inline-flex items-center justify-center rounded-lg font-extrabold", tone, size === "lg" ? "h-10 w-12 text-lg" : size === "sm" ? "h-6 w-8 text-xs opacity-80" : "h-7 w-9 text-sm")}>{g}</span>;
 }
 const ownerName = (d: Loaded, o: string) => d.h.owners.get(o)?.name ?? "Manager";
