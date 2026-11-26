@@ -1,6 +1,6 @@
 # SHS AI research (2021–2026)
 
-Generated 2026-11-25 · 95 weeks · 17,959 player-weeks · projection source: sleeper.
+Generated 2026-11-26 · 95 weeks · 17,959 player-weeks · projection source: sleeper.
 
 ## Weekly
 
