@@ -1,0 +1,65 @@
+# Smoke test against real Sleeper leagues: builds the site, serves it locally, opens every page for each league at
+# phone size and saves screenshots + a summary (console errors, failed requests, load time) to the "smoke-results"
+# branch. Read-only against Sleeper. Run by hand: Actions → Smoke test → Run workflow.
+name: Smoke test
+
+on:
+  workflow_dispatch:
+    inputs:
+      username:
+        description: Sleeper username
+        default: L1am
+      user_id:
+        description: Sleeper user ID
+        default: "389682598735060992"
+
+permissions:
+  contents: write
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/cache/restore@v4
+        with:
+          path: .cache
+          key: ecr-${{ github.run_id }}
+          restore-keys: ecr-
+      - name: Check out saved history (read-only, so news and betting-line grades match the live site)
+        run: |
+          if git ls-remote --exit-code --heads origin history >/dev/null 2>&1; then
+            git fetch --depth 1 origin history && git worktree add history origin/history
+          else mkdir -p history; fi
+      - name: Download player data
+        run: npm run data
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build
+        run: NEXT_PUBLIC_BASE_PATH=/fantasy-HQ npm run build
+      - name: Install browser
+        run: npm i --no-save playwright && npx playwright install --with-deps chromium
+      - name: Serve and visit every page
+        run: |
+          mkdir -p site && ln -s "$PWD/out" site/fantasy-HQ
+          (cd site && python3 -m http.server 8080 >/dev/null 2>&1 &)
+          sleep 2
+          node scripts/smoke/run.mjs
+        env:
+          SMOKE_USER: ${{ inputs.username }}
+          SMOKE_UID: ${{ inputs.user_id }}
+          SMOKE_OUT: smoke-out
+      - name: Save results to the smoke-results branch
+        if: always()
+        run: |
+          cd smoke-out
+          git init -q -b smoke-results
+          git -c user.name="fantasy-hq-bot" -c user.email="actions@users.noreply.github.com" add -A
+          git -c user.name="fantasy-hq-bot" -c user.email="actions@users.noreply.github.com" commit -qm "Smoke results ${{ github.run_id }}"
+          git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" HEAD:smoke-results

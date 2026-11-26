@@ -8,3 +8,4 @@ tsconfig.tsbuildinfo
 *.log
 .cache/
 /history/
+smoke-out/
