@@ -89,9 +89,17 @@ export function TradeAnalyzer({ leagueId, views, me, teams: rawTeams, initialPar
   const [pickSide, setPickSide] = useState<"a" | "b">("a");
   const valueOf = (a: Asset) => (a.kind === "pick" && mode === "dynasty" && tiers[a.id] && a.tierValues ? a.tierValues[tiers[a.id]] : a.value);
   const sumOf = (team: TeamOpt | undefined, ids: string[]) => ids.reduce((t, id) => { const x = team?.assets.find((z) => z.id === id); return t + (x ? valueOf(x) : 0); }, 0);
-  const sendTotal = result ? result.market.aSends : sumOf(mine, aSends);
-  // What you get counts after any roster spots it costs you (cuts to make room).
-  const getTotal = result ? Math.max(0, result.market.bSends - result.rosterSpots.a.cost) : sumOf(theirs, bSends);
+  // Keep-Trade-Cut style totals: each side's straight sum, plus a "value adjustment" on the side that's consolidating
+  // (fewer, better pieces), sized so the two totals compare exactly as the weighted values do (depth discount and
+  // roster-spot costs included).
+  const rawSend = sumOf(mine, aSends), rawGet = sumOf(theirs, bSends);
+  let adjSend = 0, adjGet = 0;
+  if (result && rawSend > 0 && rawGet > 0) {
+    const effS = result.market.aSends, effG = Math.max(0.01, result.market.bSends - result.rosterSpots.a.cost);
+    const q = effS / effG;
+    if (rawSend / rawGet < q) adjSend = rawGet * q - rawSend; else adjGet = rawSend / q - rawGet;
+  }
+  const sendTotal = rawSend + adjSend, getTotal = rawGet + adjGet;
   const ready = aSends.length + bSends.length > 0;
   const partnerName = theirs?.name ?? "Partner";
 
@@ -113,7 +121,7 @@ export function TradeAnalyzer({ leagueId, views, me, teams: rawTeams, initialPar
 
       {/* Value bar: both totals, the weighting each side takes, and who's winning — pinned while you scroll. */}
       <div className="sticky top-0 z-20 -mx-1 rounded-2xl border border-line bg-panel/95 px-3 py-3 shadow-lg backdrop-blur sm:mx-0 sm:px-4">
-        <ValueBar send={sendTotal} get={getTotal} sendRaw={result ? result.market.aSendsRaw : sendTotal} getRaw={result ? result.market.bSendsRaw : getTotal} balance={result?.balance ?? null} partner={partnerName} />
+        <ValueBar send={sendTotal} get={getTotal} balance={result?.balance ?? null} partner={partnerName} />
         <div className="mt-2.5 flex justify-center">
           {step === "build" ? (
             <button type="button" disabled={!ready || !result} onClick={() => { setStep("analysis"); document.getElementById("fhq-scroll")?.scrollTo({ top: 0 }); }}
@@ -129,8 +137,8 @@ export function TradeAnalyzer({ leagueId, views, me, teams: rawTeams, initialPar
       {step === "build" && (
         <>
           <div className="grid min-w-0 grid-cols-2 items-start gap-2 sm:gap-4">
-            <DealColumn title="You send" team={mine} selected={aSends} onChange={setA} tiers={tiers} setTiers={setTiers} mode={mode} valueOf={valueOf} active={pickSide === "a"} onPick={() => setPickSide("a")} />
-            {theirs && <DealColumn title="You get" team={theirs} selected={bSends} onChange={setB} tiers={tiers} setTiers={setTiers} mode={mode} valueOf={valueOf} active={pickSide === "b"} onPick={() => setPickSide("b")} />}
+            <DealColumn title="You send" team={mine} selected={aSends} onChange={setA} tiers={tiers} setTiers={setTiers} mode={mode} valueOf={valueOf} active={pickSide === "a"} onPick={() => setPickSide("a")} adjust={adjSend} />
+            {theirs && <DealColumn title="You get" team={theirs} selected={bSends} onChange={setB} tiers={tiers} setTiers={setTiers} mode={mode} valueOf={valueOf} active={pickSide === "b"} onPick={() => setPickSide("b")} adjust={adjGet} />}
           </div>
           {theirs && <Picker team={pickSide === "a" ? mine : theirs} tabs={[{ v: "a", label: "Your roster" }, { v: "b", label: `${partnerName}` }]} side={pickSide} setSide={setPickSide}
             selected={pickSide === "a" ? aSends : bSends} onAdd={(id) => (pickSide === "a" ? setA([...aSends, id]) : setB([...bSends, id]))} mode={mode} />}
@@ -149,9 +157,9 @@ export function TradeAnalyzer({ leagueId, views, me, teams: rawTeams, initialPar
 }
 
 /** One side of the deal: just the assets in it, compact and the same row height on both sides. */
-function DealColumn({ title, team, selected, onChange, tiers, setTiers, mode, valueOf, active, onPick }: {
+function DealColumn({ title, team, selected, onChange, tiers, setTiers, mode, valueOf, active, onPick, adjust }: {
   title: string; team: TeamOpt; selected: string[]; onChange: (v: string[]) => void; tiers: Record<string, Tier>; setTiers: (t: Record<string, Tier>) => void;
-  mode: "redraft" | "dynasty"; valueOf: (a: Asset) => number; active: boolean; onPick: () => void;
+  mode: "redraft" | "dynasty"; valueOf: (a: Asset) => number; active: boolean; onPick: () => void; adjust: number;
 }) {
   const byId = new Map(team.assets.map((a) => [a.id, a]));
   return (
@@ -186,6 +194,12 @@ function DealColumn({ title, team, selected, onChange, tiers, setTiers, mode, va
           </div>
         );
       })}
+      {adjust >= 0.5 && (
+        <div className="fhq-in flex h-10 items-center justify-between rounded-lg border border-line px-2 text-xs" style={{ background: "repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--fg) 8%, transparent) 6px 8px)" }}
+          title="Consolidation: fewer, better pieces are worth more than the straight sum (four quarters ≠ a dollar)">
+          <span className="truncate font-semibold text-muted">Adjustment</span><span className="num font-bold">+{tv(adjust)}</span>
+        </div>
+      )}
       <button type="button" onClick={onPick} className={cx("flex h-10 items-center justify-center gap-1 rounded-lg border border-dashed text-xs font-semibold", active ? "border-acc/60 text-acc-ink" : "border-line text-muted")}>
         <Plus size={14} /> Add
       </button>
@@ -410,9 +424,6 @@ function Result({ r, view, partner, busy, onApply, me, partnerId, deal, stack, a
   );
 }
 
-/** "Jaxon Smith-Njigba" → "J. Smith-Njigba" for tight columns (team defences and "Nobody" left alone). */
-const shortName = (n: string) => { const p = n.split(" "); return p.length > 1 && !/^[A-Z][a-z]+ [A-Z][a-z]+s$/.test(n) && n !== "Nobody" ? `${p[0][0]}. ${p.slice(1).join(" ")}` : n; };
-
 /** A section of the readout that opens in place. */
 function Fold({ title, summary, open: start = false, children }: { title: string; summary: React.ReactNode; open?: boolean; children: React.ReactNode }) {
   const [open, setOpen] = useState(start);
@@ -432,10 +443,12 @@ function Fold({ title, summary, open: start = false, children }: { title: string
 
 /** Straight after the verdict: a team before → after, starter by starter, with power and positional ranks. */
 function TeamImpact({ r, me, partnerId, partner }: { r: TradeResult; me: number; partnerId: number; partner: string }) {
+  const { ctx } = useApp();
   const [who, setWho] = useState<"a" | "b">("a");
   const rows = who === "a" ? r.lineups.a : r.lineups.b;
   const pw = r.power.find((p) => p.rosterId === (who === "a" ? me : partnerId));
   const ros = who === "a" ? { before: r.lineup.aRosBefore, after: r.lineup.aRosAfter } : { before: r.lineup.bRosBefore, after: r.lineup.bRosAfter };
+  const beforeIds = new Set(rows.map((x) => x.before.id).filter(Boolean) as string[]);
   const before = rows.reduce((t, x) => t + x.before.ppg, 0), after = rows.reduce((t, x) => t + x.after.ppg, 0);
   const d = Math.round((after - before) * 10) / 10;
   const positions = who === "a" ? r.positionsA : r.positionsB;
@@ -452,22 +465,35 @@ function TeamImpact({ r, me, partnerId, partner }: { r: TradeResult; me: number;
         <Stat label="Power rank" value={pw ? (pw.before.rank === pw.after.rank ? "—" : `${pw.before.rank > pw.after.rank ? "▲" : "▼"}${Math.abs(pw.before.rank - pw.after.rank)}`) : "—"} sub={pw ? `#${pw.before.rank} → #${pw.after.rank}` : undefined} tone={pw ? (pw.after.rank < pw.before.rank ? "pos" : pw.after.rank > pw.before.rank ? "neg" : null) : null} />
         <Stat label="Rest of season" value={r.lineup.weeks ? signed(Math.round((ros.after - ros.before) * 10) / 10) : "—"} sub={r.lineup.weeks ? `${ros.before} → ${ros.after} pts/g` : undefined} tone={ros.after > ros.before ? "pos" : ros.after < ros.before ? "neg" : null} />
       </div>
-      <div className="mt-3 border-t border-line">
-        <div className="grid grid-cols-[3.2rem_minmax(0,1fr)_minmax(0,1fr)_2.8rem] gap-2 px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted">
-          <span>Slot</span><span>Before</span><span>After</span><span className="text-right">±</span>
-        </div>
+      <ul className="mt-3 divide-y divide-line border-t border-line">
         {rows.map((x) => {
-          const changed = x.before.id !== x.after.id;
+          // "New" = a player who wasn't starting before (arrived in the trade or promoted from the bench);
+          // players who just shift spots aren't flagged.
+          const changed = !!x.after.id && !beforeIds.has(x.after.id);
+          const pl = x.after.id ? ctx?.players.get(x.after.id) : undefined;
           return (
-            <div key={x.slot} className={cx("grid grid-cols-[3.2rem_minmax(0,1fr)_minmax(0,1fr)_2.8rem] items-center gap-2 border-t border-line/60 px-4 py-1.5 text-xs", changed && "bg-acc-soft")}>
-              <span className="font-bold text-muted">{x.slot}</span>
-              <span className={cx("flex min-w-0 items-baseline gap-1", changed && "text-muted")}><span className={cx("min-w-0 truncate", changed && "line-through decoration-muted/50")}>{shortName(x.before.name)}</span><span className="num shrink-0 text-[10px] text-muted">{x.before.ppg}</span></span>
-              <span className="flex min-w-0 items-baseline gap-1"><span className={cx("min-w-0 truncate", changed && "font-semibold")}>{shortName(x.after.name)}</span><span className="num shrink-0 text-[10px] text-muted">{x.after.ppg}</span></span>
-              <span className={cx("num text-right font-bold", x.delta > 0.2 ? "text-pos" : x.delta < -0.2 ? "text-neg" : "text-muted")}>{changed ? signed(x.delta) : "·"}</span>
-            </div>
+            <li key={x.slot} className={cx("flex items-center gap-2.5 px-4 py-2", changed && "bg-acc-soft")}>
+              <span className="w-11 shrink-0 rounded-md bg-panel2 py-1 text-center text-[10px] font-extrabold text-muted">{x.slot}</span>
+              {x.after.id ? <PlayerImg id={x.after.id} name={x.after.name} pos={pl?.pos ?? ""} size={34} /> : <span className="h-[34px] w-[34px] shrink-0 rounded-full border border-dashed border-neg" />}
+              <div className="min-w-0 flex-1">
+                <div className="flex min-w-0 items-center gap-1 text-sm font-semibold">
+                  {x.after.id ? <PlayerLink id={x.after.id} name={x.after.name} className="truncate" /> : <span className="text-muted">Empty</span>}
+                  {pl && <InjuryChip status={pl.injury} />}
+                  {changed && <span className="shrink-0 rounded bg-acc px-1 text-[9px] font-extrabold text-on-acc">NEW</span>}
+                </div>
+                <div className="flex items-center gap-1 truncate text-[11px] text-muted">
+                  {pl && <NflLogo team={pl.team} size={11} />}
+                  <span className="truncate">{pl ? `${pl.pos}${pl.team ? ` · ${pl.team}` : ""}` : ""}{changed ? ` · replaces ${x.before.name} (${x.before.ppg})` : ""}</span>
+                </div>
+              </div>
+              <div className="w-12 shrink-0 text-right">
+                <div className="num text-sm font-bold">{x.after.ppg}</div>
+                <div className={cx("num text-[10px] font-bold", x.delta > 0.2 ? "text-pos" : x.delta < -0.2 ? "text-neg" : "text-muted")}>{Math.abs(x.delta) > 0.05 ? signed(x.delta) : "pts/g"}</div>
+              </div>
+            </li>
           );
         })}
-      </div>
+      </ul>
       <div className="flex gap-1.5 overflow-x-auto border-t border-line px-4 py-3">
         {positions.map((p) => {
           const dd = p.before.rank && p.after.rank ? p.before.rank - p.after.rank : 0;
@@ -495,44 +521,42 @@ function Stat({ label, value, sub, tone }: { label: string; value: string; sub?:
 }
 
 /**
- * Keep-Trade-Cut style value bar: one rectangle split between the two sides by straight value; within each side the
- * solid part is what it counts for after the weighting (depth discount, roster spots) and the striped part is what the
- * weighting takes off. The marker shows who's winning.
+ * Keep-Trade-Cut style value bar: one track split at your share of the total value. The winning side's part is thick
+ * and solid, the other side thin and faded; green when you win, red when you lose, blue when it's even. The faint
+ * centre block is the fair range.
  */
-function ValueBar({ send, get, sendRaw, getRaw, balance, partner }: { send: number; get: number; sendRaw: number; getRaw: number; balance: number | null; partner: string }) {
-  const total = Math.max(1e-9, sendRaw + getRaw);
-  const sw = (100 * sendRaw) / total, gw = 100 - sw;
-  const sFill = sendRaw > 0 ? Math.min(1, send / sendRaw) : 0, gFill = getRaw > 0 ? Math.min(1, get / getRaw) : 0;
+function ValueBar({ send, get, balance, partner }: { send: number; get: number; balance: number | null; partner: string }) {
+  const total = send + get;
+  const getShare = total > 0 ? (100 * get) / total : 50;
   const fair = balance !== null && Math.abs(balance) < 8;
-  const label = balance === null ? "Add players to both sides" : fair ? "Fair trade" : balance > 0 ? (balance > 40 ? "You win big" : "You win") : balance < -40 ? `${partner} wins big` : `${partner} wins`;
-  const stripe = "repeating-linear-gradient(135deg, transparent 0 5px, color-mix(in srgb, var(--fg) 32%, transparent) 5px 7px)";
+  const youWin = balance !== null && balance > 0 && !fair;
+  const color = balance === null ? "var(--muted)" : fair ? "#4a9eff" : youWin ? "var(--pos)" : "var(--neg)";
+  const label = balance === null ? "Add players to both sides" : fair ? "Fair trade" : balance > 0 ? (balance > 40 ? "Strongly favours you" : "Favours you") : balance < -40 ? `Strongly favours ${partner}` : `Favours ${partner}`;
+  // The side getting more value is drawn solid: "You get" (right) when you're getting more.
+  const rightWins = get >= send;
   return (
     <div>
-      <div className="mb-1.5 flex items-end justify-between gap-2">
-        <div className="min-w-0"><div className="text-[10px] font-bold uppercase tracking-wider text-muted">You send</div><div className="num h-display text-2xl leading-none sm:text-3xl">{tv(send)}</div></div>
-        <div className={cx("pb-0.5 text-center text-xs font-extrabold uppercase tracking-wide", balance === null || fair ? "text-muted" : balance > 0 ? "text-pos" : "text-neg")}>{label}</div>
-        <div className="min-w-0 text-right"><div className="text-[10px] font-bold uppercase tracking-wider text-muted">You get</div><div className="num h-display text-2xl leading-none text-acc-ink sm:text-3xl">{tv(get)}</div></div>
+      <div className="mb-2 flex items-end justify-between gap-2">
+        <div className="min-w-0"><div className="text-[10px] font-bold uppercase tracking-wider text-muted">You send</div><div className="num h-display text-2xl leading-none sm:text-3xl" style={{ color: !rightWins && balance !== null ? color : undefined }}>{tv(send)}</div></div>
+        <div className="min-w-0 text-right"><div className="text-[10px] font-bold uppercase tracking-wider text-muted">You get</div><div className="num h-display text-2xl leading-none sm:text-3xl" style={{ color: rightWins && balance !== null ? color : undefined }}>{tv(get)}</div></div>
       </div>
-      <div className="relative flex h-7 overflow-hidden rounded-lg border border-line bg-panel2">
-        {sendRaw + getRaw > 0 ? (
+      <div className="relative h-5">
+        {/* fair range */}
+        <div className="absolute inset-y-0 left-[45%] right-[45%] rounded" style={{ background: "repeating-linear-gradient(135deg, transparent 0 4px, color-mix(in srgb, #4a9eff 35%, transparent) 4px 6px)" }} aria-hidden />
+        {total > 0 && (
           <>
-            <div className="relative h-full transition-[width] duration-500" style={{ width: `${sw}%` }}>
-              <div className="absolute inset-y-0 left-0 bg-fg/85 transition-[width] duration-500" style={{ width: `${sFill * 100}%` }} />
-              <div className="absolute inset-y-0 right-0" style={{ width: `${(1 - sFill) * 100}%`, background: stripe }} />
-            </div>
-            <div className="h-full w-0.5 bg-bg" />
-            <div className="relative h-full flex-1 transition-[width] duration-500" style={{ width: `${gw}%` }}>
-              <div className="absolute inset-y-0 right-0 bg-acc transition-[width] duration-500" style={{ width: `${gFill * 100}%` }} />
-              <div className="absolute inset-y-0 left-0" style={{ width: `${(1 - gFill) * 100}%`, background: stripe }} />
-            </div>
+            {/* left part: what you send */}
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 rounded-l-full transition-all duration-500"
+              style={{ width: `${100 - getShare}%`, height: rightWins ? 6 : 14, background: color, opacity: rightWins ? 0.35 : 1 }} />
+            {/* right part: what you get */}
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 rounded-r-full transition-all duration-500"
+              style={{ width: `${getShare}%`, height: rightWins ? 14 : 6, background: color, opacity: rightWins ? 1 : 0.35 }} />
           </>
-        ) : <div className="flex-1" />}
-        {balance !== null && <div className="absolute -top-0.5 bottom-[-2px] w-1.5 -translate-x-1/2 rounded-full border border-bg shadow transition-[left] duration-500" style={{ left: `${Math.max(2, Math.min(98, 50 + balance / 2))}%`, background: fair ? "var(--acc)" : balance > 0 ? "var(--pos)" : "var(--neg)" }} aria-label={`Balance ${balance}`} />}
-        <div className="pointer-events-none absolute inset-y-0 left-1/2 w-px bg-muted/40" />
+        )}
       </div>
-      {sendRaw + getRaw > 0 && (sFill < 0.995 || gFill < 0.995) && (
-        <div className="mt-1 flex justify-between text-[10px] text-muted"><span>{sFill < 0.995 ? `weighting −${tv(sendRaw - send)}` : ""}</span><span>{gFill < 0.995 ? `weighting −${tv(getRaw - get)}` : ""}</span></div>
-      )}
+      <div className="mt-2 rounded-lg px-3 py-1.5 text-center text-sm font-extrabold" style={{ color, background: `color-mix(in srgb, ${color} 14%, transparent)` }}>
+        {label}
+      </div>
     </div>
   );
 }
