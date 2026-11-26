@@ -14,6 +14,9 @@ import { useShsWeights } from "@/components/ShsAiParts";
 import { Sheet } from "@/components/Sheet";
 
 type Tier = "early" | "mid" | "late";
+/** Trade values on a 0–999 scale (top asset = 999) for finer distinctions. */
+const tv = (x: number) => Math.round(x * 9.99).toLocaleString();
+
 export interface Asset {
   id: string; kind: "player" | "pick"; name: string; pos: string; team: string | null; sub: string; value: number; injury: string | null;
   tier?: Tier; tierValues?: Record<Tier, number>;
@@ -145,14 +148,14 @@ function Side({ title, team, selected, onChange, tiers, setTiers, mode, ai }: {
                   </div>
                 )}
               </div>
-              <div className="text-right"><div className="num font-[family-name:var(--font-display)] text-lg font-bold leading-none sm:text-2xl">{valueOf(a).toFixed(1)}</div>{(() => { const p = a.kind === "player" ? ai.get(a.id.slice(2))?.pct ?? null : null; return p !== null ? <div className={cx("num text-[10px] font-bold", p >= 5 ? "text-pos" : p <= -5 ? "text-neg" : "text-muted")} title="SHS AI vs expert consensus">AI {p > 0 ? "+" : ""}{p}%</div> : <div className="hidden text-[10px] text-muted sm:block">value</div>; })()}</div>
+              <div className="text-right"><div className="num font-[family-name:var(--font-display)] text-lg font-bold leading-none sm:text-2xl">{tv(valueOf(a))}</div>{(() => { const p = a.kind === "player" ? ai.get(a.id.slice(2))?.pct ?? null : null; return p !== null ? <div className={cx("num text-[10px] font-bold", p >= 5 ? "text-pos" : p <= -5 ? "text-neg" : "text-muted")} title="SHS AI vs expert consensus">AI {p > 0 ? "+" : ""}{p}%</div> : <div className="hidden text-[10px] text-muted sm:block">value</div>; })()}</div>
               <button type="button" aria-label={`Take ${a.name} out of the trade`} onClick={() => onChange(selected.filter((x) => x !== id))}
                 className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-neg/60 text-neg transition-transform hover:bg-neg/10 active:scale-90 sm:h-9 sm:w-9"><Minus size={16} /></button>
             </div>
           );
         })}
       </div>
-      <div className="mt-2 flex justify-between text-xs sm:text-sm"><span className="text-muted">Total value</span><span className="num font-bold">{total.toFixed(1)}</span></div>
+      <div className="mt-2 flex justify-between text-xs sm:text-sm"><span className="text-muted">Total value</span><span className="num font-bold">{tv(total)}</span></div>
       <div className="mt-3 border-t border-line pt-3">
         <div className="mb-2 flex flex-wrap items-center gap-1.5">
           <label className="relative w-full min-w-0 sm:w-auto sm:flex-1">
@@ -171,7 +174,7 @@ function Side({ title, team, selected, onChange, tiers, setTiers, mode, ai }: {
                 <div className="flex min-w-0 items-center gap-1 text-xs sm:text-sm">{a.kind === "player" ? <PlayerLink id={a.id.slice(2)} name={a.name} className="font-semibold" /> : <span className="truncate font-semibold">{a.name}</span>}<InjuryChip status={a.injury} /></div>
                 <div className="flex items-center gap-1 truncate text-[10px] text-muted sm:text-xs"><NflLogo team={a.team} size={12} /><span className="truncate">{a.sub}</span></div>
               </div>
-              <span className="num w-6 text-right text-xs font-bold sm:w-9 sm:text-sm">{a.value.toFixed(0)}</span>
+              <span className="num w-8 text-right text-xs font-bold sm:w-10 sm:text-sm">{tv(a.value)}</span>
               <button type="button" aria-label={`Add ${a.name} to the trade`} onClick={() => onChange([...selected, a.id])}
                 className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-acc text-on-acc transition-transform active:scale-90 sm:h-9 sm:w-9"><Plus size={16} /></button>
             </li>
@@ -324,7 +327,7 @@ function Result({ r, partner, busy, onApply, me, partnerId }: { r: TradeResult; 
         </Card>
       )}
 
-      <Card title="Package value" info={<>Two ways to total each side. <b>Simple sum</b> adds every asset&apos;s trade value (0–100 each). <b>Consolidated</b> weights stars more, because one great player is worth more than two average ones who take up two roster spots. The verdict uses consolidated.</>} right={<span className="text-[11px] text-muted">simple sum vs consolidated</span>}>
+      <Card title="Package value" info={<>Two ways to total each side. <b>Simple sum</b> adds every asset&apos;s trade value (0–999 each). <b>Consolidated</b> weights stars more, because one great player is worth more than two average ones who take up two roster spots. The verdict uses consolidated.</>} right={<span className="text-[11px] text-muted">simple sum vs consolidated</span>}>
         <div className="flex flex-col gap-3">
           {[{ label: "You send", raw: r.market.aSendsRaw, pkg: r.market.aSends, tone: "bg-fg" }, { label: "You receive", raw: r.market.bSendsRaw, pkg: r.market.bSends, tone: "bg-acc" }].map((row) => {
             const max = Math.max(1, r.market.aSendsRaw, r.market.bSendsRaw);
@@ -335,7 +338,7 @@ function Result({ r, partner, busy, onApply, me, partnerId }: { r: TradeResult; 
                   <div className="absolute inset-y-0 left-0 rounded-md border border-dashed border-muted/60 transition-[width] duration-500" style={{ width: `${(100 * row.raw) / max}%` }} />
                   <div className={cx("absolute inset-y-1 left-0 rounded transition-[width] duration-500", row.tone)} style={{ width: `${(100 * row.pkg) / max}%` }} />
                 </div>
-                <span className="num text-right"><b>{row.pkg.toFixed(1)}</b> <span className="text-xs text-muted">/ {row.raw.toFixed(1)}</span></span>
+                <span className="num text-right"><b>{tv(row.pkg)}</b> <span className="text-xs text-muted">/ {tv(row.raw)}</span></span>
               </div>
             );
           })}
@@ -355,7 +358,7 @@ function Result({ r, partner, busy, onApply, me, partnerId }: { r: TradeResult; 
               <li key={s.action + s.assetId} className="flex items-center gap-3 rounded-lg bg-panel2 p-3">
                 <span className={cx("flex h-8 w-8 shrink-0 items-center justify-center rounded-full", s.action === "add" ? "bg-acc text-on-acc" : "border border-line")}>{s.action === "add" ? <Plus size={16} /> : <Minus size={16} />}</span>
                 <div className="min-w-0 flex-1 text-sm">
-                  <div><b>{s.action === "add" ? "Add" : "Remove"} {s.name}</b> <span className="text-muted">({s.value.toFixed(1)})</span></div>
+                  <div><b>{s.action === "add" ? "Add" : "Remove"} {s.name}</b> <span className="text-muted">({tv(s.value)})</span></div>
                   <div className="truncate text-xs text-muted">{s.side === "a" ? (s.action === "add" ? "You also send" : "You keep") : s.action === "add" ? `${partner} also sends` : `${partner} keeps`} · gap after: {signed(s.gapAfter)}</div>
                 </div>
                 <button type="button" onClick={() => onApply(s)} className="rounded-md bg-acc px-3 py-1.5 text-xs font-bold text-on-acc">Apply</button>
@@ -395,8 +398,8 @@ function Result({ r, partner, busy, onApply, me, partnerId }: { r: TradeResult; 
                           {a.drivers.map((d) => <span key={d.label} className={cx("rounded px-1.5 py-0.5 text-[10px] font-semibold", d.tone === "pos" ? "bg-pos/15 text-pos" : d.tone === "neg" ? "bg-neg/15 text-neg" : "bg-panel2 text-muted")}>{d.label}: {d.value}</span>)}
                         </div>
                       </td>
-                      <td className="num px-2 py-2.5 text-right">{a.market.toFixed(1)}</td>
-                      {r.classA && <><td className="num px-2 py-2.5 text-right font-semibold text-acc-ink">{a.toA.toFixed(1)}</td><td className="num px-5 py-2.5 text-right">{a.toB.toFixed(1)}</td></>}
+                      <td className="num px-2 py-2.5 text-right">{tv(a.market)}</td>
+                      {r.classA && <><td className="num px-2 py-2.5 text-right font-semibold text-acc-ink">{tv(a.toA)}</td><td className="num px-5 py-2.5 text-right">{tv(a.toB)}</td></>}
                     </tr>
                   ))}
                 </tbody>

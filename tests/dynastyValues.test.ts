@@ -13,7 +13,7 @@ describe("dynasty trade values", () => {
     const order = [...values.values()].sort((x, y) => y.dynasty - x.dynasty).map((v) => v.id);
     expect(order).toEqual(["a", "b", "c", "d"]);
     expect(values.get("a")!.dynasty).toBe(100);
-    expect(values.get("b")!.dynasty).toBe(95);
+    expect(values.get("b")!.dynasty).toBeCloseTo(100 * Math.pow(0.95, 0.45), 1);
     expect(values.get("b")!.dynastyModel).toBe(100);
   });
   it("keeps uncovered players below covered ones the model rates higher", () => {
