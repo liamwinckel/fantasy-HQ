@@ -631,9 +631,19 @@ async function buildLeagueContext(
   const projectedOrder = [...teams]
     .sort((a, b) => (sim.projectedWins[a.rosterId] ?? 0) - (sim.projectedWins[b.rosterId] ?? 0) || (healthyStrength.get(a.rosterId) ?? 0) - (healthyStrength.get(b.rosterId) ?? 0))
     .map((t) => t.rosterId);
+  // Keeper leagues trade every pick on the board: use the draft's real round count (the league's draft_rounds field
+  // is often stale) for next season, and the first four rounds (plus any already traded) for later years.
+  let keeperDraft: { rounds: number; teams: number; draftId: string | null } | null = null;
+  if (format === "keeper") {
+    const drafts = (await sleeper.drafts(league.league_id).catch(() => null))?.data ?? [];
+    const d = drafts.find((x) => x.draft_id === league.draft_id) ?? drafts[0];
+    const st = (d?.settings ?? {}) as Record<string, unknown>;
+    keeperDraft = { rounds: Number(st.rounds) || league.settings.draft_rounds || 15, teams: Number(st.teams) || teamsCount, draftId: d?.draft_id ?? null };
+  }
   const picks = buildPicks({
     rosterIds, traded: tradedR.data, firstSeason: Number(season) + 1, years: 3,
-    rounds: format === "dynasty" ? league.settings.draft_rounds || 4 : Math.min(4, league.settings.draft_rounds || 4),
+    rounds: format === "dynasty" ? league.settings.draft_rounds || 4 : keeperDraft ? keeperDraft.rounds : Math.min(4, league.settings.draft_rounds || 4),
+    laterRounds: keeperDraft ? 4 : undefined,
     teams: teamsCount, superflex: isSuperflex(league.roster_positions), projectedOrder, manualTiers: opts.manualTiers,
     valueOn: valuationMode === "dynasty",
   });
@@ -678,15 +688,8 @@ async function buildLeagueContext(
   if (format === "keeper" && !seasonOver) {
     try {
       // The draft's own settings hold the real round count (the league's draft_rounds field is often stale).
-      let rounds = league.settings.draft_rounds || 15, dTeams = teamsCount;
-      let picks: DraftPick[] = [];
-      const drafts = (await sleeper.drafts(league.league_id).catch(() => null))?.data ?? [];
-      const d = drafts.find((x) => x.draft_id === league.draft_id) ?? drafts[0];
-      if (d) {
-        const st = (d.settings ?? {}) as Record<string, unknown>;
-        rounds = Number(st.rounds) || rounds; dTeams = Number(st.teams) || dTeams;
-        picks = (await sleeper.draftPicks(d.draft_id)).data;
-      }
+      const rounds = keeperDraft?.rounds ?? (league.settings.draft_rounds || 15), dTeams = keeperDraft?.teams ?? teamsCount;
+      const picks: DraftPick[] = keeperDraft?.draftId ? (await sleeper.draftPicks(keeperDraft.draftId)).data : [];
       const rules = keeperRulesFor(getSettings(), league);
       let pool: { id: string; surplus: number }[] = [];
       const predictedKeepers = new Set<string>();
@@ -706,7 +709,9 @@ async function buildLeagueContext(
         const overall = (pk.round - 1) * dTeams + Math.max(1, Math.round(slotOf(pk.tier) * dTeams));
         const s = draftable[Math.min(draftable.length - 1, overall - 1)] ?? 0;
         const yearsOut = Math.max(0, Number(pk.season) - Number(league.season) - 1);
-        const dart = 0.1 * Math.max(0, 1 - pk.round / 12); // upside of a cheap future keeper, fading to nothing by round 12
+        // Upside even past the starter-level pool (a cheap future keeper, a breakout): decays ~22% a round, so
+        // middle rounds keep a little value and round 12+ is a dart throw.
+        const dart = 0.8 * Math.pow(0.78, pk.round - 1);
         pk.keeperValue = toValue(2.5 * (Math.max(0, s) + dart) * Math.pow(0.85, yearsOut));
       }
     } catch { warnings.push("Keeper costs couldn't be loaded, so trade values ignore keeper value for now."); }

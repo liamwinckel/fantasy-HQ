@@ -41,7 +41,11 @@ export function TradeAnalyzer({ leagueId, views, me, teams: rawTeams, initialPar
     if (!baseCtx || view !== "redraft" || baseCtx.format !== "keeper") return baseCtx;
     return { ...baseCtx, values: new Map([...baseCtx.values].map(([id, v]) => [id, { ...v, redraft: v.redraftOnly ?? v.redraft }])) };
   }, [baseCtx, view]);
-  const teams = useMemo(() => rawTeams.map((t) => ({ ...t, assets: t.assets.map((a) => ({ ...a, value: a.values[view] })).sort((a, b) => b.value - a.value) })), [rawTeams, view]);
+  const teams = useMemo(() => rawTeams.map((t) => ({ ...t, assets: t.assets.map((a) => ({ ...a, value: a.values[view] })).sort((a, b) =>
+    // Players first (best first), then picks in draft order: season, round, early → late.
+    a.kind !== b.kind ? (a.kind === "player" ? -1 : 1)
+      : a.kind === "player" ? b.value - a.value
+      : a.name.localeCompare(b.name, undefined, { numeric: true }) || ["early", "mid", "late"].indexOf(a.tier ?? "mid") - ["early", "mid", "late"].indexOf(b.tier ?? "mid")) })), [rawTeams, view]);
   const [partner, setPartner] = useState(initialPartner);
   const [aSends, setA] = useState<string[]>(initialA);
   const [bSends, setB] = useState<string[]>(initialB);

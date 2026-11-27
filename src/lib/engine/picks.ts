@@ -85,6 +85,8 @@ export function buildPicks(opts: {
   firstSeason: number;
   years: number;
   rounds: number;
+  /** Rounds for seasons after the first (default: same as rounds). Traded picks beyond it are always included. */
+  laterRounds?: number;
   teams: number;
   superflex: boolean;
   projectedOrder: number[] | null;
@@ -96,10 +98,12 @@ export function buildPicks(opts: {
   for (const t of opts.traded) tradedMap.set(`${t.season}-${t.round}-${t.roster_id}`, t.owner_id);
   for (let y = 0; y < opts.years; y++) {
     const season = String(opts.firstSeason + y);
-    for (let round = 1; round <= Math.max(1, opts.rounds); round++) {
+    const maxR = Math.max(1, y > 0 && opts.laterRounds ? Math.max(opts.laterRounds, ...[...tradedMap.keys()].filter((k) => k.startsWith(`${season}-`)).map((k) => Number(k.split("-")[1]))) : opts.rounds);
+    for (let round = 1; round <= maxR; round++) {
       for (const rid of opts.rosterIds) {
         const key = `${season}-${round}-${rid}`;
         const owner = tradedMap.get(key) ?? rid;
+        if (y > 0 && opts.laterRounds && round > opts.laterRounds && !tradedMap.has(key)) continue;
         let tier: Tier = "mid";
         let tierSource: PickAsset["tierSource"] = "default";
         let estimatedSlot: number | null = null;
