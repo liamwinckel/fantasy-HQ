@@ -42,38 +42,6 @@ function Frame({ children }: { children: ReactNode }) {
   const scroller = useRef<HTMLDivElement>(null);
   const path = usePathname();
   useEffect(() => { scroller.current?.scrollTo({ top: 0 }); }, [path]);
-  // Axis lock: a sideways drag in a horizontal strip (chips, tables, boards) shouldn't also scroll the page.
-  // The first movement decides the axis; while it's sideways the page can't scroll vertically.
-  useEffect(() => {
-    const el = scroller.current;
-    if (!el) return;
-    let x0 = 0, y0 = 0, decided = false, locked = false, strip: HTMLElement | null = null;
-    const findStrip = (t: EventTarget | null) => {
-      for (let n = t as HTMLElement | null; n && n !== el; n = n.parentElement) {
-        if (n.scrollWidth > n.clientWidth + 2) { const ox = getComputedStyle(n).overflowX; if (ox === "auto" || ox === "scroll") return n; }
-      }
-      return null;
-    };
-    const start = (e: TouchEvent) => { strip = findStrip(e.target); decided = false; x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; };
-    const move = (e: TouchEvent) => {
-      if (!strip || decided) return;
-      const dx = Math.abs(e.touches[0].clientX - x0), dy = Math.abs(e.touches[0].clientY - y0);
-      if (dx + dy < 2) return;
-      decided = true;
-      if (dx > dy) { locked = true; el.style.overflowY = "hidden"; }
-    };
-    const end = () => { if (locked) { locked = false; el.style.overflowY = ""; } strip = null; };
-    el.addEventListener("touchstart", start, { passive: true, capture: true });
-    el.addEventListener("touchmove", move, { passive: true, capture: true });
-    el.addEventListener("touchend", end, { capture: true });
-    el.addEventListener("touchcancel", end, { capture: true });
-    return () => {
-      el.removeEventListener("touchstart", start, { capture: true });
-      el.removeEventListener("touchmove", move, { capture: true });
-      el.removeEventListener("touchend", end, { capture: true });
-      el.removeEventListener("touchcancel", end, { capture: true });
-    };
-  }, []);
   // Belt and braces: if iOS ever scrolls the document (keyboard, tab restore), snap it back so the header stays visible.
   useEffect(() => {
     const reset = () => { if (window.scrollY !== 0 || document.documentElement.scrollTop !== 0) window.scrollTo(0, 0); };

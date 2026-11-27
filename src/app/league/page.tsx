@@ -1,4 +1,5 @@
 "use client";
+import { HScroll } from "@/components/useHPan";
 
 import Link from "next/link";
 import { LeaguePage, type LeagueData } from "@/components/AppData";
@@ -110,7 +111,7 @@ function LeagueBody({ league, ctx }: LeagueData) {
               ))}
             </ul>
           </div>
-          <div className="min-w-0 flex-1 overflow-x-auto overscroll-x-contain" data-no-swipe>
+          <HScroll className="min-w-0 flex-1 overflow-x-auto overscroll-x-contain" data-no-swipe>
             <div className="min-w-max lg:min-w-0">
               <div className="flex h-9 items-center gap-1 border-b border-line px-2 text-center text-[10px] font-semibold uppercase tracking-wider text-muted">
                 {[...mainPos, ...extraPos].map((pos) => <span key={pos} className="w-11 lg:w-auto lg:flex-1">{pos}</span>)}<span className="w-12 lg:w-auto lg:flex-1">Depth</span>{showPicks && <span className="w-12 lg:w-auto lg:flex-1">Picks</span>}
@@ -125,7 +126,7 @@ function LeagueBody({ league, ctx }: LeagueData) {
                 ))}
               </ul>
             </div>
-          </div>
+          </HScroll>
         </div>
         </>}
       </Card>

@@ -1,4 +1,5 @@
 "use client";
+import { HScroll } from "@/components/useHPan";
 
 import { useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, Search } from "lucide-react";
@@ -78,7 +79,7 @@ function Sos({ ctx, sched }: { ctx: Ctx; sched: ReturnType<typeof scheduleTable>
     <>
       {me && roster.length > 0 && (
         <Card title="Your roster's schedule" info={<>For each player on your roster (starters first), how easy (+%) or hard (−%) each upcoming NFL opponent is: how many more or fewer fantasy points that defence allows to his position than an average defence.</>} right={<Tag kind="MODEL" />} pad={false}>
-          <div className="overflow-x-auto">
+          <HScroll className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead><tr className="text-left text-[11px] uppercase tracking-wider text-muted">
                 <th className="px-3 py-2 font-semibold sm:px-5">Player</th>
@@ -106,14 +107,14 @@ function Sos({ ctx, sched }: { ctx: Ctx; sched: ReturnType<typeof scheduleTable>
                 })}
               </tbody>
             </table>
-          </div>
+          </HScroll>
           <Info className="border-t border-line px-5 py-2.5">Green = that defense gives up more fantasy points to the position than average (easier), red = fewer (harder). Based on this season&apos;s points in your league&apos;s scoring.</Info>
         </Card>
       )}
 
       <Card title="NFL strength of schedule" info={<>Upcoming opponents for each NFL team at the chosen position: green = defences that allow more fantasy points than average (good matchups), red = fewer.</>} pad={false}>
         <div className="px-4 pb-3 sm:px-5"><PosChips pos={pos} setPos={(p) => setPos(p as SosPos)} options={sosPos} /></div>
-        <div className="overflow-x-auto">
+        <HScroll className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead><tr className="text-left text-[11px] uppercase tracking-wider text-muted">
               <th className="cursor-pointer px-3 py-2 font-semibold sm:px-5" onClick={() => setSort("team")}>Team</th>
@@ -135,7 +136,7 @@ function Sos({ ctx, sched }: { ctx: Ctx; sched: ReturnType<typeof scheduleTable>
               ))}
             </tbody>
           </table>
-        </div>
+        </HScroll>
         <Info className="border-t border-line px-5 py-2.5">Rank 1 = easiest remaining schedule for {pos}s on that team (opponents give up the most fantasy points to {pos}s). Yellow weeks are your fantasy playoffs.</Info>
       </Card>
     </>
@@ -154,7 +155,7 @@ function Dvp({ def }: { def: ReturnType<typeof defenseTable> }) {
   const rows = [...def].sort((a, b) => (a.rank[sortPos] ?? 99) - (b.rank[sortPos] ?? 99));
   return (
     <Card title="Fantasy points allowed per game" info={<>Average fantasy points each NFL defence has allowed per game to each position this season, in your league&apos;s scoring.</>} right={<span className="text-[11px] text-muted">your league&apos;s scoring · tap a column to sort</span>} pad={false}>
-      <div className="overflow-x-auto">
+      <HScroll className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead><tr className="text-left text-[11px] uppercase tracking-wider text-muted">
             <th className="px-5 py-2 font-semibold">Defense</th>
@@ -176,7 +177,7 @@ function Dvp({ def }: { def: ReturnType<typeof defenseTable> }) {
             ))}
           </tbody>
         </table>
-      </div>
+      </HScroll>
       <Info className="border-t border-line px-5 py-2.5">#1 = gives up the most to that position (best matchup). Green = above average, red = below.</Info>
     </Card>
   );
@@ -229,7 +230,7 @@ function Players({ ctx }: { ctx: Ctx }) {
           {([["all", "Everyone"], ["fa", "Free agents"], ["mine", "My team"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => setOwn(k)} className={cx("rounded-full px-3 py-1 text-xs font-semibold", own === k ? "bg-fg text-bg" : "bg-panel2 text-muted")}>{l}</button>)}
         </div>
       </div>
-      <div className="overflow-x-auto">
+      <HScroll className="overflow-x-auto">
         <table className="w-full min-w-[900px] text-sm">
           <thead><tr className="text-left text-[11px] uppercase tracking-wider text-muted">
             <th className="sticky left-0 z-10 bg-panel px-4 py-2 font-semibold">Player</th>
@@ -255,7 +256,7 @@ function Players({ ctx }: { ctx: Ctx }) {
             ))}
           </tbody>
         </table>
-      </div>
+      </HScroll>
       <div className="flex items-center justify-between border-t border-line px-4 py-2.5 text-xs text-muted">
         <span>{rows.length} players · stats: NFLverse · points: your league&apos;s scoring · projections: Sleeper</span>
         {rows.length > limit && <button type="button" onClick={() => setLimit(limit + 60)} className="font-semibold text-acc-ink">Show more</button>}
@@ -269,7 +270,7 @@ function Teams({ ctx }: { ctx: Ctx }) {
   const max = Math.max(1, ...rows.flatMap((r) => r.weekly));
   return (
     <Card title="Fantasy team scoring" info={<>Every fantasy team&apos;s points scored and allowed per week this season.</>} right={<Tag kind="ACTUAL" />} pad={false}>
-      <div className="overflow-x-auto">
+      <HScroll className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead><tr className="text-left text-[11px] uppercase tracking-wider text-muted">
             <th className="px-3 py-2 font-semibold sm:px-5">Team</th>
@@ -304,7 +305,7 @@ function Teams({ ctx }: { ctx: Ctx }) {
             ))}
           </tbody>
         </table>
-      </div>
+      </HScroll>
       <Info className="border-t border-line px-5 py-2.5">Tap a team for its roster. Regular-season weeks played so far.</Info>
     </Card>
   );

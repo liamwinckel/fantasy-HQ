@@ -1,7 +1,8 @@
 "use client";
 
 import { applySettings } from "@/lib/actions";
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
+import { useHPan } from "@/components/useHPan";
 import { PlayerLink } from "@/components/PlayerCard";
 import { Segmented } from "@/components/client";
 import { Card, InfoButton, cx, signed, Info } from "@/components/ui";
@@ -196,9 +197,11 @@ function DraftBoard({ board, order, rounds, teamName, myRosterId, season }: { bo
   const show = all ? rounds : Math.min(rounds, 8);
   const lastKeeperRound = Math.max(0, ...board.filter((c) => c.keeper).map((c) => c.round));
   const visible = Math.max(show, all ? rounds : lastKeeperRound);
+  const strip = useRef<HTMLDivElement>(null);
+  useHPan(strip);
   return (
     <Card title={`${season} draft board`} pad={false} info={<>Order is estimated from projected final standings (worst record picks first){" "}and snakes each round; traded picks are shown under their new owner. Yellow-ringed = your keepers; the rest are SHS&apos;s predictions for each team. Colours by position.</>}>
-      <div className="overflow-x-auto overscroll-x-contain" data-no-swipe>
+      <div ref={strip} className="overflow-x-auto overscroll-x-contain" data-no-swipe>
         <table className="border-separate border-spacing-1 px-2 py-2 text-[11px]">
           <thead>
             <tr>
