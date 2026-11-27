@@ -1,4 +1,5 @@
 "use client";
+import { haptic } from "@/components/haptics";
 
 import Link from "next/link";
 import { ChevronDown, Settings } from "lucide-react";
@@ -42,6 +43,15 @@ function Frame({ children }: { children: ReactNode }) {
   const scroller = useRef<HTMLDivElement>(null);
   const path = usePathname();
   useEffect(() => { scroller.current?.scrollTo({ top: 0 }); }, [path]);
+  // App-wide haptic tick on every tap of a button, link or toggle (iPhone iOS 18+ and Android).
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      const t = (e.target as HTMLElement | null)?.closest("button:not(:disabled), a[href], [role='button'], [role='tab'], select, label:has(> select)");
+      if (t && e.isTrusted) haptic();
+    };
+    document.addEventListener("click", onClick, { capture: true, passive: true });
+    return () => document.removeEventListener("click", onClick, { capture: true });
+  }, []);
   // Belt and braces: if iOS ever scrolls the document (keyboard, tab restore), snap it back so the header stays visible.
   useEffect(() => {
     const reset = () => { if (window.scrollY !== 0 || document.documentElement.scrollTop !== 0) window.scrollTo(0, 0); };

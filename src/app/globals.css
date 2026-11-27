@@ -46,7 +46,11 @@ html:not(.fhq-booted) main > div > * { animation: fhq-in 0.28s ease-out both; }
 html:not(.fhq-booted) main > div > *:nth-child(2) { animation-delay: 0.03s; }
 html:not(.fhq-booted) main > div > *:nth-child(3) { animation-delay: 0.06s; }
 html:not(.fhq-booted) main > div > *:nth-child(4) { animation-delay: 0.09s; }
-button, a, select, input { transition: background-color 0.15s, color 0.15s, border-color 0.15s, opacity 0.15s, transform 0.1s; }
+button, a, select, input, [role="button"], label:has(> select) { transition: background-color 0.15s, color 0.15s, border-color 0.15s, opacity 0.15s, transform 0.1s, scale 0.32s cubic-bezier(.34,1.56,.64,1); }
+/* Press feel, app-wide: everything tappable dips when pressed and springs back on release. */
+button:not(:disabled):active, a:active, [role="button"]:active, label:has(> select):active { scale: 0.95; transition-duration: 0.15s, 0.15s, 0.15s, 0.15s, 0.1s, 0.08s; }
+/* Big tap targets (full-width rows, cards) dip less so they don't look like they're collapsing. */
+button.w-full:not(:disabled):active, li > button:not(:disabled):active, a.block:active { scale: 0.985; }
 /* App shell: the document itself never scrolls. iOS likes to nudge the page when it shows the keyboard or
    restores a tab, which slid the header under the status bar (blurred) or off screen; pinning body stops that. */
 html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }

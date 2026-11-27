@@ -13,12 +13,13 @@ export function useHPan(ref: RefObject<HTMLElement | null>) {
     const el = ref.current;
     if (!el) return;
     el.style.touchAction = "pan-y";
-    let sx = 0, sy = 0, sl = 0, axis: "x" | "y" | null = null, lastT = 0, lastX = 0, v = 0, raf = 0, active = false;
+    let sx = 0, sy = 0, sl = 0, axis: "x" | "y" | null = null, raf = 0, active = false;
+    const trail: { t: number; x: number }[] = [];
     const start = (e: TouchEvent) => {
       if (e.touches.length !== 1) return;
       cancelAnimationFrame(raf);
-      active = true; axis = null; v = 0;
-      sx = e.touches[0].clientX; sy = e.touches[0].clientY; sl = el.scrollLeft; lastT = performance.now(); lastX = sx;
+      active = true; axis = null;
+      sx = e.touches[0].clientX; sy = e.touches[0].clientY; sl = el.scrollLeft; trail.length = 0; trail.push({ t: performance.now(), x: sx });
     };
     const move = (e: TouchEvent) => {
       if (!active || e.touches.length !== 1) return;
@@ -30,15 +31,19 @@ export function useHPan(ref: RefObject<HTMLElement | null>) {
       if (axis !== "x") return;
       e.preventDefault();
       const now = performance.now();
-      v = (x - lastX) / Math.max(1, now - lastT); lastX = x; lastT = now;
-      el.scrollLeft = sl - dx;
+      trail.push({ t: now, x }); while (trail.length > 2 && now - trail[0].t > 80) trail.shift();
+      // A little extra reach per finger-pixel so long boards don't feel heavy.
+      el.scrollLeft = sl - dx * 1.15;
     };
     const end = () => {
       if (!active) return;
       active = false;
       if (axis !== "x") return;
-      let vel = v * 16;
-      const step = () => { if (Math.abs(vel) < 0.4) return; el.scrollLeft -= vel; vel *= 0.95; raf = requestAnimationFrame(step); };
+      // Fling speed from the last ~80ms of movement (px per frame), with iOS-like momentum and friction.
+      const a = trail[0], b = trail[trail.length - 1];
+      let vel = b && a && b.t > a.t ? ((b.x - a.x) / (b.t - a.t)) * 16 * 1.6 : 0;
+      if (performance.now() - (b?.t ?? 0) > 60) vel = 0; // finger stopped before lifting
+      const step = () => { if (Math.abs(vel) < 0.3) return; el.scrollLeft -= vel; vel *= 0.972; raf = requestAnimationFrame(step); };
       raf = requestAnimationFrame(step);
     };
     el.addEventListener("touchstart", start, { passive: true });

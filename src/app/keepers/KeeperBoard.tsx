@@ -198,7 +198,7 @@ export function KeeperBoard({ leagueId, rows, rules, rounds, teams, draftType, s
 
 /** Next season's draft board, Sleeper-style: rounds down, teams across, keepers filled in. */
 function DraftBoard({ board, order, rounds, teamName, myRosterId, season }: { board: BoardCell[]; order: number[]; rounds: number; teamName: (rid: number) => string; myRosterId: number; season: number }) {
-  const [all, setAll] = useState(false);
+  const [all, setAll] = useState(true);
   const show = all ? rounds : Math.min(rounds, 8);
   const lastKeeperRound = Math.max(0, ...board.filter((c) => c.keeper).map((c) => c.round));
   const visible = Math.max(show, all ? rounds : lastKeeperRound);
