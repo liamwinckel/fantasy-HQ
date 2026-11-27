@@ -143,15 +143,37 @@ const CONTEXT_TTL = 10 * 60_000;
 export function getLeagueContext(leagueId: string, opts: { userId: string | null; mode?: Mode; force?: boolean; manualTiers?: Record<string, Tier> } ) {
   const key = `${leagueId}:${opts.mode ?? "auto"}:${JSON.stringify(opts.manualTiers ?? {})}`;
   const hit = cacheByLeague.get(key);
-  if (hit && !opts.force && Date.now() - hit.at < CONTEXT_TTL) return hit.ctx;
+  if (hit && !opts.force) {
+    // Stale-while-revalidate: an old (or invalidated) context is returned at once and rebuilt in the background;
+    // the app swaps the new one in when it's ready ("fhq-ctx" event). No spinner, no stall.
+    if (Date.now() - hit.at >= CONTEXT_TTL && !rebuilding.has(key)) {
+      rebuilding.add(key);
+      buildLeagueContext(leagueId, opts)
+        .then((c) => {
+          cacheByLeague.set(key, { at: Date.now(), ctx: Promise.resolve(c) });
+          if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("fhq-ctx", { detail: leagueId }));
+        })
+        .catch(() => { /* keep the old one */ })
+        .finally(() => rebuilding.delete(key));
+    }
+    return hit.ctx;
+  }
   const ctx = buildLeagueContext(leagueId, opts);
   cacheByLeague.set(key, { at: Date.now(), ctx });
   ctx.catch(() => cacheByLeague.delete(key));
   return ctx;
 }
+const rebuilding = new Set<string>();
 
-export function clearLeagueContexts() {
-  cacheByLeague.clear();
+/**
+ * Settings changed: mark contexts out of date (one league, or all). They keep serving instantly and rebuild in the
+ * background. `hard` drops them entirely (a full refresh).
+ */
+export function clearLeagueContexts(leagueId?: string, hard = false) {
+  for (const [k, v] of cacheByLeague) {
+    if (leagueId && !k.startsWith(`${leagueId}:`)) continue;
+    if (hard) cacheByLeague.delete(k); else v.at = 0;
+  }
 }
 
 export function leagueFormat(l: League): LeagueFormat {

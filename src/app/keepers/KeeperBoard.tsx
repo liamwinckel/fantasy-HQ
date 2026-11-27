@@ -67,7 +67,7 @@ export function KeeperBoard({ leagueId, rows, rules, rounds, teams, draftType, s
   const keeping = rows.filter((r) => r.planned);
 
   return (
-    <div className={cx("flex flex-col gap-4 transition-opacity", busy && "opacity-60")}>
+    <div className="flex flex-col gap-4">
       <div className="overflow-hidden rounded-2xl border border-line bg-panel">
         <button type="button" onClick={() => setRulesOpen(!rulesOpen)} className="flex w-full items-center gap-3 px-4 py-3 text-left" aria-expanded={rulesOpen}>
           <span className="text-sm font-bold">Keeper rules</span>

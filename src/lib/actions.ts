@@ -21,7 +21,7 @@ export async function applySettings(b: SettingsAction): Promise<void> {
   const s = getSettings();
   if (b.username) {
     await connectUser(b.username);
-    clearLeagueContexts();
+    clearLeagueContexts(undefined, true);
     return;
   }
   const patch: Partial<AppSettings> = {};
@@ -63,7 +63,15 @@ export async function applySettings(b: SettingsAction): Promise<void> {
     patch.keeperRules = { ...s.keeperRules, [leagueId]: cur };
   }
   if (b.clearCache) await clearCache();
-  clearLeagueContexts();
+  // Only rebuild what the change affects: keeper plans and hidden/shown leagues change no league numbers; a
+  // league-specific setting touches only that league.
+  const k = b.keeper;
+  const planOnly = !!k && Object.keys(k).every((x) => ["leagueId", "planSet", "planAll", "planReset"].includes(x));
+  if (b.clearCache) clearLeagueContexts(undefined, true);
+  else if (k && !planOnly) clearLeagueContexts(k.leagueId);
+  else if (b.leagueMode) clearLeagueContexts(b.leagueMode.leagueId);
+  else if (b.classOverride) clearLeagueContexts(b.classOverride.leagueId);
+  else if (b.season !== undefined || b.addLeagueId || b.removeLeagueId) clearLeagueContexts(undefined, true);
   saveSettings(patch);
 }
 
@@ -77,6 +85,6 @@ export function exportSettings(): string {
 export function importSettings(code: string) {
   const parsed = JSON.parse(decodeURIComponent(escape(atob(code.trim())))) as Partial<AppSettings>;
   if (typeof parsed !== "object" || parsed === null) throw new Error("That code isn't a Fantasy HQ settings code.");
-  clearLeagueContexts();
+  clearLeagueContexts(undefined, true);
   saveSettings(parsed);
 }

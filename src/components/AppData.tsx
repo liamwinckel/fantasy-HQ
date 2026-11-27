@@ -65,8 +65,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setPicked(getSettings().selectedLeague);
     loadAll(false);
     const onSettings = () => { setVersion((v) => v + 1); loadAll(false); };
+    const onCtx = () => setVersion((v) => v + 1); // a background rebuild finished: swap it in
     window.addEventListener("fhq-settings", onSettings);
-    return () => window.removeEventListener("fhq-settings", onSettings);
+    window.addEventListener("fhq-ctx", onCtx);
+    return () => { window.removeEventListener("fhq-settings", onSettings); window.removeEventListener("fhq-ctx", onCtx); };
   }, [loadAll]);
 
   const leagueId = useMemo(() => {
@@ -99,7 +101,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     setRefreshing(true);
     forgetMemo();
-    clearLeagueContexts();
+    clearLeagueContexts(undefined, true);
     forceNext.current = true;
     await loadAll(true);
     setVersion((v) => v + 1);

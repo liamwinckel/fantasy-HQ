@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, Search } from "lucide-react";
 import { Sheet } from "@/components/Sheet";
 import { LeaguePage, useQuery, type LeagueData } from "@/components/AppData";
@@ -92,13 +92,16 @@ const MKT: Record<string, string> = { pass_yd: "pass yds", rush_yd: "rush yds", 
 
 function RankingsBody({ league, ctx, sp }: LeagueData) {
   const { set } = useQuery();
-  const scope: RankScope = sp.scope === "ros" ? "ros" : sp.scope === "dynasty" ? "dynasty" : "week";
+  const scopeNow: RankScope = sp.scope === "ros" ? "ros" : sp.scope === "dynasty" ? "dynasty" : "week";
+  // The toggle answers instantly; the heavy re-rank (and everything drawn from it) follows a beat later.
+  const scope = useDeferredValue(scopeNow);
   const w0 = Math.min(ctx.currentWeek, ctx.lastWeek);
   // View modifiers (format / scoring); empty = this league's settings.
   const [mods, setMods] = useState<RankOpts>({});
   const lo = useMemo(() => leagueOpts(ctx), [ctx]);
   const opt = { ...lo, ...mods };
-  const all = useMemo(() => rankings(ctx, scope, mods), [ctx, scope, mods]);
+  const dMods = useDeferredValue(mods);
+  const all = useMemo(() => rankings(ctx, scope, dMods), [ctx, scope, dMods]);
   const pickList = useMemo(() => (scope === "dynasty" ? pickRows(ctx, mods) : []), [ctx, scope, mods]);
   // Dynasty list includes this league's rookie picks, slotted by value among the players.
   const list = useMemo(() => (scope === "dynasty" ? [...all, ...pickList].sort((a, b) => b.value - a.value) : all), [all, pickList, scope]);
@@ -165,9 +168,9 @@ function RankingsBody({ league, ctx, sp }: LeagueData) {
           {" "}<b>{dyn ? "Value" : "Pts"}</b> = {dyn ? <>dynasty trade value in this league (0–100{ctx.superflex ? ", superflex" : ""})</> : <>Sleeper&apos;s projection in your scoring, {scope === "week" ? `Week ${w0}` : `Weeks ${w0}–${ctx.lastWeek}`}</>}.
           {" "}<b>SHS</b> = SHS AI&apos;s agreement with the experts: <b className="text-pos">+</b> = better than his expert rank, <b className="text-neg">−</b> = worse. Tap the ⓘ on the SHS column for what goes into it, or a player to see each factor.
         </>}>
-        <TabSwitch label="Rankings span" value={scope} onChange={(v) => { set({ scope: v === "week" ? undefined : v }, true); setLimit(75); }}
+        <TabSwitch label="Rankings span" value={scopeNow} onChange={(v) => { set({ scope: v === "week" ? undefined : v }, true); setLimit(75); }}
           options={[{ value: "week", label: "Week", sub: `Week ${w0}` }, { value: "ros", label: "Season", sub: `Weeks ${w0}–${ctx.lastWeek}` }, { value: "dynasty", label: "Dynasty", sub: "Long term" }]} />
-        <Modifiers scope={scope} opt={opt} lo={lo} keeper={ctx.format === "keeper" && ctx.keeperCost.size > 0} set={(m) => setMods({ ...mods, ...m })} reset={() => setMods({})} />
+        <Modifiers scope={scopeNow} opt={opt} lo={lo} keeper={ctx.format === "keeper" && ctx.keeperCost.size > 0} set={(m) => setMods({ ...mods, ...m })} reset={() => setMods({})} />
       </PageHeader>
 
       {/* SHS AI results in one compact strip; tap a row for the full detail. */}

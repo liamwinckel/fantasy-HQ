@@ -8,7 +8,6 @@ import { Sheet } from "@/components/Sheet";
 import { SwipeRow } from "@/components/SwipeRow";
 import { Card, ClassBadge, InjuryChip, Logo, NflLogo, cx, signed } from "@/components/ui";
 import { evaluateTrade, type BalanceSuggestion, type PowerShift, type TradeResult } from "@/lib/engine/trade";
-import { getLeagueContext } from "@/lib/services/league";
 import { useApp } from "@/components/AppData";
 import { rankings } from "@/lib/services/rankings";
 import { shsAi, type ShsAi } from "@/lib/services/shsai";
@@ -68,13 +67,16 @@ export function TradeAnalyzer({ leagueId, views, me, teams: rawTeams, initialPar
     if (!aSends.length && !bSends.length) { setResult(null); return; }
     if (!ctx) return;
     let live = true;
-    const t = setTimeout(async () => {
+    const t = setTimeout(() => {
       setBusy(true);
       setErr(null);
       try {
-        const manualTiers = Object.fromEntries(Object.entries(tiers).map(([k, v]) => [k.slice(2), v]));
-        // Pick positions you set by hand re-price the picks, which needs a fresh league model.
-        const c = Object.keys(manualTiers).length && setup?.settings.userId ? await getLeagueContext(leagueId, { userId: setup.settings.userId, mode, manualTiers }) : ctx;
+        // Pick positions set by hand re-price just those picks (no league rebuild).
+        const tierVal = new Map(teams.flatMap((t) => t.assets).filter((a) => a.kind === "pick" && a.tierValues).map((a) => [a.id, a.tierValues!]));
+        const c = Object.keys(tiers).length ? { ...ctx, picks: ctx.picks.map((p) => {
+          const tv = tiers[`k:${p.key}`];
+          return tv ? { ...p, tier: tv, tierSource: "manual" as const, value: tierVal.get(`k:${p.key}`)?.[tv] ?? p.value } : p;
+        }) } : ctx;
         const r = evaluateTrade(c, { teamA: me, teamB: partner, aSends, bSends, mode });
         if (live) setResult(r);
       } catch (e) {
@@ -84,7 +86,7 @@ export function TradeAnalyzer({ leagueId, views, me, teams: rawTeams, initialPar
       }
     }, 120);
     return () => { live = false; clearTimeout(t); };
-  }, [aSends, bSends, partner, mode, tiers, leagueId, ctx, me, setup]);
+  }, [aSends, bSends, partner, mode, tiers, leagueId, ctx, me, teams]);
 
   const apply = (s: BalanceSuggestion) => {
     if (s.side === "a") setA(s.action === "add" ? [...aSends, s.assetId] : aSends.filter((x) => x !== s.assetId));
@@ -410,7 +412,7 @@ function Result({ r, view, partner, busy, onApply, me, partnerId, deal, stack, a
   const maxW = Math.max(1, ...r.lineup.aWeeks.flatMap((w) => [w.before, w.after]));
   const fairBand = Math.max(3, 0.08 * Math.max(r.market.aSends, r.market.bSends));
   return (
-    <div className={cx("flex flex-col gap-3 transition-opacity", busy && "opacity-60")}>
+    <div className="flex flex-col gap-3">
       <div className="lg:hidden"><TeamImpact r={r} me={me} partnerId={partnerId} partner={partner} /></div>
       <div className="hidden grid-cols-2 items-start gap-4 lg:grid">
         <TeamImpact r={r} me={me} partnerId={partnerId} partner={partner} fixed="a" />
