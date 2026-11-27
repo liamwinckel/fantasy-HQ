@@ -137,7 +137,7 @@ export function KeeperBoard({ leagueId, rows, rules, rounds, teams, draftType, s
             <li key={r?.playerId ?? `empty-${i}`}>
               {r ? <KeeperSlotCard r={r} rounds={rounds} over={i >= rules.maxKeepers} onRemove={() => setKeep(r.playerId, "none")} onAt={(k) => setKeep(r.playerId, k)} onCost={(n) => save({ override: { playerId: r.playerId, round: n } })} cellLabel={cellLabel} />
                 : (
-                  <button type="button" onClick={() => setPicking(true)} className="flex w-full items-center gap-3 px-4 py-3 text-left sm:px-5">
+                  <button type="button" onClick={() => setPicking(true)} className="fhq-pop flex w-full items-center gap-3 px-4 py-3 text-left sm:px-5">
                     <span className="w-9 shrink-0 text-center text-[10px] font-extrabold text-muted">K{i + 1}</span>
                     <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-acc/60 text-acc-ink"><Plus size={18} /></span>
                     <span className="text-sm font-semibold text-muted">Add a keeper</span>

@@ -232,7 +232,7 @@ function DealColumn({ title, team, selected, onChange, tiers, setTiers, mode, va
         if (!a) return null;
         return (
           <SwipeRow key={id} onRemove={() => onChange(selected.filter((x) => x !== id))}>
-          <div className="fhq-in flex h-12 items-center gap-1.5 rounded-lg bg-panel2 px-2">
+          <div className="fhq-pop flex h-12 items-center gap-1.5 rounded-lg bg-panel2 px-2">
             <div className="min-w-0 flex-1">
               <div className="flex min-w-0 items-center gap-1 text-xs font-semibold sm:text-sm">{a.kind === "player" ? <PlayerLink id={a.id.slice(2)} name={a.name} className="truncate" /> : <span className="truncate">{a.name}</span>}<InjuryChip status={a.injury} /></div>
               {a.kind === "pick" && mode === "dynasty" ? (

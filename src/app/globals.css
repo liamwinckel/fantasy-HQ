@@ -46,18 +46,18 @@ html:not(.fhq-booted) main > div > * { animation: fhq-in 0.28s ease-out both; }
 html:not(.fhq-booted) main > div > *:nth-child(2) { animation-delay: 0.03s; }
 html:not(.fhq-booted) main > div > *:nth-child(3) { animation-delay: 0.06s; }
 html:not(.fhq-booted) main > div > *:nth-child(4) { animation-delay: 0.09s; }
-button, a, select, input, [role="button"], label:has(> select) { transition: background-color 0.15s, color 0.15s, border-color 0.15s, opacity 0.15s, transform 0.1s, scale 0.32s cubic-bezier(.34,1.56,.64,1); }
-/* A new item landing in a lineup (e.g. a keeper added): pops in with a brief yellow glow. */
-@keyframes fhq-pop { 0% { opacity: 0; transform: translateY(-6px) scale(0.94); box-shadow: 0 0 0 0 color-mix(in srgb, var(--acc) 0%, transparent); }
-  55% { opacity: 1; transform: translateY(0) scale(1.015); box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--acc) 70%, transparent); }
-  100% { transform: none; box-shadow: inset 0 0 0 2px transparent; } }
-.fhq-pop { animation: fhq-pop 0.55s cubic-bezier(.2,.9,.3,1.2) both; }
-@keyframes fhq-check { 0% { transform: scale(0.4) rotate(-20deg); } 60% { transform: scale(1.25) rotate(4deg); } 100% { transform: none; } }
-.fhq-check { animation: fhq-check 0.4s cubic-bezier(.3,1.6,.5,1) both; }
+button, a, select, input, [role="button"], label:has(> select) { transition: background-color 0.15s, color 0.15s, border-color 0.15s, opacity 0.15s, transform 0.1s, scale 0.22s cubic-bezier(.2,.8,.25,1); }
+/* A new item landing in a list (a keeper added, a player put in a trade): a soft fade-and-settle with a faint
+   yellow wash that fades out. Opacity/transform only (GPU), no overshoot, so it never stutters. */
+@keyframes fhq-pop { from { opacity: 0; transform: translate3d(0,4px,0) scale(0.99); } to { opacity: 1; transform: none; } }
+@keyframes fhq-wash { from { background-color: color-mix(in srgb, var(--acc) 10%, transparent); } to { background-color: transparent; } }
+.fhq-pop { animation: fhq-pop 0.32s cubic-bezier(.2,.7,.2,1) both, fhq-wash 0.9s ease-out; will-change: opacity, transform; }
+@keyframes fhq-check { from { opacity: 0.4; transform: scale(0.8); } to { opacity: 1; transform: none; } }
+.fhq-check { animation: fhq-check 0.22s cubic-bezier(.2,.7,.2,1) both; }
 /* No tap delay anywhere (no double-tap-zoom wait). */
 a, button, [role="button"], label, select, input, summary { touch-action: manipulation; }
 /* Press feel, app-wide: everything tappable dips when pressed and springs back on release. */
-button:not(:disabled):active, a:active, [role="button"]:active, label:has(> select):active { scale: 0.95; transition-duration: 0.15s, 0.15s, 0.15s, 0.15s, 0.1s, 0.08s; }
+button:not(:disabled):active, a:active, [role="button"]:active, label:has(> select):active { scale: 0.96; transition-duration: 0.15s, 0.15s, 0.15s, 0.15s, 0.1s, 0.08s; }
 /* Big tap targets (full-width rows, cards) dip less so they don't look like they're collapsing. */
 button.w-full:not(:disabled):active, li > button:not(:disabled):active, a.block:active { scale: 0.985; }
 /* App shell: the document itself never scrolls. iOS likes to nudge the page when it shows the keyboard or
