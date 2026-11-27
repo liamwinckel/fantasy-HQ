@@ -151,7 +151,7 @@ export function LeagueOverview({ setup, league, ctx, sp }: LeagueData) {
             {waivers.length === 0 && <li className="text-sm text-muted">Nothing stands out.</li>}
           </ul>
         </Card>
-        <Card title="Injury report" right={<Tag kind="SLEEPER" />}>
+        <Card title="Injury report" collapse right={<Tag kind="SLEEPER" />}>
           {injured.length === 0 && <p className="text-sm text-muted">No injury designations on your roster.</p>}
           <ul className="flex flex-col gap-2.5">
             {injured.map((p) => (
@@ -177,7 +177,7 @@ function PlayoffPath({ ctx, me, power }: { ctx: Ctx; me: number; power: ReturnTy
   const outlook = starters.map((id) => ({ id, name: ctx.players.get(id)!.name, pos: ctx.players.get(id)!.pos, f: ctx.extras.get(id)?.outlookPlayoffs ?? 1 })).sort((a, b) => b.f - a.f);
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Card title="Path to the playoffs" right={<Tag kind="MODEL" />} info={<>Your remaining regular-season games. <b>Power #</b> = the opponent&apos;s power rank (1 = best team). The bar and % are your chance to win that week, from both teams&apos; projected best lineups.</>}>
+      <Card title="Path to the playoffs" collapse right={<Tag kind="MODEL" />} info={<>Your remaining regular-season games. <b>Power #</b> = the opponent&apos;s power rank (1 = best team). The bar and % are your chance to win that week, from both teams&apos; projected best lineups.</>}>
         {weeks.length > 0 && <div className="mb-1.5 grid grid-cols-[3.5rem_1fr_6rem] gap-3 text-[10px] font-semibold uppercase tracking-wider text-muted"><span>Week</span><span>Opponent</span><span className="text-right">Win chance</span></div>}
         {weeks.length === 0 && <p className="text-sm text-muted">The regular season is over.</p>}
         <ul className="flex flex-col gap-2">
@@ -196,7 +196,7 @@ function PlayoffPath({ ctx, me, power }: { ctx: Ctx; me: number; power: ReturnTy
           })}
         </ul>
       </Card>
-      <Card title={`Fantasy playoff schedule · weeks ${ctx.playoffStart}–${ctx.lastWeek}`} info={<>For each of your starters: how many more (+) or fewer (−) points his NFL opponents in the fantasy playoffs usually allow to his position, vs an average opponent. Easy = +5% or more, Tough = −5% or worse.</>}>
+      <Card title={`Fantasy playoff schedule collapse · weeks ${ctx.playoffStart}–${ctx.lastWeek}`} info={<>For each of your starters: how many more (+) or fewer (−) points his NFL opponents in the fantasy playoffs usually allow to his position, vs an average opponent. Easy = +5% or more, Tough = −5% or worse.</>}>
         <ul className="flex flex-col gap-1.5 text-sm">
           {outlook.map((o) => (
             <li key={o.id} className="flex items-center justify-between gap-2">

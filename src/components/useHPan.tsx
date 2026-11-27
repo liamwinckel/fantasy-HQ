@@ -15,6 +15,22 @@ export function useHPan(ref: RefObject<HTMLElement | null>) {
     el.style.touchAction = "pan-y";
     let sx = 0, sy = 0, sl = 0, axis: "x" | "y" | null = null, raf = 0, active = false;
     const trail: { t: number; x: number }[] = [];
+    // Rubber band: past either end the content stretches (resisting, like iOS) and springs back — never a hard stop.
+    const inner = () => el.firstElementChild as HTMLElement | null;
+    let over = 0;
+    const setOver = (o: number, anim = false) => {
+      over = o;
+      const c = inner(); if (!c) return;
+      c.style.transition = anim ? "transform 420ms cubic-bezier(.2,.9,.3,1.15)" : "none";
+      c.style.transform = o ? `translate3d(${o}px,0,0)` : "";
+    };
+    const maxL = () => el.scrollWidth - el.clientWidth;
+    const scrollTo = (target: number) => {
+      const m = maxL();
+      if (target < 0) { el.scrollLeft = 0; setOver(Math.min(120, -target * 0.35)); }
+      else if (target > m) { el.scrollLeft = m; setOver(-Math.min(120, (target - m) * 0.35)); }
+      else { el.scrollLeft = target; if (over) setOver(0); }
+    };
     const start = (e: TouchEvent) => {
       if (e.touches.length !== 1) return;
       cancelAnimationFrame(raf);
@@ -33,17 +49,29 @@ export function useHPan(ref: RefObject<HTMLElement | null>) {
       const now = performance.now();
       trail.push({ t: now, x }); while (trail.length > 2 && now - trail[0].t > 80) trail.shift();
       // A little extra reach per finger-pixel so long boards don't feel heavy.
-      el.scrollLeft = sl - dx * 1.15;
+      scrollTo(sl - dx * 1.15);
     };
     const end = () => {
       if (!active) return;
       active = false;
       if (axis !== "x") return;
+      if (over) { setOver(0, true); return; } // released while stretched: spring back
       // Fling speed from the last ~80ms of movement (px per frame), with iOS-like momentum and friction.
       const a = trail[0], b = trail[trail.length - 1];
       let vel = b && a && b.t > a.t ? ((b.x - a.x) / (b.t - a.t)) * 16 * 1.6 : 0;
       if (performance.now() - (b?.t ?? 0) > 60) vel = 0; // finger stopped before lifting
-      const step = () => { if (Math.abs(vel) < 0.3) return; el.scrollLeft -= vel; vel *= 0.972; raf = requestAnimationFrame(step); };
+      const step = () => {
+        if (Math.abs(vel) < 0.3) return;
+        const next = el.scrollLeft - vel, m = maxL();
+        if (next < 0 || next > m) {
+          // Momentum hits an edge: a small bounce proportional to the speed, then settle.
+          el.scrollLeft = next < 0 ? 0 : m;
+          setOver(Math.max(-60, Math.min(60, vel * 2.2)));
+          requestAnimationFrame(() => setOver(0, true));
+          return;
+        }
+        el.scrollLeft = next; vel *= 0.972; raf = requestAnimationFrame(step);
+      };
       raf = requestAnimationFrame(step);
     };
     el.addEventListener("touchstart", start, { passive: true });

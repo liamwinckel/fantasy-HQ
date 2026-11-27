@@ -155,7 +155,11 @@ export function KeeperBoard({ leagueId, rows, rules, rounds, teams, draftType, s
             const can = !!r.costRound && (r.slots.length > 0 || !!r.keptAt);
             return (
               <li key={r.playerId}>
-                <button type="button" disabled={!can} onClick={() => { setKeep(r.playerId, r.planned ? "none" : r.keptAt ?? r.slots[0]?.key ?? "none"); }}
+                <button type="button" disabled={!can} onClick={() => {
+                  setKeep(r.playerId, r.planned ? "none" : r.keptAt ?? r.slots[0]?.key ?? "none");
+                  // Filling the last spot closes the sheet so you see the new keeper land in the lineup.
+                  if (!r.planned && keeping.length + 1 >= rules.maxKeepers) setTimeout(() => setPicking(false), 220);
+                }}
                   className={cx("flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left transition-colors disabled:opacity-40", r.planned ? "border-acc bg-acc-soft" : "border-line bg-panel2 hover:border-acc/50")}>
                   <KeepGrade g={keeperGrade(r.surplus)} />
                   <PlayerImg id={r.playerId} name={r.name} pos={r.pos} size={34} />
@@ -164,7 +168,7 @@ export function KeeperBoard({ leagueId, rows, rules, rounds, teams, draftType, s
                     <div className="truncate text-[11px] text-muted">{r.pos}{r.team ? ` · ${r.team}` : ""} · {r.costRound ? `keep Rd ${r.costRound} · goes Rd ${r.expectedRound}` : r.ineligible ?? "can't be kept"}</div>
                   </div>
                   {r.roundsSaved !== null && r.costRound ? <span className={cx("num w-10 shrink-0 text-right text-sm font-bold", r.roundsSaved > 0 ? "text-pos" : r.roundsSaved < 0 ? "text-neg" : "text-muted")}>{r.roundsSaved > 0 ? "+" : ""}{r.roundsSaved}<span className="block text-[9px] font-normal text-muted">rounds</span></span> : null}
-                  <span className={cx("flex h-7 w-7 shrink-0 items-center justify-center rounded-full", r.planned ? "bg-acc text-on-acc" : "border border-line text-muted")}>{r.planned ? <Check size={15} /> : <Plus size={15} />}</span>
+                  <span key={r.planned ? "on" : "off"} className={cx("flex h-7 w-7 shrink-0 items-center justify-center rounded-full", r.planned ? "fhq-check bg-acc text-on-acc" : "border border-line text-muted")}>{r.planned ? <Check size={15} /> : <Plus size={15} />}</span>
                 </button>
               </li>
             );
@@ -174,7 +178,7 @@ export function KeeperBoard({ leagueId, rows, rules, rounds, teams, draftType, s
 
       <DraftBoard board={board} order={order} rounds={rounds} teamName={teamName} myRosterId={myRosterId} season={season} />
 
-      <Card title="Other teams' likely keepers" info={<>SHS predicts each team&apos;s keepers with your league&apos;s rules: mostly next season&apos;s gain at the price he&apos;d cost (a player keepable late beats an equal player keepable early), plus a little long-term dynasty value. Up to {rules.maxKeepers} per team, only when worth it.</>} pad={false}>
+      <Card title="Other teams' likely keepers" collapse summary={`${others.length} teams`} info={<>SHS predicts each team&apos;s keepers with your league&apos;s rules: mostly next season&apos;s gain at the price he&apos;d cost (a player keepable late beats an equal player keepable early), plus a little long-term dynasty value. Up to {rules.maxKeepers} per team, only when worth it.</>} pad={false}>
         <ul className="divide-y divide-line">
           {others.map((t) => (
             <li key={t.rosterId} data-team={t.rosterId} className="cursor-pointer px-4 py-2.5 sm:px-5">
@@ -205,7 +209,7 @@ function DraftBoard({ board, order, rounds, teamName, myRosterId, season }: { bo
   const strip = useRef<HTMLDivElement>(null);
   useHPan(strip);
   return (
-    <Card title={`${season} draft board`} pad={false} info={<>Order is estimated from projected final standings (worst record picks first){" "}and snakes each round; traded picks are shown under their new owner. Yellow-ringed = your keepers; the rest are SHS&apos;s predictions for each team. Colours by position.</>}>
+    <Card title={`${season} draft board`} collapse id="keeper-board" summary="Tap to see every round" pad={false} info={<>Order is estimated from projected final standings (worst record picks first){" "}and snakes each round; traded picks are shown under their new owner. Yellow-ringed = your keepers; the rest are SHS&apos;s predictions for each team. Colours by position.</>}>
       <div ref={strip} className="overflow-x-auto overscroll-x-contain" data-no-swipe>
         <table className="border-separate border-spacing-1 px-2 py-2 text-[11px]">
           <thead>
@@ -270,7 +274,7 @@ function KeeperSlotCard({ r, rounds, over, onRemove, onAt, onCost, cellLabel }: 
   const saved = cost - go;
   const lo = Math.min(cost, go), hi = Math.max(cost, go);
   return (
-    <div className={cx("flex flex-col gap-2 px-4 py-3 sm:px-5", over && "bg-neg/10")}>
+    <div className={cx("fhq-pop flex flex-col gap-2 px-4 py-3 sm:px-5", over && "bg-neg/10")}>
       <div className="flex items-center gap-3">
         <KeepGrade g={keeperGrade(r.surplus)} />
         <PlayerImg id={r.playerId} name={r.name} pos={r.pos} size={42} />

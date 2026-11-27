@@ -76,7 +76,7 @@ function WaiverPageBody({ setup, league, ctx, sp }: LeagueData) {
 
       <WaiverPlanner ctx={ctx} rosterId={ctx.myRosterId} />
 
-      <Card title="Drop candidates" info={<>Bench players (not in any of your best lineups) who are worse than the best free agent at the same position right now{" "}— in redraft by rest-of-season points per game, in dynasty by trade value. Players out long-term (IR, PUP, suspended) are flagged too.</>} right={<Tag kind="MODEL" />} pad={false}>
+      <Card title="Drop candidates" collapse info={<>Bench players (not in any of your best lineups) who are worse than the best free agent at the same position right now{" "}— in redraft by rest-of-season points per game, in dynasty by trade value. Players out long-term (IR, PUP, suspended) are flagged too.</>} right={<Tag kind="MODEL" />} pad={false}>
         <ul className="divide-y divide-line">
           {r.drops.map((d) => (
             <li key={d.player.id} className="flex items-center gap-3 px-5 py-2.5 text-sm">
@@ -116,7 +116,7 @@ function WaiverPlanner({ ctx, rosterId }: { ctx: LeagueData["ctx"]; rosterId: nu
   if (!plan) return null;
   const KIND = { fill: ["Bye/hole fill", "bg-acc text-on-acc"], upgrade: ["Upgrade", "bg-pos/20 text-pos"], stash: ["Stash", "border border-line text-muted"] } as const;
   return (
-    <Card title="Waiver planner · next 4 weeks" info={<>Looks ahead, not just at this week. Each week we build your best lineup from projections (byes, injuries and matchups included) and flag the spots that will be empty or weak. Then every free agent is tried in your lineup for each week: the bars show how many points he adds each week. Grab bye-week fills a week early, before other teams do; stash injured players who&apos;ll start for you when they&apos;re back.</>}>
+    <Card title="Waiver planner · next 4 weeks" collapse info={<>Looks ahead, not just at this week. Each week we build your best lineup from projections (byes, injuries and matchups included) and flag the spots that will be empty or weak. Then every free agent is tried in your lineup for each week: the bars show how many points he adds each week. Grab bye-week fills a week early, before other teams do; stash injured players who&apos;ll start for you when they&apos;re back.</>}>
       <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
         {plan.weeks.map((w) => (
           <div key={w.week} className={cx("rounded-xl border p-2.5", w.holes.length ? "border-warn/60 bg-warn/5" : "border-line bg-panel2/40")}>
@@ -190,7 +190,7 @@ function BidSheet({ faab, rows }: { faab: FaabState; rows: { w: WaiverPlayer; s:
   const list = [...rows].sort((a, b) => b.s.bid - a.s.bid || (a.s.trendRank ?? 99) - (b.s.trendRank ?? 99)).slice(0, 8);
   const tone = (t: string) => (t === "Must-add" ? "bg-pos/20 text-pos" : t === "Strong add" ? "bg-pos/10 text-pos" : t === "Solid add" ? "bg-acc-soft text-acc-ink" : "bg-panel2 text-muted");
   return (
-    <Card title="FAAB bid sheet" right={<span className="num text-sm font-bold">${faab.myLeft} <span className="font-normal text-muted">of ${faab.budget} left</span></span>}
+    <Card title="FAAB bid sheet" collapse right={<span className="num text-sm font-bold">${faab.myLeft} <span className="font-normal text-muted">of ${faab.budget} left</span></span>}
       info={<>Waiver rankings combine how much a player helps <b>your</b> lineup with how hot he is across Sleeper (most-added in the last 48 hours, free agents in this league only).
         Bids come from what your league has actually paid{faab.seasons ? ` over ${faab.seasons} season${faab.seasons > 1 ? "s" : ""}` : ""}{faab.fromLeague ? "" : ", with typical FAAB prices filling in until there's more history"}, rise late in the season (unspent FAAB is worth nothing) and never exceed what you have left.</>} pad={false}>
       <ul className="divide-y divide-line">

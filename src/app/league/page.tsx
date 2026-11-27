@@ -158,7 +158,7 @@ function PlayoffPicture({ ctx, power, onOpen }: { ctx: Ctx; power: Power; onOpen
   const level = (rid: number) => { const i = hard.indexOf(rid); if (i < 0) return null; const q = n > 1 ? i / (n - 1) : 0.5; const step = q < 0.2 ? 5 : q < 0.4 ? 4 : q < 0.6 ? 3 : q < 0.8 ? 2 : 1; return { step, word: ["", "Easiest", "Easy", "Average", "Tough", "Toughest"][step], rank: i + 1 }; };
   const spots = ctx.league.settings.playoff_teams || 6;
   return (
-    <Card title="Playoff picture" info={<>Playoff odds from 4,000 simulated seasons. <b>Schedule left</b> = how strong each team&apos;s remaining fantasy opponents are (by power score), ranked against the rest of the league: 5 bars = toughest run-in, 1 bar = easiest. Tap it for the opponents.</>} pad={false}>
+    <Card title="Playoff picture" collapse info={<>Playoff odds from 4,000 simulated seasons. <b>Schedule left</b> = how strong each team&apos;s remaining fantasy opponents are (by power score), ranked against the rest of the league: 5 bars = toughest run-in, 1 bar = easiest. Tap it for the opponents.</>} pad={false}>
       <div className="grid grid-cols-[1.75rem_minmax(0,1fr)_3.5rem_5.5rem] gap-2 border-b border-line px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted sm:px-5"><span>#</span><span>Team</span><span className="text-right">Playoffs</span><span className="text-right">Schedule left</span></div>
       <ul className="divide-y divide-line">
         {rows.map((r, i) => (
@@ -233,7 +233,7 @@ function PicksDetail({ ctx, rid, rank, total }: { ctx: Ctx; rid: number; rank: n
 function DynastyOutlook({ ctx, power, onOpen }: { ctx: Ctx; power: Power; onOpen: (d: Detail) => void }) {
   const rows = [...power].sort((a, b) => a.dynastyRank - b.dynastyRank);
   return (
-    <Card title="Dynasty outlook" info={<>Roster value rank uses dynasty values (age, contracts, durability) for players and picks. Strategy is the model&apos;s read of each team; you can override it in the Trade Analyzer.</>} pad={false}>
+    <Card title="Dynasty outlook" collapse info={<>Roster value rank uses dynasty values (age, contracts, durability) for players and picks. Strategy is the model&apos;s read of each team; you can override it in the Trade Analyzer.</>} pad={false}>
       <ul className="divide-y divide-line">
         {rows.map((p) => {
           const t = ctx.teams.find((x) => x.rosterId === p.rosterId)!;

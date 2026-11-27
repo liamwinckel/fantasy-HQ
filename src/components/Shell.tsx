@@ -128,7 +128,7 @@ function Frame({ children }: { children: ReactNode }) {
             </div>
           </header>
           <EdgeBackStage under={<Home />}>
-          <div ref={scroller} id="fhq-scroll" className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-none">
+          <div ref={scroller} id="fhq-scroll" className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain">
             <main className="app-bottom-pad mx-auto w-full max-w-[1320px] px-3 pt-5 sm:px-6"><Boundary>{children}</Boundary></main>
           </div>
           </EdgeBackStage>

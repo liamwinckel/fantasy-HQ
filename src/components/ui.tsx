@@ -3,7 +3,7 @@ import { Roll, useGrow } from "./motion";
 
 import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 export function cx(...c: (string | false | null | undefined)[]) {
   return c.filter(Boolean).join(" ");
@@ -13,25 +13,53 @@ export function cx(...c: (string | false | null | undefined)[]) {
  * Card. With `href` or `onOpen`, the whole card is tappable (taps on links/buttons inside still do their own thing),
  * and a chevron shows next to the title.
  */
-export function Card({ children, className, title, right, pad = true, info, href, onOpen }: { children: ReactNode; className?: string; title?: ReactNode; right?: ReactNode; pad?: boolean; info?: ReactNode; href?: string; onOpen?: () => void }) {
+export function Card({ children, className, title, right, pad = true, info, href, onOpen, collapse, summary, defaultOpen = false, id }: {
+  children: ReactNode; className?: string; title?: ReactNode; right?: ReactNode; pad?: boolean; info?: ReactNode; href?: string; onOpen?: () => void;
+  /** Make the card a widget that opens in place (title row toggles it). Remembers open/closed per card. */
+  collapse?: boolean; summary?: ReactNode; defaultOpen?: boolean; id?: string;
+}) {
   const [open, setOpen] = useState(false);
+  const key = collapse ? `fhq-card:${id ?? (typeof title === "string" ? title : "")}` : null;
+  const [shut, setShut] = useState<boolean>(() => {
+    if (!collapse) return false;
+    try { const v = key ? localStorage.getItem(key) : null; if (v !== null) return v === "0"; } catch { /* private mode */ }
+    return !defaultOpen;
+  });
+  const toggle = () => { const n = !shut; setShut(n); try { if (key) localStorage.setItem(key, n ? "0" : "1"); } catch { /* ignore */ } };
   const router = useRouter();
   const tappable = !!(href || onOpen);
   const go = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest("a,button,input,select,textarea,[role=button],[data-no-open]")) return;
     if (onOpen) onOpen(); else if (href) router.push(href);
   };
+  const body = <div className={pad ? "p-4 sm:p-5" : ""}>{children}</div>;
   return (
     <section onClick={tappable ? go : undefined}
       className={cx("min-w-0 rounded-xl border border-line bg-panel", tappable && "cursor-pointer transition-[transform,border-color] duration-150 hover:border-acc/50 active:scale-[0.99]", className)}>
       {title && (
-        <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3 sm:px-5">
-          <h2 className="h-display flex min-w-0 items-center gap-2 text-xl">{title}{info && <InfoButton open={open} onClick={() => setOpen(!open)} />}</h2>
-          <div className="flex shrink-0 items-center gap-2">{right}{tappable && <ChevronRight size={18} className="text-muted" aria-hidden />}</div>
+        <div className={cx("flex items-center justify-between gap-3 px-4 py-3 sm:px-5", (!collapse || !shut) && "border-b border-line")}>
+          {collapse ? (
+            <div role="button" tabIndex={0} onClick={toggle} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }} aria-expanded={!shut}
+              className="flex min-w-0 flex-1 cursor-pointer items-center gap-2" style={{ scale: "1" }}>
+              <h2 className="h-display flex min-w-0 items-center gap-2 text-xl">{title}{info && <InfoButton open={open} onClick={() => setOpen(!open)} />}</h2>
+              {shut && summary && <span className="ml-auto hidden min-w-0 truncate text-xs text-muted sm:block">{summary}</span>}
+            </div>
+          ) : (
+            <h2 className="h-display flex min-w-0 items-center gap-2 text-xl">{title}{info && <InfoButton open={open} onClick={() => setOpen(!open)} />}</h2>
+          )}
+          <div className="flex shrink-0 items-center gap-2">
+            {(!collapse || !shut) && right}
+            {tappable && <ChevronRight size={18} className="text-muted" aria-hidden />}
+            {collapse && <button type="button" onClick={toggle} aria-label={shut ? "Open" : "Close"} className="flex h-7 w-7 items-center justify-center rounded-full text-muted hover:text-fg"><ChevronDown size={18} className={cx("transition-transform duration-300", !shut && "rotate-180")} /></button>}
+          </div>
         </div>
       )}
       {info && open && <div className="fhq-in border-b border-line bg-panel2/60 px-4 py-3 text-xs leading-relaxed text-muted sm:px-5">{info}</div>}
-      <div className={pad ? "p-4 sm:p-5" : ""}>{children}</div>
+      {collapse ? (
+        <div className={cx("grid transition-[grid-template-rows] duration-300 ease-out", shut ? "grid-rows-[0fr]" : "grid-rows-[1fr]")}>
+          <div className="min-h-0 overflow-hidden">{body}</div>
+        </div>
+      ) : body}
     </section>
   );
 }
