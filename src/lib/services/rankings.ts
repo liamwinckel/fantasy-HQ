@@ -73,6 +73,11 @@ export function rankings(ctx: LeagueContext, scope: RankScope, opts: RankOpts = 
   const scLeague = ctx.league.scoring_settings as Record<string, number>;
   const rescore = scope !== "dynasty" && (opt.tep !== lo.tep || opt.ppr !== lo.ppr || opt.passTd !== lo.passTd);
   const scOv = { ...scLeague, bonus_rec_te: opt.tep, rec: opt.ppr, pass_td: opt.passTd };
+  // What expert ranks assume: plain scoring at this league's PPR. Anything the league scores beyond it (kick/punt
+  // return yards, yardage and first-down bonuses, big-play bonuses, TE premium, 6-pt passing TDs…) is a per-player
+  // edge the experts can't see.
+  const scStd: Record<string, number> = { pass_yd: 0.04, pass_td: 4, pass_int: -2, pass_2pt: 2, rush_yd: 0.1, rush_td: 6, rush_2pt: 2, rec: opt.ppr, rec_yd: 0.1, rec_td: 6, rec_2pt: 2, fum_lost: -2 };
+  const extra = new Map<string, number>();
   // Dynasty market scale for the chosen format.
   const mkt = (id: string) => (sf ? ctx.consensus[id]?.v2 : ctx.consensus[id]?.v1) ?? null;
   const maxMk = scope === "dynasty" ? Math.max(1, ...[...ctx.players.keys()].map((id) => mkt(id) ?? 0)) : 1;
@@ -89,6 +94,11 @@ export function rankings(ctx: LeagueContext, scope: RankScope, opts: RankOpts = 
         if (st) { games++; for (const [k, x] of Object.entries(st)) s[k] = (s[k] ?? 0) + x; }
       }
       if (pts <= 0.05 && !c) continue;
+      if (!["K", "DEF"].includes(p.pos)) {
+        let lg = 0, std = 0;
+        for (const w of weeks) { const st = ctx.projStats.get(w)?.get(p.id); if (st) { lg += scoreSleeperStats(st, rescore ? scOv : scLeague, p.pos); std += scoreSleeperStats(st, scStd, p.pos); } }
+        extra.set(p.id, lg - std);
+      }
       if (rescore) {
         let a = 0, b = 0;
         for (const w of weeks) { const st = ctx.projStats.get(w)?.get(p.id); if (st) { a += scoreSleeperStats(st, scLeague, p.pos); b += scoreSleeperStats(st, scOv, p.pos); } }
@@ -149,7 +159,15 @@ export function rankings(ctx: LeagueContext, scope: RankScope, opts: RankOpts = 
       let prev = Infinity;
       for (const r of arr.filter((x) => x.ecrPos !== null).sort((a, b) => a.ecrPos! - b.ecrPos!)) { prev = Math.min(prev, atRank(r.pos, r.ecrPos!) || 0); conv.set(r.id, prev); }
     }
-    const key = (r: RankRow) => (r.ecrPos !== null ? (conv.get(r.id) ?? 0) * kf(r) + 1e6 : (r.pts || 0) * kf(r));
+    // League scoring edge: a player's extra points from this league's modifiers beyond what's typical at his
+    // position (the typical part is already in the converted curve). A returner in a return-yards league moves up.
+    const medEdge = new Map<string, number>();
+    for (const [pos, arr] of byPos) {
+      const e = arr.filter((r) => r.ecrPos !== null && r.ecrPos <= 40).map((r) => extra.get(r.id) ?? 0).sort((a, b) => a - b);
+      medEdge.set(pos, e.length ? e[Math.floor(e.length / 2)] : 0);
+    }
+    const edge = (r: RankRow) => (extra.has(r.id) ? (extra.get(r.id)! - (medEdge.get(r.pos) ?? 0)) : 0);
+    const key = (r: RankRow) => (r.ecrPos !== null ? ((conv.get(r.id) ?? 0) + edge(r)) * kf(r) + 1e6 : (r.pts || 0) * kf(r));
     // Equal converted points (common: projections are rounded) keep the experts' order within a position.
     rows.sort((a, b) => key(b) - key(a) || (a.pos === b.pos ? (a.ecrPos ?? 1e9) - (b.ecrPos ?? 1e9) : 0) || b.pts - a.pts);
   }

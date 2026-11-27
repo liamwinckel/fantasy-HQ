@@ -26,7 +26,7 @@ function KeepersPageBody({ setup, league, ctx, sp }: LeagueData) {
       <PageHeader eyebrow={`${league.name} · ${formatLabel(league)} · ${rounds} rounds × ${teams} teams`} title="Keeper Planner" />
       {draftNote && <Notice tone="warn">{draftNote}</Notice>}
       <KeeperBoard leagueId={league.league_id} rows={rows.map((r) => ({ ...r, surplus: Number.isFinite(r.surplus) ? r.surplus : null }))} rules={rules} rounds={rounds} teams={teams} draftType={draftType} sleeperMax={sleeperMax || null} season={Number(league.season) + 1}
-        board={board} order={order} others={others} teamName={teamName} myRosterId={ctx.myRosterId} hasPlan={hasPlan} />
+        board={board} order={order} others={others} teamName={teamName} myRosterId={ctx.myRosterId} hasPlan={hasPlan} rulesSet={!!setup.settings.keeperRules?.[league.league_id]} />
       <KeeperMarket market={market} rounds={rounds} partnerLink={(rid, pid) => `/trade/?partner=${rid}&b=p:${pid}`} />
     </div>
   );

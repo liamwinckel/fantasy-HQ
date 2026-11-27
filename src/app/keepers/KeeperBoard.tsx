@@ -4,8 +4,10 @@ import { applySettings } from "@/lib/actions";
 import { useRef, useState, type ReactNode } from "react";
 import { useHPan } from "@/components/useHPan";
 import { PlayerLink } from "@/components/PlayerCard";
-import { Segmented } from "@/components/client";
-import { Card, InfoButton, cx, signed, Info } from "@/components/ui";
+import { PlayerImg, Segmented } from "@/components/client";
+import { Sheet } from "@/components/Sheet";
+import { Check, ChevronDown, Plus, X } from "lucide-react";
+import { Card, cx, signed, Info } from "@/components/ui";
 import { keeperGrade, modRounds, type KeeperRules } from "@/lib/engine/keepers";
 import type { BoardCell, MyKeeperRow } from "@/lib/services/keeperData";
 import type { KeeperRow } from "@/lib/engine/keepers";
@@ -38,12 +40,13 @@ const Field = ({ label, children, hint }: { label: string; children: ReactNode; 
   <div className="flex flex-col gap-1 text-xs text-muted">{label}{children}{hint && <span className="text-[11px]">{hint}</span>}</div>
 );
 
-export function KeeperBoard({ leagueId, rows, rules, rounds, teams, draftType, sleeperMax, season, board, order, others, teamName, myRosterId, hasPlan }: {
+export function KeeperBoard({ leagueId, rows, rules, rounds, teams, draftType, sleeperMax, season, board, order, others, teamName, myRosterId, hasPlan, rulesSet }: {
   leagueId: string; rows: Row[]; rules: KeeperRules; rounds: number; teams: number; draftType: string | null; sleeperMax: number | null; season: number;
-  board: BoardCell[]; order: number[]; others: Others; teamName: (rid: number) => string; myRosterId: number; hasPlan: boolean;
+  board: BoardCell[]; order: number[]; others: Others; teamName: (rid: number) => string; myRosterId: number; hasPlan: boolean; rulesSet: boolean;
 }) {
+  const [rulesOpen, setRulesOpen] = useState(!rulesSet);
+  const [picking, setPicking] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [help, setHelp] = useState(false);
   const save = async (patch: object) => {
     setBusy(true);
     await applySettings({ keeper: { leagueId, ...patch } });
@@ -65,7 +68,21 @@ export function KeeperBoard({ leagueId, rows, rules, rounds, teams, draftType, s
 
   return (
     <div className={cx("flex flex-col gap-4 transition-opacity", busy && "opacity-60")}>
-      <Card title="Keeper rules" info={<>These rules turn each player&apos;s draft slot (pulled from Sleeper) into next season&apos;s cost. Draft: {rounds} rounds × {teams} teams{draftType ? ` (${draftType})` : ""}.</>}>
+      <div className="overflow-hidden rounded-2xl border border-line bg-panel">
+        <button type="button" onClick={() => setRulesOpen(!rulesOpen)} className="flex w-full items-center gap-3 px-4 py-3 text-left" aria-expanded={rulesOpen}>
+          <span className="text-sm font-bold">Keeper rules</span>
+          <span className="flex min-w-0 flex-1 gap-1.5 overflow-hidden">
+            {[`${rules.maxKeepers} keeper${rules.maxKeepers === 1 ? "" : "s"}`,
+              rules.draftedMode === "adp" ? `Drafted: ADP${rules.adpOffset ? ` ${rules.adpOffset > 0 ? "+" : ""}${rules.adpOffset}` : ""}` : `Drafted: Rd ${rules.direction === "earlier" ? "−" : "+"}${mod}`,
+              rules.undraftedMode === "round" ? `Pickups: Rd ${rules.undraftedRound}` : `Pickups: ADP${rules.undraftedOffset ? ` ${rules.undraftedOffset > 0 ? "+" : ""}${rules.undraftedOffset}` : ""}`,
+              `${rounds} rds`].map((c) => <span key={c} className="shrink-0 rounded-md bg-panel2 px-2 py-0.5 text-[11px] font-semibold text-muted">{c}</span>)}
+          </span>
+          {!rulesSet && <span className="shrink-0 rounded bg-acc px-1.5 py-0.5 text-[10px] font-extrabold text-on-acc">SET UP</span>}
+          <ChevronDown size={16} className={cx("shrink-0 text-muted transition-transform", rulesOpen && "rotate-180")} />
+        </button>
+        <div className={cx("grid transition-[grid-template-rows] duration-300", rulesOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]")}>
+        <div className="overflow-hidden"><div className="border-t border-line px-4 py-4 sm:px-5">
+        <p className="mb-4 text-xs text-muted">These rules turn each player&apos;s draft slot (pulled from Sleeper) into next season&apos;s cost. Draft: {rounds} rounds × {teams} teams{draftType ? ` (${draftType})` : ""}.</p>
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           <Stepper label="Keepers per team" value={rules.maxKeepers} min={0} max={Math.min(30, rounds)} onChange={(v) => save({ maxKeepers: v })} hint={sleeperMax ? `Sleeper setting: ${sleeperMax}` : undefined} />
           <Field label="Drafted players cost">
@@ -109,63 +126,51 @@ export function KeeperBoard({ leagueId, rows, rules, rounds, teams, draftType, s
           <Field label="Value him over"><Segmented label="Value horizon" value={String(rules.horizon) as "1" | "2"} onChange={(h) => save({ horizon: Number(h) })} options={[{ value: "1", label: "Next season" }, { value: "2", label: "Next 2 seasons" }]} /></Field>
         </div>
         <Info className="mt-4">&quot;Where he&apos;d go next year&quot; is SHS&apos;s projected draft round (next season&apos;s value ranked across the league) until real ADP exists in the summer.</Info>
-      </Card>
+        </div></div></div>
+      </div>
 
-      <Card title={`Your keepers for ${season}`} right={<div className="flex items-center gap-2"><InfoButton open={help} onClick={() => setHelp(!help)} label="How to read this" />{hasPlan && <button type="button" className="text-xs font-semibold text-muted underline" onClick={() => save({ planReset: true })}>Use recommended</button>}</div>} pad={false}>
-        {help && (
-          <div className="fhq-in border-b border-line bg-panel2/50 px-4 py-3 text-xs leading-relaxed text-muted">
-            <p><b className="text-fg">Drafted</b> = where he went in this season&apos;s Sleeper draft (round.pick and overall pick #), or kept / undrafted.</p>
-            <p className="mt-1"><b className="text-fg">Costs</b> = the round you give up next season under your rules. <b className="text-fg">Would go</b> = the round he&apos;d likely be drafted in if nobody kept him.</p>
-            <p className="mt-1"><b className="text-fg">Rounds saved</b> = how much later you get him than he&apos;d go (+3 = you keep a round-4 talent with a round-7 pick).</p>
-            <p className="mt-1"><b className="text-fg">Gain</b> = how many more fantasy points per game he should score than the player you&apos;d typically get with that same pick. It&apos;s what KEEP is based on, because a round saved early in the draft is worth more than a round saved late.</p>
-            <p className="mt-1"><b className="text-fg">Keep at</b> = which of your picks he uses. Change it to plan your board.</p>
-          </div>
-        )}
-        <div className="border-b border-line px-4 py-2 text-xs text-muted sm:px-5">Keeping {keeping.length} of {rules.maxKeepers}{keeping.length > rules.maxKeepers ? <b className="text-neg"> · over the limit</b> : ""}{hasPlan ? " · your plan" : " · recommended"}</div>
+      <Card title={`Your keepers for ${season}`} pad={false}
+        right={<div className="flex items-center gap-2 text-xs"><span className="text-muted">{keeping.length}/{rules.maxKeepers}{hasPlan ? " · your plan" : " · suggested"}</span>{hasPlan && <button type="button" className="font-semibold text-acc-ink underline" onClick={() => save({ planReset: true })}>Reset</button>}</div>}
+        info={<>Grade = next season&apos;s points per game over what that round&apos;s pick usually gets. The bar runs from round 1 to {rounds}: the dot is where he&apos;d go next year, the tick is what he costs to keep. Green between them = rounds you save.</>}>
         <ul className="divide-y divide-line">
-          {rows.map((r) => (
-            <li key={r.playerId} className={cx("grid grid-cols-2 gap-x-3 gap-y-2 px-3 py-3 sm:grid-cols-[minmax(0,1.3fr)_6.5rem_6.5rem_5.5rem_5rem_9rem] sm:items-center sm:px-5", r.planned && "bg-acc-soft")}>
-              <div className="col-span-2 min-w-0 sm:col-span-1">
-                <div className="flex min-w-0 items-center gap-2">
-                  <KeepGrade g={keeperGrade(r.surplus)} />
-                  <PlayerLink id={r.playerId} name={r.name} className="min-w-0 truncate font-semibold" />
-                  {r.planned && <span className="shrink-0 rounded bg-acc px-1.5 py-0.5 text-[10px] font-extrabold text-on-acc">KEEP</span>}
-                </div>
-                <div className="truncate text-xs text-muted">{r.pos}{r.team ? ` · ${r.team}` : ""}{r.age ? ` · age ${Math.floor(r.age)}` : ""}{r.yearsKept ? ` · kept ${r.yearsKept} season${r.yearsKept === 1 ? "" : "s"}` : ""}</div>
-              </div>
-              <div className="text-xs">
-                <div className="text-[10px] uppercase tracking-wider text-muted">Drafted</div>
-                {r.draftedRound ? <><b className="num text-sm">{pickLabel(r)}</b> <span className="text-muted">#{r.draftedOverall}</span><div className="truncate text-[11px] text-muted">{r.wasKeeper ? "as a keeper" : r.draftedBy ? `by ${r.draftedBy}` : ""}</div></> : <span className="text-muted">Undrafted (waivers)</span>}
-              </div>
-              <div className="text-xs">
-                <div className="text-[10px] uppercase tracking-wider text-muted">Costs · would go</div>
-                {r.costRound ? <><b className="num text-sm">Rd {r.costRound}</b> <span className="text-muted">· Rd {r.expectedRound}</span><div className="text-[11px] text-muted">{r.costSource === "manual" ? "custom cost" : r.costSource === "undrafted" ? "pickup rule" : "draft rule"}{r.capped ? " · capped" : ""}</div></> : <span className="font-semibold text-neg">{r.ineligible ?? "Can't be kept"}</span>}
-              </div>
-              <div className="text-xs">
-                <div className="text-[10px] uppercase tracking-wider text-muted">Rounds saved</div>
-                {r.roundsSaved === null ? "—" : <b className={cx("num text-sm", r.roundsSaved > 0 ? "text-pos" : r.roundsSaved < 0 ? "text-neg" : "")}>{r.roundsSaved > 0 ? `+${r.roundsSaved}` : r.roundsSaved}</b>}
-              </div>
-              <div className="text-xs">
-                <div className="text-[10px] uppercase tracking-wider text-muted">Gain / game</div>
-                {r.surplus === null ? "—" : <b className={cx("num text-sm", r.surplus > 0 ? "text-pos" : "text-neg")}>{signed(r.surplus)} pts</b>}
-              </div>
-              <div className="col-span-2 flex flex-col gap-1 sm:col-span-1">
-                <select aria-label={`Keep ${r.name} at`} className="rounded-md border border-line bg-panel2 px-2 py-1.5 text-xs" disabled={!r.costRound}
-                  value={r.planned && r.keptAt ? r.keptAt : "none"} onChange={(e) => setKeep(r.playerId, e.target.value)}>
-                  <option value="none">Don&apos;t keep</option>
-                  {r.slots.map((s) => <option key={s.key} value={s.key}>Keep at {s.label}{s.via ? ` (via ${s.via})` : " (your pick)"}</option>)}
-                  {r.planned && r.keptAt && !r.slots.some((s) => s.key === r.keptAt) && <option value={r.keptAt}>Keep at {cellLabel(r.keptAt)}</option>}
-                </select>
-                {r.slotNote && <span className="text-[11px] text-warn">{r.slotNote}</span>}
-                <select aria-label={`Cost for ${r.name}`} className="rounded-md border border-line bg-panel2 px-2 py-1 text-[11px] text-muted" value={r.costSource === "manual" ? r.costRound ?? 0 : 0} onChange={(e) => save({ override: { playerId: r.playerId, round: Number(e.target.value) } })}>
-                  <option value={0}>Cost: by rules</option>
-                  {Array.from({ length: rounds }, (_, i) => i + 1).map((n) => <option key={n} value={n}>Cost: round {n}</option>)}
-                </select>
-              </div>
+          {Array.from({ length: Math.max(rules.maxKeepers, keeping.length) }, (_, i) => keeping[i] ?? null).map((r, i) => (
+            <li key={r?.playerId ?? `empty-${i}`}>
+              {r ? <KeeperSlotCard r={r} rounds={rounds} over={i >= rules.maxKeepers} onRemove={() => setKeep(r.playerId, "none")} onAt={(k) => setKeep(r.playerId, k)} onCost={(n) => save({ override: { playerId: r.playerId, round: n } })} cellLabel={cellLabel} />
+                : (
+                  <button type="button" onClick={() => setPicking(true)} className="flex w-full items-center gap-3 px-4 py-3 text-left sm:px-5">
+                    <span className="w-9 shrink-0 text-center text-[10px] font-extrabold text-muted">K{i + 1}</span>
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-acc/60 text-acc-ink"><Plus size={18} /></span>
+                    <span className="text-sm font-semibold text-muted">Add a keeper</span>
+                  </button>
+                )}
             </li>
           ))}
         </ul>
+        {keeping.length >= rules.maxKeepers && <button type="button" onClick={() => setPicking(true)} className="w-full border-t border-line py-2.5 text-xs font-semibold text-muted">Swap or add players</button>}
       </Card>
+
+      <Sheet open={picking} onClose={() => setPicking(false)} title="Your roster" sub="Best keeps first · ★ = suggested">
+        <ul className="flex flex-col gap-1.5 pb-2">
+          {[...rows].sort((a, b) => Number(!!b.costRound) - Number(!!a.costRound) || (b.surplus ?? -99) - (a.surplus ?? -99)).map((r) => {
+            const can = !!r.costRound && (r.slots.length > 0 || !!r.keptAt);
+            return (
+              <li key={r.playerId}>
+                <button type="button" disabled={!can} onClick={() => { setKeep(r.playerId, r.planned ? "none" : r.keptAt ?? r.slots[0]?.key ?? "none"); }}
+                  className={cx("flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left transition-colors disabled:opacity-40", r.planned ? "border-acc bg-acc-soft" : "border-line bg-panel2 hover:border-acc/50")}>
+                  <KeepGrade g={keeperGrade(r.surplus)} />
+                  <PlayerImg id={r.playerId} name={r.name} pos={r.pos} size={34} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1 text-sm font-semibold"><span className="truncate">{r.name}</span>{r.recommended && <span className="shrink-0 text-acc-ink">★</span>}</div>
+                    <div className="truncate text-[11px] text-muted">{r.pos}{r.team ? ` · ${r.team}` : ""} · {r.costRound ? `keep Rd ${r.costRound} · goes Rd ${r.expectedRound}` : r.ineligible ?? "can't be kept"}</div>
+                  </div>
+                  {r.roundsSaved !== null && r.costRound ? <span className={cx("num w-10 shrink-0 text-right text-sm font-bold", r.roundsSaved > 0 ? "text-pos" : r.roundsSaved < 0 ? "text-neg" : "text-muted")}>{r.roundsSaved > 0 ? "+" : ""}{r.roundsSaved}<span className="block text-[9px] font-normal text-muted">rounds</span></span> : null}
+                  <span className={cx("flex h-7 w-7 shrink-0 items-center justify-center rounded-full", r.planned ? "bg-acc text-on-acc" : "border border-line text-muted")}>{r.planned ? <Check size={15} /> : <Plus size={15} />}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </Sheet>
 
       <DraftBoard board={board} order={order} rounds={rounds} teamName={teamName} myRosterId={myRosterId} season={season} />
 
@@ -250,4 +255,60 @@ function KeepGrade({ g }: { g: string | null }) {
   if (!g) return <span className="num grid h-7 w-9 shrink-0 place-items-center rounded-lg bg-panel2 text-sm font-extrabold text-muted">—</span>;
   const tone = g.startsWith("A") ? "bg-pos/20 text-pos" : g.startsWith("B") ? "bg-pos/10 text-pos" : g.startsWith("C") ? "bg-panel2 text-fg" : "bg-neg/15 text-neg";
   return <span title="Keep grade: next-season value over what that round's pick usually gets" className={cx("num grid h-7 w-9 shrink-0 place-items-center rounded-lg text-sm font-extrabold", tone)}>{g}</span>;
+}
+
+/**
+ * A kept player, lineup-style: grade, photo and name, then a round bar — dot = where he'd go next year, tick = what
+ * he costs; the stretch between is the rounds you save (green) or overpay (red). Keep-at pick and custom cost tuck
+ * into small chips.
+ */
+function KeeperSlotCard({ r, rounds, over, onRemove, onAt, onCost, cellLabel }: {
+  r: Row; rounds: number; over: boolean; onRemove: () => void; onAt: (key: string) => void; onCost: (round: number) => void; cellLabel: (k: string | null) => string | null;
+}) {
+  const x = (round: number) => `${((Math.min(rounds, Math.max(1, round)) - 0.5) / rounds) * 100}%`;
+  const cost = r.costRound ?? rounds, go = r.expectedRound;
+  const saved = cost - go;
+  const lo = Math.min(cost, go), hi = Math.max(cost, go);
+  return (
+    <div className={cx("flex flex-col gap-2 px-4 py-3 sm:px-5", over && "bg-neg/10")}>
+      <div className="flex items-center gap-3">
+        <KeepGrade g={keeperGrade(r.surplus)} />
+        <PlayerImg id={r.playerId} name={r.name} pos={r.pos} size={42} />
+        <div className="min-w-0 flex-1">
+          <PlayerLink id={r.playerId} name={r.name} className="block truncate text-sm font-bold" />
+          <div className="truncate text-[11px] text-muted">{r.pos}{r.team ? ` · ${r.team}` : ""}{r.age ? ` · ${Math.floor(r.age)}` : ""}{r.yearsKept ? ` · kept ${r.yearsKept}×` : ""}{r.surplus !== null ? ` · ${signed(r.surplus)} pts/g` : ""}</div>
+        </div>
+        <div className="shrink-0 text-right">
+          <div className="num text-sm font-extrabold">Rd {r.costRound ?? "—"}</div>
+          <div className={cx("num text-[10px] font-bold", saved > 0 ? "text-pos" : saved < 0 ? "text-neg" : "text-muted")}>{saved > 0 ? `saves ${saved}` : saved < 0 ? `${-saved} early` : "at value"}</div>
+        </div>
+        <button type="button" aria-label={`Don't keep ${r.name}`} onClick={onRemove} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-neg/50 text-neg hover:bg-neg hover:text-white"><X size={14} /></button>
+      </div>
+      <div className="relative ml-[3.25rem] h-4" aria-label={`Would go round ${go}, costs round ${cost}`}>
+        <div className="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-panel2" />
+        <div className={cx("absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full", saved >= 0 ? "bg-pos" : "bg-neg")} style={{ left: x(lo), width: `calc(${x(hi)} - ${x(lo)})` }} />
+        <div className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-bg bg-fg" style={{ left: x(go) }} title={`Would go round ${go}`} />
+        <div className="absolute top-0 h-4 w-1 -translate-x-1/2 rounded bg-acc" style={{ left: x(cost) }} title={`Costs round ${cost}`} />
+      </div>
+      <div className="ml-[3.25rem] flex flex-wrap items-center gap-1.5 text-[11px]">
+        <span className="text-muted">goes Rd {go} ·</span>
+        <label className="relative rounded-md bg-panel2 px-2 py-0.5 font-semibold">
+          at {r.keptAt ? cellLabel(r.keptAt) ?? r.slots.find((s) => s.key === r.keptAt)?.label ?? "—" : "—"} ▾
+          <select aria-label={`Keep ${r.name} at`} className="absolute inset-0 opacity-0" value={r.keptAt ?? ""} onChange={(e) => onAt(e.target.value)}>
+            {r.slots.map((s) => <option key={s.key} value={s.key}>{s.label}{s.via ? ` (via ${s.via})` : ""}</option>)}
+            {r.keptAt && !r.slots.some((s) => s.key === r.keptAt) && <option value={r.keptAt}>{cellLabel(r.keptAt)}</option>}
+          </select>
+        </label>
+        <label className="relative rounded-md bg-panel2 px-2 py-0.5 font-semibold text-muted">
+          {r.costSource === "manual" ? "custom cost" : "cost by rules"} ▾
+          <select aria-label={`Cost for ${r.name}`} className="absolute inset-0 opacity-0" value={r.costSource === "manual" ? r.costRound ?? 0 : 0} onChange={(e) => onCost(Number(e.target.value))}>
+            <option value={0}>By rules</option>
+            {Array.from({ length: rounds }, (_, i) => i + 1).map((n) => <option key={n} value={n}>Round {n}</option>)}
+          </select>
+        </label>
+        {r.slotNote && <span className="text-warn">{r.slotNote}</span>}
+        {over && <span className="font-bold text-neg">over the limit</span>}
+      </div>
+    </div>
+  );
 }
