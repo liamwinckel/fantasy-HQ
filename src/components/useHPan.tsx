@@ -15,22 +15,8 @@ export function useHPan(ref: RefObject<HTMLElement | null>) {
     el.style.touchAction = "pan-y";
     let sx = 0, sy = 0, sl = 0, axis: "x" | "y" | null = null, raf = 0, active = false;
     const trail: { t: number; x: number }[] = [];
-    // Rubber band: past either end the content stretches (resisting, like iOS) and springs back — never a hard stop.
-    const inner = () => el.firstElementChild as HTMLElement | null;
-    let over = 0;
-    const setOver = (o: number, anim = false) => {
-      over = o;
-      const c = inner(); if (!c) return;
-      c.style.transition = anim ? "transform 420ms cubic-bezier(.2,.9,.3,1.15)" : "none";
-      c.style.transform = o ? `translate3d(${o}px,0,0)` : "";
-    };
     const maxL = () => el.scrollWidth - el.clientWidth;
-    const scrollTo = (target: number) => {
-      const m = maxL();
-      if (target < 0) { el.scrollLeft = 0; setOver(Math.min(120, -target * 0.35)); }
-      else if (target > m) { el.scrollLeft = m; setOver(-Math.min(120, (target - m) * 0.35)); }
-      else { el.scrollLeft = target; if (over) setOver(0); }
-    };
+    const scrollTo = (target: number) => { el.scrollLeft = Math.max(0, Math.min(maxL(), target)); };
     const start = (e: TouchEvent) => {
       if (e.touches.length !== 1) return;
       cancelAnimationFrame(raf);
@@ -55,7 +41,6 @@ export function useHPan(ref: RefObject<HTMLElement | null>) {
       if (!active) return;
       active = false;
       if (axis !== "x") return;
-      if (over) { setOver(0, true); return; } // released while stretched: spring back
       // Fling speed from the last ~80ms of movement (px per frame), with iOS-like momentum and friction.
       const a = trail[0], b = trail[trail.length - 1];
       let vel = b && a && b.t > a.t ? ((b.x - a.x) / (b.t - a.t)) * 16 * 1.6 : 0;
@@ -63,13 +48,7 @@ export function useHPan(ref: RefObject<HTMLElement | null>) {
       const step = () => {
         if (Math.abs(vel) < 0.3) return;
         const next = el.scrollLeft - vel, m = maxL();
-        if (next < 0 || next > m) {
-          // Momentum hits an edge: a small bounce proportional to the speed, then settle.
-          el.scrollLeft = next < 0 ? 0 : m;
-          setOver(Math.max(-60, Math.min(60, vel * 2.2)));
-          requestAnimationFrame(() => setOver(0, true));
-          return;
-        }
+        if (next <= 0 || next >= m) { el.scrollLeft = next <= 0 ? 0 : m; return; } // glide to the end and stop
         el.scrollLeft = next; vel *= 0.972; raf = requestAnimationFrame(step);
       };
       raf = requestAnimationFrame(step);

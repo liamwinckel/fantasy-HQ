@@ -137,7 +137,7 @@ export function KeeperBoard({ leagueId, rows, rules, rounds, teams, draftType, s
             <li key={r?.playerId ?? `empty-${i}`}>
               {r ? <KeeperSlotCard r={r} rounds={rounds} over={i >= rules.maxKeepers} onRemove={() => setKeep(r.playerId, "none")} onAt={(k) => setKeep(r.playerId, k)} onCost={(n) => save({ override: { playerId: r.playerId, round: n } })} cellLabel={cellLabel} />
                 : (
-                  <button type="button" onClick={() => setPicking(true)} className="fhq-pop flex w-full items-center gap-3 px-4 py-3 text-left sm:px-5">
+                  <button type="button" onClick={() => setPicking(true)} className="flex w-full items-center gap-3 px-4 py-3 text-left sm:px-5">
                     <span className="w-9 shrink-0 text-center text-[10px] font-extrabold text-muted">K{i + 1}</span>
                     <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-acc/60 text-acc-ink"><Plus size={18} /></span>
                     <span className="text-sm font-semibold text-muted">Add a keeper</span>
@@ -168,7 +168,7 @@ export function KeeperBoard({ leagueId, rows, rules, rounds, teams, draftType, s
                     <div className="truncate text-[11px] text-muted">{r.pos}{r.team ? ` · ${r.team}` : ""} · {r.costRound ? `keep Rd ${r.costRound} · goes Rd ${r.expectedRound}` : r.ineligible ?? "can't be kept"}</div>
                   </div>
                   {r.roundsSaved !== null && r.costRound ? <span className={cx("num w-10 shrink-0 text-right text-sm font-bold", r.roundsSaved > 0 ? "text-pos" : r.roundsSaved < 0 ? "text-neg" : "text-muted")}>{r.roundsSaved > 0 ? "+" : ""}{r.roundsSaved}<span className="block text-[9px] font-normal text-muted">rounds</span></span> : null}
-                  <span key={r.planned ? "on" : "off"} className={cx("flex h-7 w-7 shrink-0 items-center justify-center rounded-full", r.planned ? "fhq-check bg-acc text-on-acc" : "border border-line text-muted")}>{r.planned ? <Check size={15} /> : <Plus size={15} />}</span>
+                  <span key={r.planned ? "on" : "off"} className={cx("flex h-7 w-7 shrink-0 items-center justify-center rounded-full", r.planned ? "bg-acc text-on-acc" : "border border-line text-muted")}>{r.planned ? <Check size={15} /> : <Plus size={15} />}</span>
                 </button>
               </li>
             );
@@ -274,7 +274,7 @@ function KeeperSlotCard({ r, rounds, over, onRemove, onAt, onCost, cellLabel }: 
   const saved = cost - go;
   const lo = Math.min(cost, go), hi = Math.max(cost, go);
   return (
-    <div className={cx("fhq-pop flex flex-col gap-2 px-4 py-3 sm:px-5", over && "bg-neg/10")}>
+    <div className={cx("flex flex-col gap-2 px-4 py-3 sm:px-5", over && "bg-neg/10")}>
       <div className="flex items-center gap-3">
         <KeepGrade g={keeperGrade(r.surplus)} />
         <PlayerImg id={r.playerId} name={r.name} pos={r.pos} size={42} />
