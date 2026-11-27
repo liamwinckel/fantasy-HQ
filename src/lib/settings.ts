@@ -95,7 +95,9 @@ export function saveSettings(patch: Partial<AppSettings>) {
   }
   // SHS AI weights only change scoring on screen; they don't need the league reloaded.
   const shsOnly = Object.keys(patch).every((k) => k === "shs" || k === "cfbdKey");
-  if (typeof window !== "undefined") window.dispatchEvent(new Event(shsOnly ? "fhq-shs" : "fhq-settings"));
+  // Remembering which league is open is just a bookmark: nothing needs reloading.
+  const quiet = Object.keys(patch).every((k) => k === "selectedLeague");
+  if (typeof window !== "undefined" && !quiet) window.dispatchEvent(new Event(shsOnly ? "fhq-shs" : "fhq-settings"));
   return next;
 }
 

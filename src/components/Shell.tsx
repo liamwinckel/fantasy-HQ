@@ -42,7 +42,17 @@ function Frame({ children }: { children: ReactNode }) {
   const { setup, leagueId, synced } = useApp();
   const scroller = useRef<HTMLDivElement>(null);
   const path = usePathname();
+  const router = useRouter();
   useEffect(() => { scroller.current?.scrollTo({ top: 0 }); }, [path]);
+  // Warm up every main screen so taps navigate instantly (no fetch of the page on first visit).
+  useEffect(() => {
+    const t = setTimeout(() => {
+      for (const r of ["/", "/matchup/", "/league/", "/rankings/", "/trade/", "/waivers/", "/keepers/", "/stats/", "/history/", "/mock-draft/", "/trade-finder/", "/brief/", "/settings/", "/start-sit/", "/lineup/"]) {
+        try { router.prefetch(r); } catch { /* fine */ }
+      }
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [router]);
   // App-wide haptic tick on every tap of a button, link or toggle (iPhone iOS 18+ and Android).
   useEffect(() => {
     const onClick = (e: MouseEvent) => {

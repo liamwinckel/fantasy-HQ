@@ -54,6 +54,8 @@ button, a, select, input, [role="button"], label:has(> select) { transition: bac
 .fhq-pop { animation: fhq-pop 0.55s cubic-bezier(.2,.9,.3,1.2) both; }
 @keyframes fhq-check { 0% { transform: scale(0.4) rotate(-20deg); } 60% { transform: scale(1.25) rotate(4deg); } 100% { transform: none; } }
 .fhq-check { animation: fhq-check 0.4s cubic-bezier(.3,1.6,.5,1) both; }
+/* No tap delay anywhere (no double-tap-zoom wait). */
+a, button, [role="button"], label, select, input, summary { touch-action: manipulation; }
 /* Press feel, app-wide: everything tappable dips when pressed and springs back on release. */
 button:not(:disabled):active, a:active, [role="button"]:active, label:has(> select):active { scale: 0.95; transition-duration: 0.15s, 0.15s, 0.15s, 0.15s, 0.1s, 0.08s; }
 /* Big tap targets (full-width rows, cards) dip less so they don't look like they're collapsing. */
