@@ -246,11 +246,13 @@ export function blendWithMarket(values: Map<string, PlayerValue>, players: Playe
  * (points above replacement): surplus points per game over what his keep-round pick would return × 17 games,
  * counted at 40% (it's next year, and he has to stay healthy). Values are then rescaled so the top asset = 100.
  */
-export function applyKeeperBonus(values: Map<string, PlayerValue>, surplus: Map<string, number>) {
+/** Returns how to put a next-season surplus (pts/g over replacement) on the same final keeper trade-value scale. */
+export function applyKeeperBonus(values: Map<string, PlayerValue>, surplus: Map<string, number>): (surplusPpg: number) => number {
   const maxRaw = Math.max(1e-9, ...[...values.values()].map((v) => v.rosVorp));
   const perPoint = maxRaw / 100; // raw rest-of-season points per value point
   for (const v of values.values()) v.redraftOnly = v.redraft;
   for (const [id, s] of surplus) { const v = values.get(id); if (v && s > 0) v.redraft = round1(v.redraft + (s * 17 * 0.4) / perPoint); }
   const maxR = Math.max(1e-9, ...[...values.values()].map((v) => v.redraft));
   for (const v of values.values()) v.redraft = round1((100 * v.redraft) / maxR);
+  return (s) => round1((100 * ((s * 17 * 0.4) / perPoint)) / maxR);
 }

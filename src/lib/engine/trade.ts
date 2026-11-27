@@ -191,14 +191,15 @@ export function evaluateTrade(ctx: LeagueContext, req: TradeRequest): TradeResul
     const key = id.slice(2);
     const pk = ctx.picks.find((x) => x.key === key);
     if (!pk) return null;
-    const market = mode === "redraft" ? 0 : pk.value;
+    // Keeper leagues: picks carry their keeper value even when trading on redraft/keeper values.
+    const market = mode === "redraft" ? (ctx.format === "keeper" ? pk.keeperValue ?? 0 : 0) : pk.value;
     const orig = ctx.teams.find((t) => t.rosterId === pk.originalRosterId);
     return {
       id, kind: "pick", name: `${pk.season} Round ${pk.round}`, from, market,
       detail: `${orig ? `Orig. ${orig.name}` : ""} · ${pk.tier}${pk.tierSource === "estimated" ? ` (est. slot ${pk.estimatedSlot})` : pk.tierSource === "default" ? " (slot unknown)" : " (manual)"}`,
       toA: stratK(classA, market),
       toB: stratK(classB, market),
-      note: mode === "redraft" ? "No current-season value in Redraft" : undefined,
+      note: mode === "redraft" && ctx.format !== "keeper" ? "No current-season value in Redraft" : undefined,
       drivers: [{ label: "Pick", value: `${pk.season} R${pk.round} · ${pk.tier}`, tone: "neutral" }],
     };
   };
@@ -397,7 +398,8 @@ export function evaluateTrade(ctx: LeagueContext, req: TradeRequest): TradeResul
   const worstB = build.b[0];
   if (worstB && worstB.delta <= -2) explanation.push(`${teamB.name}'s ${worstB.slot} would drop to ${worstB.after.name} (${worstB.after.ppg} pts/g).`);
   if (odds) explanation.push(`Simulated title odds: ${odds.aTitleBefore}% → ${odds.aTitleAfter}%.`);
-  if (mode === "redraft" && assets.some((a) => a.kind === "pick")) explanation.push("Draft picks carry no value in Redraft mode.");
+  if (mode === "redraft" && ctx.format !== "keeper" && assets.some((a) => a.kind === "pick")) explanation.push("Draft picks carry no value in Redraft mode.");
+  if (mode === "redraft" && ctx.format === "keeper" && assets.some((a) => a.kind === "pick")) explanation.push("Picks are valued by the player each would land next season after keepers, in your keeper rules.");
 
   const lowConf = assets.filter((a) => a.kind === "player" && ctx.projections.get(a.id.slice(2))?.confidence === "Low").length;
   const unknownPicks = assets.filter((a) => a.kind === "pick" && a.detail.includes("unknown")).length;

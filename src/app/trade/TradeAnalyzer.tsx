@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, ChevronDown, Minus, Plus, Search, X } from "lucide-react";
 import { PlayerLink } from "@/components/PlayerCard";
 import { PlayerImg, Segmented } from "@/components/client";
+import { Sheet } from "@/components/Sheet";
 import { SwipeRow } from "@/components/SwipeRow";
 import { Card, ClassBadge, InjuryChip, Logo, NflLogo, cx, signed } from "@/components/ui";
 import { evaluateTrade, type BalanceSuggestion, type PowerShift, type TradeResult } from "@/lib/engine/trade";
@@ -111,13 +112,10 @@ export function TradeAnalyzer({ leagueId, views, me, teams: rawTeams, initialPar
           Values
           <Segmented label="Trade values" options={views.map((v) => ({ value: v, label: VIEW_LABEL[v] }))} value={view} onChange={setView} />
         </div>
-        <label className="flex w-full flex-col gap-1 text-[11px] uppercase tracking-wider text-muted sm:w-auto">
+        <div className="flex w-full flex-col gap-1 text-[11px] uppercase tracking-wider text-muted sm:w-auto">
           Trade partner
-          <select value={partner} onChange={(e) => { setPartner(Number(e.target.value)); setB([]); setStep("build"); }}
-            className="w-full min-w-0 rounded-lg border border-line bg-panel px-3 py-2.5 text-sm font-semibold normal-case tracking-normal text-fg sm:w-auto sm:min-w-64">
-            {teams.filter((t) => t.rosterId !== me).map((t) => <option key={t.rosterId} value={t.rosterId}>{t.name} · {t.record}{t.cls ? ` · ${t.cls}` : ""}</option>)}
-          </select>
-        </label>
+          <PartnerPicker teams={teams.filter((t) => t.rosterId !== me)} value={partner} onChange={(rid) => { setPartner(rid); setB([]); setStep("build"); }} />
+        </div>
       </div>
 
       {/* Value bar: both totals, the weighting each side takes, and who's winning — pinned while you scroll. */}
@@ -161,6 +159,49 @@ export function TradeAnalyzer({ leagueId, views, me, teams: rawTeams, initialPar
           aiTake={<AiTake ai={ai} aSends={aSends} bSends={bSends} teams={teams} me={me} partner={partner} partnerName={partnerName} mode={mode} />} />
       )}
     </div>
+  );
+}
+
+/** Trade partner: the current team as a card; tap for every team with logo, record, build and playoff odds. */
+function PartnerPicker({ teams, value, onChange }: { teams: TeamOpt[]; value: number; onChange: (rid: number) => void }) {
+  const [open, setOpen] = useState(false);
+  const cur = teams.find((t) => t.rosterId === value);
+  const row = (t: TeamOpt, big = false) => (
+    <>
+      <Logo src={t.avatar} name={t.name} size={big ? 36 : 34} />
+      <div className="min-w-0 flex-1 text-left">
+        <div className="truncate text-sm font-bold normal-case tracking-normal text-fg">{t.name}</div>
+        <div className="flex items-center gap-1.5 truncate text-[11px] normal-case tracking-normal text-muted">
+          <span className="num">{t.record}</span>
+          {t.manager && t.manager !== t.name && <span className="truncate">· {t.manager}</span>}
+        </div>
+      </div>
+      {t.cls && <ClassBadge cls={t.cls} />}
+    </>
+  );
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)} className="flex w-full items-center gap-3 rounded-xl border border-line bg-panel px-3 py-2 transition-colors hover:border-acc/60 active:scale-[0.99] sm:min-w-80">
+        {cur ? row(cur, true) : <span className="flex-1 text-left text-sm normal-case">Pick a team</span>}
+        <ChevronDown size={16} className="shrink-0 text-muted" />
+      </button>
+      <Sheet open={open} onClose={() => setOpen(false)} title="Trade with…">
+        <ul className="flex flex-col gap-1.5 pb-2">
+          {teams.map((t) => (
+            <li key={t.rosterId}>
+              <button type="button" onClick={() => { onChange(t.rosterId); setOpen(false); }}
+                className={cx("flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 transition-colors", t.rosterId === value ? "border-acc bg-acc-soft" : "border-line bg-panel2 hover:border-acc/50")}>
+                {row(t)}
+                <span className="w-12 shrink-0 text-right">
+                  <span className="num block text-sm font-bold">{Math.round(t.playoff)}%</span>
+                  <span className="block text-[9px] text-muted">playoffs</span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </Sheet>
+    </>
   );
 }
 
@@ -223,8 +264,10 @@ function Picker({ team, tabs, side, setSide, title, selected, onAdd, mode }: {
 }) {
   const [q, setQ] = useState("");
   const [pos, setPos] = useState("ALL");
-  const positions = ["ALL", ...new Set(team.assets.filter((a) => mode === "dynasty" || a.kind === "player").map((a) => a.pos))];
-  const pool = team.assets.filter((a) => !selected.includes(a.id) && (mode === "dynasty" || a.kind === "player") && (pos === "ALL" || a.pos === pos) && (!q || a.name.toLowerCase().includes(q.toLowerCase())));
+  // Picks are tradeable whenever they carry value in this view (always in keeper leagues).
+  const tradeable = (a: Asset) => a.kind === "player" || mode === "dynasty" || a.value > 0;
+  const positions = ["ALL", ...new Set(team.assets.filter(tradeable).map((a) => a.pos))];
+  const pool = team.assets.filter((a) => !selected.includes(a.id) && tradeable(a) && (pos === "ALL" || a.pos === pos) && (!q || a.name.toLowerCase().includes(q.toLowerCase())));
   return (
     <Card pad={false}>
       <div className="flex flex-col gap-2 p-3 sm:p-4">

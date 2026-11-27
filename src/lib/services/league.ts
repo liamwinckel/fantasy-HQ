@@ -688,11 +688,24 @@ async function buildLeagueContext(
         picks = (await sleeper.draftPicks(d.draft_id)).data;
       }
       const rules = keeperRulesFor(getSettings(), league);
-      for (const t of teams) for (const r of keeperPlan(out, t.rosterId, picks, rules, rounds, { teams: dTeams })) {
+      let pool: number[] = [];
+      for (const t of teams) for (const r of keeperPlan(out, t.rosterId, picks, rules, rounds, { teams: dTeams, onPool: (p) => (pool = p) })) {
         if (r.surplus !== null && r.surplus > 0) out.keeperSurplus.set(r.playerId, r.surplus);
         if (r.surplus !== null && r.costRound !== null) out.keeperCost.set(r.playerId, { round: r.costRound, surplus: r.surplus });
       }
-      applyKeeperBonus(values, out.keeperSurplus);
+      const toValue = applyKeeperBonus(values, out.keeperSurplus);
+      // Draft picks, keeper-aware: a pick lands the best player left after every team's keepers are off the board
+      // (keepers take their teams' picks, so roughly the top keepers × teams are gone). A late pick also brings a
+      // cheap future keeper, so it never drops to nothing. Later years are discounted.
+      const kept = Math.round(rules.maxKeepers * dTeams * 0.6);
+      const slotOf = (tier: string) => (tier === "early" ? 0.2 : tier === "late" ? 0.8 : 0.5);
+      for (const pk of out.picks) {
+        const overall = (pk.round - 1) * dTeams + Math.max(1, Math.round(slotOf(pk.tier) * dTeams));
+        const s = pool[Math.min(pool.length - 1, overall - 1 + kept)] ?? 0;
+        const yearsOut = Math.max(0, Number(pk.season) - Number(league.season) - 1);
+        const cheapKeep = 0.25 * Math.max(0, 1 - pk.round / Math.max(1, rounds)); // late picks = cheap keepers later
+        pk.keeperValue = toValue(Math.max(0.15, s + cheapKeep) * Math.pow(0.85, yearsOut));
+      }
     } catch { warnings.push("Keeper costs couldn't be loaded, so trade values ignore keeper value for now."); }
   }
   return out;

@@ -35,7 +35,7 @@ function TradePageBody({ setup, league, ctx, sp }: LeagueData) {
         ...ctx.picks.filter((k) => k.ownerRosterId === t.rosterId).map((k) => ({
           id: `k:${k.key}`, kind: "pick" as const, name: `${k.season} Round ${k.round}`, pos: "PICK", team: null,
           sub: `${k.originalRosterId === t.rosterId ? "Own" : `via ${ctx.teams.find((x) => x.rosterId === k.originalRosterId)?.name ?? "?"}`} · ${k.tier}${k.tierSource === "estimated" ? " (est.)" : k.tierSource === "default" ? " (slot unknown)" : ""}`,
-          value: 0, injury: null, tier: k.tier, values: { redraft: 0, keeper: 0, dynasty: k.value },
+          value: 0, injury: null, tier: k.tier, values: { redraft: k.keeperValue ?? 0, keeper: k.keeperValue ?? 0, dynasty: k.value },
           tierValues: { early: pickValue({ round: k.round, tier: "early", teams: ctx.teamsCount, superflex: ctx.superflex, yearsOut: Number(k.season) - Number(ctx.league.season) - 1 }),
             mid: pickValue({ round: k.round, tier: "mid", teams: ctx.teamsCount, superflex: ctx.superflex, yearsOut: Number(k.season) - Number(ctx.league.season) - 1 }),
             late: pickValue({ round: k.round, tier: "late", teams: ctx.teamsCount, superflex: ctx.superflex, yearsOut: Number(k.season) - Number(ctx.league.season) - 1 }) },

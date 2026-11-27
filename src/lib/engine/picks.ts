@@ -28,6 +28,8 @@ export interface PickAsset {
   label: string;
   /** Market data for this pick (DynastyProcess / FantasyPros), when covered. */
   market?: { e1: number; e2: number; v1: number; v2: number };
+  /** Keeper leagues: trade value from next season's draft, on the keeper trade-value scale. */
+  keeperValue?: number;
 }
 
 const ORD = ["", "1st", "2nd", "3rd", "4th", "5th"];
